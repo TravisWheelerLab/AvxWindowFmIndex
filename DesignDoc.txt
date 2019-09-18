@@ -1,0 +1,96 @@
+Project: FM_Fast library
+
+Goal: to provide a heavily optimized FM-index protein search implementation for use in bioinformatics pipelines.
+
+Currently, I am aiming to make this both a software library that can be linked to (as in LibDifSufSort),
+as well as a standalone executable version.
+
+Public API:
+  building:
+    build FM-index from ascii full-text, given as cmd line argument string
+    build FM-index from ascii full-text, given as stdin pipe      (standalone only, I think.)
+    build FM-index from ascii full-text, given as raw text file
+    build FM-index from ascii full-text, given as fasta file
+    (maybe) build FM-index from ascii existing fm index file, as hmmer likes it
+
+    save Fm-index as application specific file format (.FMI extension)
+    (maybe) save FM-index as hmmer fm-index file format
+    (maybe) return FM-index as structure from library code.
+
+    reconstructFullText: rebuilds the full text by walking through the bwt from the end '$' character.
+
+
+    exists function: takes arguments of kmer string, and a prebuilt FM-index structure. returns bool of if the kmer was found.
+    findRangeForKmer: takes arguments of Kmer string, and prebuilt FM-index structure. returns range in BWT of occurances.
+    findQueryHitsForKmer: takes arguments of kmer string, prebuilt FM-index. returns array of all positions in original full database text where found.
+
+    backwardStep: takes arguments FM-index structure, bwt range, and prefix character. Returns range for kmer that also includes prefix.    (lib only)
+
+    FullStringSearch: takes query sequence (or file), prebuilt FM-index. returns list of tuples [position in sequence, range of hits in bwt.] (lib only)
+    FullStringQueryHits: takes query sequence (or file), prebuilt fm-index. returns array of tuples [position in sequence, position in database].
+
+
+--------------------------------------------------------------------------------
+
+project structure:
+
+directory: Index
+	FmIndex.h: structs for the FmIndex and lower level structs/unions.
+	FmFastBuild.c/.h
+		Builds a FmIndex from full text source, either from string or file. 
+	FmFastLoad.c/.h
+		Loads an FmIndex from file. 
+	FmFastSave.c/.h
+		Saves the FmIndex structure to file.
+
+directory: Search
+	FmFastOccupancy.c/h: contains all of the occupancy functions and helpers
+	FmFastSearch.c/.h: contains backwardsStep function, exists function, and findRange functions.
+
+directory: Error:
+	FmFastError.c/.h: handles errors
+
+
+Api (root directory):
+	FmFastApi.h: include api for the project, contains public functions. 
+	FmFastRoot.h: top-level definitions, typedefs, etc.
+
+
+unplaced stuff:
+CharacterTransforms: converts ascii to frequency indexed characters, ascii to vector format, function for ambiguity resolution.
+
+
+
+
+
+
+--------------------------------------------------------------------------------
+cannonical naming convention.
+files: 		pascal case
+structs: 	pascal case
+functions: 	camel case
+
+
+--------------------------------------------------------------------------------
+.FMI File Format:
+  bytes [7:0]:    8 byte header containing the text "FmIndex" and a null terminator (0x00)
+  bytes [71:8]:   64 byte metadata header, containing at least a 4-byte version info integer.
+                    As long as the version info is below 2^16, the rest of the versioning is defined below.
+                    Versions after 2^16 are allowed to redefine the data below. These versions are undefined, and only specified for future-proofing.
+                  The byte after the version info (byte 12) shall determine the bit size of the positions.
+                    If Byte 12 is 0, the I array (defined below) shall be represented as 32-bit positions.
+                    If Byte 12 is 1, the I array shall be represented as 64-bit positions.
+                    Currently, only 64-bit I arrays are supported (byte 12 == 0 is undefined.)
+
+
+  bytes [79:72]:  8 byte integer representing the number of 224-position blocks in the index
+  bytes [87:80]:  8 byte integer representing the number of positions BWT array.
+  bytes [95:88]:  8 byte integer indicating the position of the null terminator.
+  bytes [-:96]:   The block list of the index. Each block contains a 160 byte base occupancy header
+                    and 160 bytes for the position bit vectors, totaling 320 bytes per block.
+
+  after each block is specified, the file shall contain one integer per position in the Bwt
+  correlating to the I array in the traditional FM-index implementation.
+  The integer bit width shall be determined by the 5th byte in the metadata (byte 12 in the file).
+--------------------------------------------------------------------------------
+

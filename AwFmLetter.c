@@ -2,8 +2,9 @@
 #include <stdlib.h>
 
 
-frequencyIndexedLetter_t awFmAsciiLetterToLetterIndex(char asciiLetter){
 
+
+uint8_t awFmAsciiLetterToLetterIndex(char asciiLetter){
   //bitmask to alias lowercase letter to uppercase letters
   const char charBitmask = 0x1F;
   asciiLetter = asciiLetter & charBitmask;
@@ -33,6 +34,6 @@ frequencyIndexedLetter_t awFmAsciiLetterToLetterIndex(char asciiLetter){
       asciiLetter += 1;
     }
   }
-  
+
   return letterOffsets[asciiLetter];
 }

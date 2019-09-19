@@ -1,4 +1,4 @@
-Project: FM_Fast library
+Project: AvxWindowFmIndex library
 
 Goal: to provide a heavily optimized FM-index protein search implementation for use in bioinformatics pipelines.
 
@@ -35,25 +35,25 @@ Public API:
 project structure:
 
 directory: Index
-	FmIndex.h: structs for the FmIndex and lower level structs/unions.
-	FmFastBuild.c/.h
-		Builds a FmIndex from full text source, either from string or file. 
-	FmFastLoad.c/.h
-		Loads an FmIndex from file. 
-	FmFastSave.c/.h
+	AwFmIndex.h: structs for the FmIndex and lower level structs/unions.
+	AwFmFastBuild.c/.h
+		Builds a FmIndex from full text source, either from string or file.
+	AwFmLoad.c/.h
+		Loads an FmIndex from file.
+	AwFmSave.c/.h
 		Saves the FmIndex structure to file.
 
 directory: Search
-	FmFastOccupancy.c/h: contains all of the occupancy functions and helpers
-	FmFastSearch.c/.h: contains backwardsStep function, exists function, and findRange functions.
+	AwFmOccupancy.c/h: contains all of the occupancy functions and helpers
+	AwFmFastSearch.c/.h: contains backwardsStep function, exists function, and findRange functions.
 
 directory: Error:
-	FmFastError.c/.h: handles errors
+	AwFmError.c/.h: handles errors
 
 
 Api (root directory):
-	FmFastApi.h: include api for the project, contains public functions. 
-	FmFastRoot.h: top-level definitions, typedefs, etc.
+	AwFmApi.h: include api for the project, contains public functions.
+	AwFmRoot.h: top-level definitions, typedefs, etc.
 
 
 unplaced stuff:
@@ -72,7 +72,7 @@ functions: 	camel case
 
 
 --------------------------------------------------------------------------------
-.FMI File Format:
+.awfmi File Format:
   bytes [7:0]:    8 byte header containing the text "FmIndex" and a null terminator (0x00)
   bytes [71:8]:   64 byte metadata header, containing at least a 4-byte version info integer.
                     As long as the version info is below 2^16, the rest of the versioning is defined below.
@@ -93,4 +93,3 @@ functions: 	camel case
   correlating to the I array in the traditional FM-index implementation.
   The integer bit width shall be determined by the 5th byte in the metadata (byte 12 in the file).
 --------------------------------------------------------------------------------
-

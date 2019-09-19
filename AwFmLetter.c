@@ -3,7 +3,20 @@
 
 
 
-
+/*
+ * Function:  awFmAsciiLetterToLetterIndex
+ * --------------------
+ * Transforms an ascii-encoded character into a frequency-encoded amino acid value.
+ * These frequency encoded values are used internally in AwFm to better optimize memory usage and aid performance.
+ *  CAUTION: characters that are not ASCII letters may alias to represent an amino acid. Only letters a-z, A-Z should be given.
+ *
+ *  Inputs:
+ *    asciiLetter: ascii-encoded letter representing an amino acid, or an amino acid ambiguity character (b, z, or x)
+ *
+ *  Returns:
+ *    Frequency-encoded value representing the amino acid.
+ *
+ */
 uint8_t awFmAsciiLetterToLetterIndex(char asciiLetter){
   //bitmask to alias lowercase letter to uppercase letters
   const char charBitmask = 0x1F;
@@ -36,4 +49,30 @@ uint8_t awFmAsciiLetterToLetterIndex(char asciiLetter){
   }
 
   return letterOffsets[asciiLetter];
+}
+
+
+/*
+ * Function:  awFmAsciiLetterToCompressedVectorFormat
+ * --------------------
+ * Transforms an ascii-encoded character into a set of 5 bits that will represent the amino acid in the strided AVX vector.
+ *  CAUTION: characters that are not ASCII letters may alias to represent an amino acid. Only letters a-z, A-Z should be given.
+ *  Inputs:
+ *    asciiLetter: ascii-encoded letter representing an amino acid, or an amino acid ambiguity character (b, z, or x)
+ *
+ *  Returns:
+ *    Value representing the compressed vector format of the amino acid.
+ *
+ */
+uint8_t awFmAsciiLetterToCompressedVectorFormat(const char asciiLetter){
+  //bitmask to alias lowercase letter to uppercase letters
+  const char charBitmask = 0x1F;
+  const letter_t compressedVectorLetters[32] = {
+    0x00, 0x1A, 0x00, 0x04, 0x06, 0x15, 0x1B, 0x16,
+    0x02, 0x03, 0x00, 0x05, 0x1C, 0x01, 0x1E, 0x00,
+    0x0C, 0x1D, 0x09, 0x13, 0x0A, 0x00, 0x19, 0x08,
+    0x00, 0x17, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  };
+
+  return compressedVectorLetters[asciiValue & charBitmask];
 }

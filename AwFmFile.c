@@ -5,19 +5,25 @@
 
 
 /*Private Function Prototypes*/
-size_t getSequenceSegmentStartPositionWithoutUnderflow(const struct AwFmIndex *restrict const index,
+static inline size_t getSequenceSegmentStartPositionWithoutUnderflow(const struct AwFmIndex *restrict const index,
   const size_t sequencePosition, const size_t priorFlankingSequenceLength, const size_t dbSequenceLength);
 
-size_t getSequenceSegmentEndPositionWithoutOverflow(const struct AwFmIndex *restrict const index,
+static inline size_t getSequenceSegmentEndPositionWithoutOverflow(const struct AwFmIndex *restrict const index,
   const size_t sequencePosition, const size_t postFlankingSequenceLength, const size_t dbSequenceLength);
 
-  size_t fileOffsetForSequenceSegment(const struct AwFmIndex *restrict const index,
-    const size_t sequenceSegmentStartPosition);
+static inline size_t fileOffsetForSequenceBeginning(const struct AwFmIndex *restrict const index);
+
+static inline size_t fileOffsetForSequenceSegment(const struct AwFmIndex *restrict const index,
+  const size_t sequenceSegmentStartPosition);
+
+static inline size_t fileOffsetForSuffixArrayPosition(const struct AwFmIndex *restrict const index,
+  const size_t compressedSuffixArrayPosition);
 
 
-const char    IndexFileExtension[5]         = "awfmi";
-const uint8_t IndexFileFormatIdHeaderLength = 10
-const char    IndexFileFormatIdHeader[IndexFileFormatIdHeaderLength]  = "AwFmIndex\n";
+
+static const char    IndexFileExtension[5]         = "awfmi";
+static const uint8_t IndexFileFormatIdHeaderLength = 10
+static const char    IndexFileFormatIdHeader[IndexFileFormatIdHeaderLength]  = "AwFmIndex\n";
 
 /*
  * Function:  awFmCreateIndexFile
@@ -197,6 +203,58 @@ enum AwFmFileAccessCode awFmLoadIndexFromFile(const char *restrict const fileSrc
 
 
 /*
+ * Function:  awFmLoadSuffixArrayIndexFromFile
+ * --------------------
+ * Loads the position in the database sequence for the given compressed suffix array index from the AwFm Index file.
+ *
+ *
+ *  Inputs:
+ *    fileSrc:                        Fully qualified file path to load the database sequence from.
+ *    index:                          Pointer to the valid AwFmIndex struct so that we can determine the location in the file.
+ *    compressedSuffixArrayPosition:  Index into the compressed suffix array to load. Note, this is not the same as the BWT position.
+ *      Since the SA is likely compressed, the BWT positon is the compressedSuffixArrayPosition multiplied by the compression factor.
+ *    dbPositionOut:                  Output argument for the position in the database sequence.
+ *
+ *  Returns:
+ *    AwFmFileAccessCode detailing the result of the read attempt. Possible return values:
+ *      AwFmFileReadOkay on success,
+ *      AwFmFileOpenFail on failure to open the AwFm Index file.
+ *      AwFmFileReadFail on failure to read the data at the expected file position.
+ *        This would be likely due to the file somehow being smaller than the index expects.
+ *      AwFmIllegalPositionError on the compressedSuffixArrayPosition being outisde the range that
+ *        would be stored in the AwFm Index file.
+ */
+enum AwFmFileAccessCode awFmLoadSuffixArrayIndexFromFile(const char *restrict const fileSrc,
+  const struct AwFmIndex *restrict const index, const size_t compressedSuffixArrayPosition,
+  const uint64_t *restrict dbPositionOut){
+
+  //sanity check on the compressed SA index
+  if((compressedSuffixArrayPosition * index->metadata.data.suffixArrayCompressionRatio) > awFmGetDbSequenceLength(index)){
+    return AwFmIllegalPositionError;
+  }
+
+  //open the file
+  FILE *datafile;
+  errno_t errorCode = fopen_s(&datafile, "r");
+  if(errorCode != 0){
+    return AwFmFileOpenFail;
+  }
+
+  //seek to the correct value in the compressed suffix array
+  const size_t suffixFileOffset = fileOffsetForSuffixArrayPosition(index, compressedSuffixArrayPosition);
+  fseek(datafile, suffixFileOffset, SEEK_SET);
+
+  size_t elementsRead = fread(dbPositionOut, sizeof(uint64_t), 1 , datafile);
+  fclose(datafile);
+
+  if(elementsRead != 1)
+    return AwFmFileReadFail;
+  else
+    return AwFmFileReadOkay;
+}
+
+
+/*
  * Function:  awFmLoadSequenceSectionFromFile
  * --------------------
  * Loads a section of the database sequence from the AwFm Index file. If the specified range
@@ -234,7 +292,7 @@ enum AwFmFileAccessCode awFmLoadSequenceSectionFromFile(const char *restrict con
   const size_t sequenceSegmentLength = sequenceEndPosition - sequenceStartPosition;
 
   //find the byte offset from the start of the file where the sequence segment starts
-  const size_t fileOffsetForSequenceSegmentStartPosition = fileOffsetForSequenceSegment(index,
+  const size_t fileOffsetForSequenceSegmentStartPosition = fileOffsetForSequenceSegment(index->numBlocks,
     sequenceSegmentStartPosition);
 
 
@@ -248,6 +306,11 @@ enum AwFmFileAccessCode awFmLoadSequenceSectionFromFile(const char *restrict con
   //in the AwFmIndex file, seek to the beginning of the sequence segment
   int fseekResult = fseek(datafile, fileOffsetForSequenceSegmentStartPosition, SEEK_SET);
 
+  if(fseekResult != 0){
+    fclose(datafile);
+    return AwFmFileReadFail;
+  }
+
   *charactersRead = fread(*sequencePtr, sizeof(char), charactersToRead, datafile);
   if(*charactersRead != sequenceSegmentLength){
     fclose(datafile);
@@ -258,6 +321,8 @@ enum AwFmFileAccessCode awFmLoadSequenceSectionFromFile(const char *restrict con
 }
 
 
+
+/*private function implementations*/
 size_t getSequenceSegmentStartPositionWithoutUnderflow(const struct AwFmIndex *restrict const index,
   const size_t sequencePosition, const size_t priorFlankingSequenceLength, const size_t dbSequenceLength){
     if(priorFlankingSequenceLength > sequencePosition)
@@ -265,7 +330,6 @@ size_t getSequenceSegmentStartPositionWithoutUnderflow(const struct AwFmIndex *r
     else
       return sequencePosition - priorFlankingSequenceLength
 }
-
 
 size_t getSequenceSegmentEndPositionWithoutOverflow(const struct AwFmIndex *restrict const index,
   const size_t sequencePosition, const size_t postFlankingSequenceLength, const size_t dbSequenceLength){
@@ -275,17 +339,25 @@ size_t getSequenceSegmentEndPositionWithoutOverflow(const struct AwFmIndex *rest
       return postFlankingSequenceLength - sequencePosition;
 }
 
-
-size_t fileOffsetForSequenceSegment(const struct AwFmIndex *restrict const index,
-  const size_t sequenceSegmentStartPosition){
-
+inline size_t fileOffsetForSequenceBeginning(const struct AwFmIndex *restrict const index){
   const uint_fast8_t  headerLength          = sizeof(char) * IndexFileFormatIdHeaderLength;
   const uint_fast16_t metadataLength        = sizeof(struct AwFmIndexPaddedMetadata);
   const uint_fast8_t  numBlocksLength       = sizeof(uint64_t);
   const uint_fast16_t rankPrefixSumsLength  = sizeof(uint64_t) * (AMINO_CARDINALITY + 1);
-  const uint_64_t     blockListLength       = sizeof(struct AwFmBlock) * index->numBlocks;
+  const uint_64_t     blockListLength       = sizeof(struct AwFmBlock) * index->numBlocks
 
+  return headerLength + metadataLength + numBlocksLength + rankPrefixSumsLength + blockListLength;
+}
 
-  return headerLength + metadataLength + numBlocksLength + rankPrefixSumsLength +
-          blockListLength + sequenceSegmentStartPosition;
+inline size_t fileOffsetForSequenceSegment(const struct AwFmIndex *restrict const index, const size_t sequenceSegmentStartPosition){
+  return fileOffsetForSequenceBeginning(index) + sequenceSegmentStartPosition;
+}
+
+inline size_t fileOffsetForSuffixArrayPosition(const struct AwFmIndex *restrict const index,
+  const size_t compressedSuffixArrayPosition){
+  const size_t databaseSequenceSize = awFmGetDbSequenceLength(index) * sizeof(char);
+  const size_t byteOffsetInSuffixArray = suffixArrayPosition * sizeof(uint64_t);
+
+  return fileOffsetForSequenceBeginning(index) + databaseSequenceSize + byteOffsetInSuffixArray;
+
 }

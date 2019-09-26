@@ -6,11 +6,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-struct AwFmBacktracePosition{
-  uint64_t position;
-  uint64_t offset;
-};
-
 struct AwFmSearchRange awFmSearchKmerSuffix(const struct AwFmIndex *restrict const index,
   const struct AwFmSearchRange *restrict const currentRange, const uint8_t queryLetter);
 

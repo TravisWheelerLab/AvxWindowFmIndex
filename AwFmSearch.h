@@ -11,10 +11,6 @@ struct AwFmBacktracePosition{
   uint64_t offset;
 };
 
-//todo: what is this?
-struct AwFmDbPositionArray *awFmDatabaseSearchForKmers(const struct AwFmIndex *restrict const index,
-  const char *restrict const kmer, const uint16_t kmerLength);
-
 struct AwFmSearchRange awFmSearchKmerSuffix(const struct AwFmIndex *restrict const index,
   const struct AwFmSearchRange *restrict const currentRange, const uint8_t queryLetter);
 

@@ -1,6 +1,7 @@
 #include "AwFmOccupancy.h"
+#include "AwFmLetter.h"
 #include <immintrin.h>
-
+#include <stdbool.h>
 
 /*Private Function Prototypes*/
 static inline size_t        getBlockIndexFromGlobalPosition(const uint64_t globalQueryPosition);
@@ -25,11 +26,11 @@ static inline uint_fast8_t  countBitsInMaskedOccupancyVector(const __m256i maske
  *    letter: Frequency-indexed letter that's occupancy is being queried.
  *
  */
-inline void awFmGetOccupancy(const struct AwFmBlock *const restrict blockList, const size_t queryPosition, const letter_t letter){
+uint64_t awFmGetOccupancy(const struct AwFmIndex *const restrict index, const size_t queryPosition, const uint8_t letter){
 
   const uint_fast8_t queryLocalPosition = getBlockQueryPositionFromGlobalPosition(queryPosition);
   const size_t blockIndex               = getBlockIndexFromGlobalPosition(queryPosition);
-  const __m256i occupancyVector         = createBlockOccupancyVector(blockList, blockIndex, letter);
+  const __m256i occupancyVector         = createBlockOccupancyVector(index->blockList, blockIndex, letter);
   const __m256i maskedOccVector         = applyQueryPositionBitmask(occupancyVector, queryLocalPosition);
 
   //make lookup tables for computing the occupancy popcount.
@@ -37,7 +38,7 @@ inline void awFmGetOccupancy(const struct AwFmBlock *const restrict blockList, c
   const __m256i lowBitsLookupTable      = _mm256_setr_epi8( 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0, 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0);
   const __m256i highBitsLookupTable     = _mm256_setr_epi8(-4,-3,-3,-2,-3,-2,-2,-1,-3,-2,-2,-1,-2,-1,-1, 0,-4,-3,-3,-2,-3,-2,-2,-1,-3,-2,-2,-1,-2,-1,-1, 0);
   const uint_fast8_t blockOccupancy     = countBitsInMaskedOccupancyVector(maskedOccVector, lowBitsLookupTable, highBitsLookupTable);
-  const uint64_t blockBaseOccupancy     = blockList[blockIndex].baseOccupancies[queryLetter];
+  const uint64_t blockBaseOccupancy     = index->blockList[blockIndex].baseOccupancies[letter];
 
   const uint64_t occupancy              = blockOccupancy + blockBaseOccupancy;
   return occupancy;
@@ -45,9 +46,9 @@ inline void awFmGetOccupancy(const struct AwFmBlock *const restrict blockList, c
 
 
 /*
- * Function:  awFmRequestBlockDataPrefetch
+ * Function:  awFmOccupancyDataPrefetch
  * --------------------
- *  manually request cache  prefetching for the data to be read for the occupancy call.
+ *  manually request cache prefetching for the data to be read for the occupancy call.
  *  Prefetching is done using either the _mm_prefetch intel intrinsic, or the __builtin_prefetch GCC extension.
  *    The correct block to prefetch is computed from the position.
  *
@@ -56,23 +57,60 @@ inline void awFmGetOccupancy(const struct AwFmBlock *const restrict blockList, c
  *    queryPosition: Position in the BWT that the occupancy call will calculate.
  *
  */
- inline void awFmRequestBlockDataPrefetch(const struct AwFmBlock *restrict const blockList, const uint64_t queryPosition){
-   const int PREFETCH_HINT_READ_ONLY             = 0;
-   const int PREFETCH_HINT_NO_TEMPORAL_LOCALITY  = 0;
-
-   //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
-   const uint64_t blockIndex = getBlockIndexFromGlobalPosition(queryPosition);
-   const uint8_t *blockAddress                      = (uint8_t*)(blockList + blockIndex);
+ void awFmOccupancyDataPrefetch(const struct AwFmIndex *restrict const index, const uint64_t queryPosition){
 
    for(uint_fast16_t prefetchOffset = 0; prefetchOffset < sizeof(struct AwFmBlock); prefetchOffset += CACHE_LINE_SIZE_IN_BYTES){
      #ifdef AVX_VECTOR_PREFETCH
+        //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
+        const uint64_t blockIndex    = getBlockIndexFromGlobalPosition(queryPosition);
+        const uint8_t *blockAddress  = (uint8_t*)(index->blockList + blockIndex);
        _mm_prefetch(blockAddress + prefetchOffset, _MM_HINT_NTA);
      #else
      #ifdef AVX_VECTOR_GCC_BUILTIN_PREFETCH
+       //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
+       const uint64_t blockIndex    = getBlockIndexFromGlobalPosition(queryPosition);
+       const uint8_t *blockAddress  = (uint8_t*)(index->blockList + blockIndex);
+       const int PREFETCH_HINT_READ_ONLY             = 0;
+       const int PREFETCH_HINT_NO_TEMPORAL_LOCALITY  = 0;
        __builtin_prefetch(blockAddress + prefetchOffset, PREFETCH_HINT_READ_ONLY, PREFETCH_HINT_NO_TEMPORAL_LOCALITY);
      #endif
    }
  }
+
+uint_fast8_t awFmGetLetterAtBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition){
+  const uint64_t      blockIndex          = getBlockIndexFromGlobalPosition(bwtPosition);
+  const uint_fast8_t  blockQueryPosition  = getBlockQueryPositionFromGlobalPosition(bwtPosition);
+  const uint_fast8_t  byteInAvxVector     = blockQueryPosition / 7;
+  const uint_fast8_t  bitInVectorByte     = blockQueryPosition % 7;
+
+  const __m256i *restrict const blockVectorPtr = index->blockList[blockIndex].letterBitVectors;
+
+  uint8_t assembledVectorLetter = 0;
+  for(uint_fast8_t i = 0; i < 5; i++){
+    const uint_fast8_t vectorByte  = _mm256_extract_epi8(_mm256_load_si256(blockVectorPtr + i), byteInAvxVector);
+    const uint_fast8_t letterBitInVector = ((vectorByte >> bitInVectorByte) & 1);
+    assembledVectorLetter = (assembledVectorLetter << 1) | letterBitInVector;
+  }
+
+  return awFmCompressedVectorLetterToLetterIndex(assembledVectorLetter);
+}
+
+
+inline size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition){
+  const uint8_t frequencyIndexLetter = awFmGetLetterAtBwtPosition(index, bwtPosition);
+  const uint64_t occupancy = awFmGetOccupancy(index, bwtPosition, frequencyIndexLetter);
+  const uint64_t backtraceBwtPosition = occupancy + index->rankPrefixSums[frequencyIndexLetter];
+
+  //prefetch the next occupancy call if needed.
+  const bool backtraceNotFinished = backtraceBwtPosition % index->suffixArrayCompressionRatio;
+
+  //using __builtin_expect helps the branch prediction expect that it's likely to need to prefetch more.
+  if(__builtin_expect(backtraceNotFinished, 1)){
+    awFmOccupancyDataPrefetch(index, backtraceBwtPosition);
+  }
+
+  return backtraceBwtPosition;
+}
 
 
  /*
@@ -86,7 +124,7 @@ inline void awFmGetOccupancy(const struct AwFmBlock *const restrict blockList, c
   *   Returns:
   *     Index of the block where the given query position resides.
   */
- static inline size_t getBlockIndexFromGlobalPosition(const size_t globalQueryPosition){
+inline size_t getBlockIndexFromGlobalPosition(const size_t globalQueryPosition){
   return globalQueryPosition / POSITIONS_PER_FM_BLOCK;
 }
 
@@ -102,7 +140,7 @@ inline void awFmGetOccupancy(const struct AwFmBlock *const restrict blockList, c
  *   Returns:
  *     Bit position into the block's AVX2 vectors where the query position lands.
  */
-static inline uint_fast8_t getBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition){
+inline uint_fast8_t getBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition){
   return globalQueryPosition % POSITIONS_PER_FM_BLOCK;
 }
 
@@ -121,10 +159,10 @@ static inline uint_fast8_t getBlockQueryPositionFromGlobalPosition(const size_t 
  *   Returns:
  *    256-bit vector with bits set at every position where the given letter was found.
  */
-static inline __m256i createBlockOccupancyVector(const struct FmBlock *restrict const blockList, const size_t blockIndex, const uint8_t letter){
+inline __m256i createBlockOccupancyVector(const struct AwFmBlock *restrict const blockList, const size_t blockIndex, const uint8_t letter){
   //load the letter bit vectors
   const __m256i *restrict const blockVectorPtr = blockList[blockIndex].letterBitVectors;
-  const __m256i bit0Vector = _mm256_load_si256(blockVectorPtr;
+  const __m256i bit0Vector = _mm256_load_si256(blockVectorPtr);
   const __m256i bit1Vector = _mm256_load_si256(blockVectorPtr + 1);
   const __m256i bit2Vector = _mm256_load_si256(blockVectorPtr + 2);
   const __m256i bit3Vector = _mm256_load_si256(blockVectorPtr + 3);
@@ -133,8 +171,11 @@ static inline __m256i createBlockOccupancyVector(const struct FmBlock *restrict 
   //GCC and ICC-complient hint to the compiler that the first letter is the most common,
   //so if you're going to do branch target prediction, predict Leucine.
   //Also, let the compiler know that the last 8 letters are unlikely.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-value"
   __builtin_expect(letter == 0, 1);     //0 is very likely, expect it
   __builtin_expect(letter >= 12, 0);    //12-19 are very unlikely, don't expect them.
+#pragma GCC diagnostic pop
   switch(letter){
     case 0:   /*L (leucine). Group One, encoding 0b11100*/
       return  _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
@@ -193,9 +234,9 @@ static inline __m256i createBlockOccupancyVector(const struct FmBlock *restrict 
  *   Returns:
  *    256-bit vector where only bits before this position are allowed to be set (all bits >= query position are cleared).
  */
-static inline __m256i applyQueryPositionBitmask(const __m256i occupancyVector, const uint8_t localQueryPosition){
-  const uint8_t numBytesToPreserveAllOnes = localQueryPosition / POSITIONS_PER_FM_BLOCK;
-  const uint8_t lastQueryByteBitmask      = (1 << (localQueryPosition % POSITIONS_PER_FM_BLOCK)) - 1
+inline __m256i applyQueryPositionBitmask(const __m256i occupancyVector, const uint8_t localQueryPosition){
+  const uint8_t numBytesToPreserveAllOnes = localQueryPosition / POSITIONS_PER_FM_BLOCK_BYTE;
+  const uint8_t lastQueryByteBitmask      = (1 << (localQueryPosition % POSITIONS_PER_FM_BLOCK_BYTE)) - 1;
 
   __m256i queryBitmask = _mm256_set_epi8( 31, 30, 29, 28, 27, 26, 25, 24,
                                           23, 22, 21, 20, 19, 18, 17, 16,
@@ -206,7 +247,9 @@ static inline __m256i applyQueryPositionBitmask(const __m256i occupancyVector, c
   queryBitmask = _mm256_cmpgt_epi8(_mm256_set1_epi8(numBytesToPreserveAllOnes), queryBitmask);
   queryBitmask = _mm256_insert_epi8(queryBitmask, lastQueryByteBitmask, numBytesToPreserveAllOnes);
 
-  return _mm256i_and_si256(occupancyVector, queryBitmask);
+
+
+  return _mm256_and_si256(occupancyVector, queryBitmask);
 }
 
 
@@ -228,7 +271,7 @@ static inline __m256i applyQueryPositionBitmask(const __m256i occupancyVector, c
  *   Returns:
  *    Count of how many bits were set in the maskedOccupancyVector.
  */
-static inline uint_fast8_t countBitsInMaskedOccupancyVector(const __m256i maskedOccupancyVector, const __m256i lowBitsLookupTable, const __m256i highBitsLookupTable){
+inline uint_fast8_t countBitsInMaskedOccupancyVector(const __m256i maskedOccupancyVector, const __m256i lowBitsLookupTable, const __m256i highBitsLookupTable){
   const __m256i lowNybbleBitCount           = _mm256_shuffle_epi8(lowBitsLookupTable, maskedOccupancyVector);
   const __m256i highNybbleBits              = _mm256_srli_si256(maskedOccupancyVector, 4);
   const __m256i highNybbleNegativeBitCount  = _mm256_shuffle_epi8(highBitsLookupTable, highNybbleBits);

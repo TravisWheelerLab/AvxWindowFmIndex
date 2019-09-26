@@ -1,12 +1,16 @@
 #ifndef AW_FM_OCCUPANCY_H
 #define AW_FM_OCCUPANCY_H
 
-#include "AwFmIndex"
+#include "AwFmIndex.h"
 #include <stdint.h>
 
-void awFmGetOccupancy(const struct AwFmBlock *restrict const blockList,
+uint64_t awFmGetOccupancy(const struct AwFmIndex *restrict const index,
   const size_t queryPosition, const uint8_t letter);
 
-inline void awFmRequestBlockDataPrefetch(const struct fm_block *const restrict blockList, const uint64_t blockIndex);
+void  awFmOccupancyDataPrefetch(const struct AwFmIndex *restrict const index, const uint64_t queryPosition);
+
+uint8_t awFmGetLetterAtBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
+
+size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
 
 #endif /* end of include guard: AW_FM_OCCUPANCY_H */

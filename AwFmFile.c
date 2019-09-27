@@ -9,7 +9,7 @@
 
 /*Returns the start position of the database sequence segment, or zero if the position would underflow*/
 static inline size_t getSequenceSegmentStartPositionWithoutUnderflow(const struct AwFmIndex *restrict const index,
-  const size_t sequencePosition, const size_t priorFlankingSequenceLength, const size_t dbSequenceLength);
+  const size_t sequencePosition, const size_t priorFlankingSequenceLength);
 
 /*Returns the end position of the database sequence segment, or sequence end position if the position would overflow*/
 static inline size_t getSequenceSegmentEndPositionWithoutOverflow(const struct AwFmIndex *restrict const index,
@@ -329,7 +329,7 @@ enum AwFmFileAccessCode awFmLoadSequenceSectionFromFile(const struct AwFmIndex *
   //calculate the start position in the sequence, and how many characters to read.
   const size_t databaseSequenceLength       = awFmGetDbSequenceLength(index);
   const size_t sequenceSegmentStartPosition = getSequenceSegmentStartPositionWithoutUnderflow(index,
-    sequencePosition, priorFlankingSequenceLength, databaseSequenceLength);
+    sequencePosition, priorFlankingSequenceLength);
   const size_t sequenceSegmentEndPosition   = getSequenceSegmentEndPositionWithoutOverflow(index,
     sequencePosition, postFlankingSequenceLength, databaseSequenceLength);
   const size_t sequenceSegmentLength        = sequenceSegmentEndPosition - sequenceSegmentStartPosition;
@@ -382,7 +382,7 @@ enum AwFmFileAccessCode awFmLoadSequenceSectionFromFile(const struct AwFmIndex *
  *      or sequencePosition - priorFlankingSequenceLength otherwise.
  */
 size_t getSequenceSegmentStartPositionWithoutUnderflow(const struct AwFmIndex *restrict const index,
-  const size_t sequencePosition, const size_t priorFlankingSequenceLength, const size_t dbSequenceLength){
+  const size_t sequencePosition, const size_t priorFlankingSequenceLength){
     if(priorFlankingSequenceLength > sequencePosition)
       return 0;
     else

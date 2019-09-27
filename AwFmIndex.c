@@ -4,6 +4,8 @@
 #include <stdlib.h>
 
 //TODO: when creating rankPrefixSums, make sure that the prefix sum for A ia 1 (for the $ terminator)
+//TODO: awFmIndexCreate function.
+
 
 /*
  * Function:  alignedAllocAwFmIndex
@@ -58,7 +60,6 @@ struct AwFmIndex *alignedAllocAwFmIndex(const char *restrict const fileSrc){
  */
 struct AwFmBlock *alignedAllocBlockList(const size_t numBlocks){
   return aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, numBlocks * sizeof(struct AwFmBlock));
-
 }
 
 
@@ -85,13 +86,37 @@ void deallocateFmIndex(struct AwFmIndex *restrict index){
 }
 
 
-
-//todo comment
+/*
+ * Function:  awFmSearchRangeLength
+ * --------------------
+ * Gets the number of positions included in the given AwFmSearchRange
+ *
+ *  Inputs:
+ *    range: Range of positions in the BWT that corresponds to some number of
+ *      instances of a given kmer.
+ *
+ *  Outputs:
+ *    Number of positions in the given range if the range is valid (startPtr < endPtr),
+ *      or 0 otherwise, as that would imply that no instances of that kmer were found.
+ */
 inline size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range){
-  return (range->endPtr - range->startPtr) + 1;
+  uint64_t length = range->endPtr - range->startPtr;
+  return (range->startPtr < range->endPtr)? length: 0;
 }
 
-
+/*
+ * Function:  awFmBwtPositionIsSampled
+ * --------------------
+ * Determines if the given BWT position is sampled under the given AwFmIndex's
+ *  suffix array compression ratio.
+ *
+ *  Inputs:
+ *    index:      Pointer to the BWT's AwFmIndex.
+ *    position:   Position in the BWT.
+ *
+ *  Outputs:
+ *    True if the position is sampled in the compressedSuffixArray, or false otherwise.
+ */
 inline bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position){
   return position % index->suffixArrayCompressionRatio;
 }

@@ -27,7 +27,6 @@ static inline size_t fileOffsetForSuffixArrayPosition(const struct AwFmIndex *re
   const size_t compressedSuffixArrayPosition);
 
 
-static const char    IndexFileExtension[5]         = "awfmi";
 static const uint8_t IndexFileFormatIdHeaderLength = 10;
 static const char    IndexFileFormatIdHeader[10]  = "AwFmIndex\n";
 

@@ -30,6 +30,8 @@ struct AwFmIndex{
   uint16_t  suffixArrayCompressionRatio;
   uint64_t  rankPrefixSums[AMINO_CARDINALITY + 1]; //last position acts as BWT length
   char      *fileSrc;
+  uint8_t   *databaseSequence;  //usually NULL, used in construction and saving to file
+  uint64_t  *fullSuffixArray;   //usually NULL, used in construction and saving to file
   union AwFmIndexPaddedMetadata metadata;
 };
 
@@ -42,6 +44,7 @@ struct AwFmSearchRange{
 /*Public Functions*/
 
 //API Function
+
 struct  AwFmIndex *alignedAllocAwFmIndex(const char *restrict const fileSrc);
 struct  AwFmBlock *alignedAllocBlockList(const size_t numBlocks);
         void      deallocateFmIndex(struct AwFmIndex *restrict index);

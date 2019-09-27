@@ -6,17 +6,23 @@
 
 
 /*Private Function Prototypes*/
+
+/*Returns the start position of the database sequence segment, or zero if the position would underflow*/
 static inline size_t getSequenceSegmentStartPositionWithoutUnderflow(const struct AwFmIndex *restrict const index,
   const size_t sequencePosition, const size_t priorFlankingSequenceLength, const size_t dbSequenceLength);
 
+/*Returns the end position of the database sequence segment, or sequence end position if the position would overflow*/
 static inline size_t getSequenceSegmentEndPositionWithoutOverflow(const struct AwFmIndex *restrict const index,
   const size_t sequencePosition, const size_t postFlankingSequenceLength, const size_t dbSequenceLength);
 
+/*Returns the number of bytes between the start of the AwFmIndex file and the start of the database sequence.*/
 static inline size_t fileOffsetForSequenceBeginning(const struct AwFmIndex *restrict const index);
 
+/*Returns the number of bytes between the start of the AwFmIndex file and the given beginning of the requested sequence segment.*/
 static inline size_t fileOffsetForSequenceSegment(const struct AwFmIndex *restrict const index,
   const size_t sequenceSegmentStartPosition);
 
+/*Returns the number of bytes between the start of the AwFmIndex file and the given position in the compressed suffix array.*/
 static inline size_t fileOffsetForSuffixArrayPosition(const struct AwFmIndex *restrict const index,
   const size_t compressedSuffixArrayPosition);
 
@@ -358,8 +364,23 @@ enum AwFmFileAccessCode awFmLoadSequenceSectionFromFile(const struct AwFmIndex *
 }
 
 
+/*Private Function Implementations*/
 
-/*private function implementations*/
+/*
+ * Function:  getSequenceSegmentStartPositionWithoutUnderflow
+ * --------------------
+ *  Returns the start position of the database sequence segment, or zero if the position would underflow.
+ *    This function acts as a data-access safeguard for when a sequence segment is requested that would
+ *    start before the actual start of the database sequence.
+ *
+ *  Inputs:
+ *    index:                        Pointer to the AwFmIndex to be queried.
+ *    sequencePosition:             Position in the sequence to build the segment around
+ *    priorFlankingSequenceLength:  How many characters before the sequencePosition to include in the segment.
+ *  Returns:
+ *    priorFlankingSequenceLength if no underflow would occur,
+ *      or sequencePosition - priorFlankingSequenceLength otherwise.
+ */
 size_t getSequenceSegmentStartPositionWithoutUnderflow(const struct AwFmIndex *restrict const index,
   const size_t sequencePosition, const size_t priorFlankingSequenceLength, const size_t dbSequenceLength){
     if(priorFlankingSequenceLength > sequencePosition)
@@ -368,6 +389,22 @@ size_t getSequenceSegmentStartPositionWithoutUnderflow(const struct AwFmIndex *r
       return sequencePosition - priorFlankingSequenceLength;
 }
 
+
+/*
+ * Function:  getSequenceSegmentEndPositionWithoutOverflow
+ * --------------------
+ *  Returns the end position of the database sequence segment, or sequence end position if the position would overflow.
+ *    This function acts as a data-access safeguard for when a sequence segment is requested that would
+ *    end after the actual end of the database sequence.
+ *
+ *  Inputs:
+ *    index:                        Pointer to the AwFmIndex to be queried.
+ *    sequencePosition:             Position in the sequence to build the segment around
+ *    postFlankingSequenceLength:   How many characters after the sequencePosition to include in the segment.
+ *  Returns:
+ *    postFlankingSequenceLength if no overflow would occur,
+ *      or postFlankingSequenceLength  - sequencePosition otherwise.
+ */
 size_t getSequenceSegmentEndPositionWithoutOverflow(const struct AwFmIndex *restrict const index,
   const size_t sequencePosition, const size_t postFlankingSequenceLength, const size_t dbSequenceLength){
     if((sequencePosition + postFlankingSequenceLength > dbSequenceLength))
@@ -376,6 +413,19 @@ size_t getSequenceSegmentEndPositionWithoutOverflow(const struct AwFmIndex *rest
       return postFlankingSequenceLength - sequencePosition;
 }
 
+/*
+ * Function:  fileOffsetForSequenceBeginning
+ * --------------------
+ *  Returns the number of bytes between the start of the AwFmIndex file and the start of the database sequence.
+ *
+ *  Inputs:
+ *    index:  Pointer to the AwFmIndex to be queried.
+ *
+ *  Returns:
+ *    Number of bytes between the start of the AwFmIndex file and the start of the database sequence.
+ *      While most of the AwFmIndex file is of static length, the number of blocks is variable,
+ *      so this function accounts for the size of the block list.
+ */
 inline size_t fileOffsetForSequenceBeginning(const struct AwFmIndex *restrict const index){
   const uint_fast8_t  headerLength          = sizeof(char) * IndexFileFormatIdHeaderLength;
   const uint_fast16_t metadataLength        = sizeof(union AwFmIndexPaddedMetadata);
@@ -386,10 +436,42 @@ inline size_t fileOffsetForSequenceBeginning(const struct AwFmIndex *restrict co
   return headerLength + metadataLength + numBlocksLength + rankPrefixSumsLength + blockListLength;
 }
 
+
+/*
+ * Function:  fileOffsetForSequenceSegment
+ * --------------------
+ *  Returns the number of bytes between the start of the AwFmIndex file and the given beginning of the requested sequence segment.
+ *
+ *  Inputs:
+ *    index:                          Pointer to the AwFmIndex to be queried.
+ *    sequenceSegmentStartPosition:   Position in the database sequence to start the segment.
+ *
+ *  Returns:
+ *    Number of bytes between the start of the AwFmIndex file and the start of the sequence segment.
+ *      While most of the AwFmIndex file is of static length, the number of blocks is variable,
+ *      so this function accounts for the size of the block list (by calling fileOffsetForSequenceBeginning).
+ */
 inline size_t fileOffsetForSequenceSegment(const struct AwFmIndex *restrict const index, const size_t sequenceSegmentStartPosition){
   return fileOffsetForSequenceBeginning(index) + sequenceSegmentStartPosition;
 }
 
+
+/*
+ * Function:  fileOffsetForSuffixArrayPosition
+ * --------------------
+ *  Returns the number of bytes between the start of the AwFmIndex file and the given position in the compressed suffix array.
+ *
+ *  Inputs:
+ *    index:                          Pointer to the AwFmIndex to be queried.
+ *    compressedSuffixArrayPosition:  Position in the compressed suffix array to load.
+ *      Note: this is the index in the -compressed- suffix array, not the BWT position.
+ *      To determine this index, use the awFmGetCompressedSuffixArrayLength function.
+ *
+ *  Returns:
+ *    Number of bytes between the start of the AwFmIndex file and the requested position in the compressed suffix array.
+ *      While most of the AwFmIndex file is of static length, the number of blocks is variable,
+ *      so this function accounts for the size of the block list (by calling fileOffsetForSequenceBeginning).
+ */
 inline size_t fileOffsetForSuffixArrayPosition(const struct AwFmIndex *restrict const index,
   const size_t compressedSuffixArrayPosition){
   const size_t databaseSequenceSize = awFmGetDbSequenceLength(index) * sizeof(char);

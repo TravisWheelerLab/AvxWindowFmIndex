@@ -75,9 +75,6 @@ uint64_t *awFmFindDatabaseHitPositionsFromSearchRange(const struct AwFmIndex *re
   const struct AwFmSearchRange *restrict const searchRange,
   enum AwFmFileAccessCode *restrict fileAccessResult){
 
-  //init the file access code to one where the access was abandoned. we'll change this later if access is attempted.
-  *fileAccessResult = AwFmFileAccessAbandoned;
-
   const uint64_t numPositionsInRange            = awFmSearchRangeLength(searchRange);
 
   //allocate the position array and offsetArray (uses one malloc call, only needs 1 free call)
@@ -86,6 +83,7 @@ uint64_t *awFmFindDatabaseHitPositionsFromSearchRange(const struct AwFmIndex *re
   uint64_t *const restrict offsetArray    = positionArray + numPositionsInRange;
   //check for allocation failures
   if(__builtin_expect(positionArray == NULL, 0)){
+    *fileAccessResult = AwFmAllocationFailure;
     return NULL;
   }
 

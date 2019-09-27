@@ -4,14 +4,26 @@
 #include <stdbool.h>
 
 /*Private Function Prototypes*/
+/*Computes the index in the blockList where the given BWT position is found.*/
 static inline size_t        getBlockIndexFromGlobalPosition(const uint64_t globalQueryPosition);
+
+/*computes the position where the given BWT position can be found in the relevant AwFmBlock.*/
 static inline uint_fast8_t  getBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition);
-static inline __m256i       createBlockOccupancyVector(const struct AwFmBlock *const restrict blockList, const size_t blockIndex, const uint8_t letter);
-static inline __m256i       applyQueryPositionBitmask(const __m256i occupancyVector, const uint8_t localQueryPosition);
-static inline uint_fast8_t  countBitsInMaskedOccupancyVector(const __m256i maskedOccupancyVector, const __m256i lowBitsLookupTable, const __m256i highBitsLookupTable);
+
+/*constructs the AVX2 vector representing the positions in the AwFmBlock where the given letter can be found.*/
+static inline __m256i       createBlockOccupancyVector(const struct AwFmBlock *const restrict blockList,
+  const size_t blockIndex, const uint8_t letter);
+
+/*Creates and applies a mask vector to the occupancy vector to zero out all positions after the query position.*/
+static inline __m256i       applyQueryPositionBitmask(const __m256i occupancyVector,
+  const uint8_t localQueryPosition);
+
+/*performs a popcount operation on the given maskedOccupancyVector to determine the occupancy
+  of this block before query position.*/
+static inline uint_fast8_t  countBitsInMaskedOccupancyVector(const __m256i maskedOccupancyVector,
+  const __m256i lowBitsLookupTable, const __m256i highBitsLookupTable);
 
 
-//TODO performance check: try move lookup tables into countBits function
 /*
  * Function:  awFmGetOccupancy
  * --------------------
@@ -20,10 +32,9 @@ static inline uint_fast8_t  countBitsInMaskedOccupancyVector(const __m256i maske
  *    Then, a position mask is applied to make sure no positions after the given query position are included.
  *
  *  Inputs:
- *    blockList: pointer to the array of blocks that make up the BWT array.
- *    queryPosition: Position in the BWT that the occupancy call will calculate.
- *    letter: Frequency-indexed letter that's occupancy is being queried.
- *
+ *    blockList:      Pointer to the array of blocks that make up the BWT array.
+ *    queryPosition:  Position in the BWT that the occupancy call will calculate.
+ *    letter:         Frequency-indexed letter that's occupancy is being queried.
  */
 uint64_t awFmGetOccupancy(const struct AwFmIndex *const restrict index, const size_t queryPosition, const uint8_t letter){
 
@@ -43,16 +54,17 @@ uint64_t awFmGetOccupancy(const struct AwFmIndex *const restrict index, const si
   return occupancy;
 }
 
+
 /*
  * Function:  awFmOccupancyDataPrefetch
  * --------------------
- *  manually request cache prefetching for the data to be read for the occupancy call.
+ *  Manually request cache prefetching for the data to be read for the occupancy call.
  *  Prefetching is done using either the _mm_prefetch intel intrinsic, or the __builtin_prefetch GCC extension.
  *    The correct block to prefetch is computed from the position.
  *
  *  Inputs:
- *    blockList: pointer to the array of blocks that make up the BWT array.
- *    queryPosition: Position in the BWT that the occupancy call will calculate.
+ *    blockList:      Pointer to the array of blocks that make up the BWT array.
+ *    queryPosition:  Position in the BWT that the occupancy call will calculate.
  *
  */
  void awFmOccupancyDataPrefetch(const struct AwFmIndex *restrict const index, const uint64_t queryPosition){
@@ -76,6 +88,19 @@ uint64_t awFmGetOccupancy(const struct AwFmIndex *const restrict index, const si
  }
 
 
+ /*
+  * Function:  awFmGetLetterAtBwtPosition
+  * --------------------
+  *  Reads the AwFmBlock containing this position, and returns the frequency-index
+  *   format letter stored at this position.
+  *
+  *   Inputs:
+  *     index:          Pointer to the AwFmIndex to query.
+  *     bwtPosition:    Position of the requsted letter in the BWT.
+  *
+  *   Returns:
+  *     Frequency-indexed format letter that can be used to backtrace from this position.
+  */
 uint_fast8_t awFmGetLetterAtBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition){
   const uint64_t      blockIndex          = getBlockIndexFromGlobalPosition(bwtPosition);
   const uint_fast8_t  blockQueryPosition  = getBlockQueryPositionFromGlobalPosition(bwtPosition);
@@ -95,6 +120,19 @@ uint_fast8_t awFmGetLetterAtBwtPosition(const struct AwFmIndex *restrict const i
 }
 
 
+/*
+ * Function:  awFmBackstepBwtPosition
+ * --------------------
+ *  Backtraces the the given position to find the BWT position of the letter that
+ *    comes immediately before it in the database sequence.
+ *
+ *   Inputs:
+ *     index:          Pointer to the AwFmIndex to query.
+ *     bwtPosition:    Position of the requsted letter in the BWT.
+ *
+ *   Returns:
+ *     Position of the letter immediately before it in the database sequence.
+ */
 inline size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition){
   const uint8_t frequencyIndexLetter = awFmGetLetterAtBwtPosition(index, bwtPosition);
   const uint64_t occupancy = awFmGetOccupancy(index, bwtPosition, frequencyIndexLetter);
@@ -112,17 +150,17 @@ inline size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const ind
 }
 
 
- /*
-  * Function:  getBlockIndexFromGlobalPosition
-  * --------------------
-  *  Computes the block index, given the full BWT query position.
-  *
-  *  Inputs:
-  *    globalQueryPosition: Position in the BWT that the occupancy function is requesting
-  *
-  *   Returns:
-  *     Index of the block where the given query position resides.
-  */
+/*
+ * Function:  getBlockIndexFromGlobalPosition
+ * --------------------
+ *  Computes the block index, given the full BWT query position.
+ *
+ *  Inputs:
+ *    globalQueryPosition: Position in the BWT that the occupancy function is requesting
+ *
+ *   Returns:
+ *     Index of the block where the given query position resides.
+ */
 inline size_t getBlockIndexFromGlobalPosition(const size_t globalQueryPosition){
   return globalQueryPosition / POSITIONS_PER_FM_BLOCK;
 }
@@ -156,7 +194,7 @@ inline uint_fast8_t getBlockQueryPositionFromGlobalPosition(const size_t globalQ
  *    letter: letter to generate an occupancy vector of.
  *
  *   Returns:
- *    256-bit vector with bits set at every position where the given letter was found.
+ *    256-bit AVX2 vector with bits set at every position where the given letter was found.
  */
 inline __m256i createBlockOccupancyVector(const struct AwFmBlock *restrict const blockList, const size_t blockIndex, const uint8_t letter){
   //load the letter bit vectors

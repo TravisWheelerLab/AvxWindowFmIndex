@@ -18,7 +18,7 @@ struct AwFmSearchRange awFmSearchKmerSuffix(const struct AwFmIndex *restrict con
     array that is returned.*/
 uint64_t *awFmFindDatabaseHitPositionsFromSearchRange(const struct AwFmIndex *restrict const index,
   const struct AwFmSearchRange *restrict const searchRange,
-  enum AwFmFileAccessCode *restrict fileAccessResult);
+  enum AwFmReturnCode *restrict fileAccessResult);
 
 /*queries the AwFmIndex, returning a range of positions in the BWT where the given kmer is found.*/
 struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *restrict const index,

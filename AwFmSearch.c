@@ -64,7 +64,7 @@ struct AwFmSearchRange awFmSearchKmerSuffix(const struct AwFmIndex *restrict con
  *    positionArrayLength:    Length of the positionArray and offsetArray.
  *
  *  Returns:
- *    AwFmFileAccessCode detailing the result of the read attempt. Possible return values:
+ *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
  *      AwFmFileReadOkay on success,
  *      AwFmFileOpenFail on failure to open the AwFm Index file
  *      AwFmFileReadFail on failure to read as many characters as was expected by the sequence.
@@ -73,7 +73,7 @@ struct AwFmSearchRange awFmSearchKmerSuffix(const struct AwFmIndex *restrict con
  */
 uint64_t *awFmFindDatabaseHitPositionsFromSearchRange(const struct AwFmIndex *restrict const index,
   const struct AwFmSearchRange *restrict const searchRange,
-  enum AwFmFileAccessCode *restrict fileAccessResult){
+  enum AwFmReturnCode *restrict fileAccessResult){
 
   const uint64_t numPositionsInRange            = awFmSearchRangeLength(searchRange);
 

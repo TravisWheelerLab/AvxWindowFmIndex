@@ -2,9 +2,18 @@
 #include "AwFmGlobals.h"
 #include <string.h>
 #include <stdlib.h>
+#include <libdivsufsort.h>
 
 //TODO: when creating rankPrefixSums, make sure that the prefix sum for A ia 1 (for the $ terminator)
 //TODO: awFmIndexCreate function.
+
+
+struct AwFmFileAccessCode awFmCreateIndex(struct AwFmIndex **indexPtr, const char *restrict const databaseSequence,
+  const size_t databaseSequenceLength){
+    if(indexPtr == NULL){
+      return AwFmAllocationFailure;
+    }
+  }
 
 
 /*

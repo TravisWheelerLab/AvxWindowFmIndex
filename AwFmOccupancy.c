@@ -1,5 +1,5 @@
-#include "AwFmOccupancy.h"
 #include "AwFmLetter.h"
+#include "AwFmOccupancy.h"
 #include <immintrin.h>
 #include <stdbool.h>
 
@@ -9,7 +9,6 @@ static inline uint_fast8_t  getBlockQueryPositionFromGlobalPosition(const size_t
 static inline __m256i       createBlockOccupancyVector(const struct AwFmBlock *const restrict blockList, const size_t blockIndex, const uint8_t letter);
 static inline __m256i       applyQueryPositionBitmask(const __m256i occupancyVector, const uint8_t localQueryPosition);
 static inline uint_fast8_t  countBitsInMaskedOccupancyVector(const __m256i maskedOccupancyVector, const __m256i lowBitsLookupTable, const __m256i highBitsLookupTable);
-
 
 
 //TODO performance check: try move lookup tables into countBits function
@@ -44,7 +43,6 @@ uint64_t awFmGetOccupancy(const struct AwFmIndex *const restrict index, const si
   return occupancy;
 }
 
-
 /*
  * Function:  awFmOccupancyDataPrefetch
  * --------------------
@@ -76,6 +74,7 @@ uint64_t awFmGetOccupancy(const struct AwFmIndex *const restrict index, const si
      #endif
    }
  }
+
 
 uint_fast8_t awFmGetLetterAtBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition){
   const uint64_t      blockIndex          = getBlockIndexFromGlobalPosition(bwtPosition);
@@ -243,11 +242,8 @@ inline __m256i applyQueryPositionBitmask(const __m256i occupancyVector, const ui
                                           15, 14, 13, 12, 11, 10, 9,  8,
                                           7,  6,  5,  4,  3,  2,  1,  0);
 
-
   queryBitmask = _mm256_cmpgt_epi8(_mm256_set1_epi8(numBytesToPreserveAllOnes), queryBitmask);
   queryBitmask = _mm256_insert_epi8(queryBitmask, lastQueryByteBitmask, numBytesToPreserveAllOnes);
-
-
 
   return _mm256_and_si256(occupancyVector, queryBitmask);
 }

@@ -1,10 +1,11 @@
 #ifndef AW_FM_INDEX_SEARCH_H
 #define AW_FM_INDEX_SEARCH_H
 
-#include "AwFmIndex.h"
 #include "AwFmFile.h"
-#include <stdint.h>
+#include "AwFmIndex.h"
 #include <stdbool.h>
+#include <stdint.h>
+
 
 /*Given the range of BWT positions where current kmer suffix is found, returns the
     range where the suffix can be found after prepending the next letter.*/
@@ -26,8 +27,5 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *
 /*queries the AwFmIndex, returning true if the given kmer is found in the database sequence.*/
 bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const char *restrict const kmer,
   const uint16_t kmerLength);
-
-
-
 
 #endif /* end of include guard: AW_FM_INDEX_SEARCH_H */

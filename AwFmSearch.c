@@ -1,6 +1,6 @@
-#include "AwFmSearch.h"
-#include "AwFmOccupancy.h"
 #include "AwFmIndex.h"
+#include "AwFmOccupancy.h"
+#include "AwFmSearch.h"
 
 /*
  * Function:  awFmSearchKmerSuffix

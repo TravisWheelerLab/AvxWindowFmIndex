@@ -1,8 +1,8 @@
 #include "AwFmFile.h"
 #include "AwFmIndex.h"
 #include <stdbool.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 
 /*Private Function Prototypes*/
@@ -19,7 +19,6 @@ static inline size_t fileOffsetForSequenceSegment(const struct AwFmIndex *restri
 
 static inline size_t fileOffsetForSuffixArrayPosition(const struct AwFmIndex *restrict const index,
   const size_t compressedSuffixArrayPosition);
-
 
 
 static const char    IndexFileExtension[5]         = "awfmi";
@@ -110,6 +109,7 @@ enum AwFmFileAccessCode awFmCreateIndexFile(const struct AwFmIndex *restrict con
   fclose(datafile);
   return AwFmFileWriteOkay;
 }
+
 
 /*
  * Function:  awFmLoadIndexFromFile

@@ -2,18 +2,32 @@
 #include "AwFmGlobals.h"
 #include <string.h>
 #include <stdlib.h>
-#include <libdivsufsort.h>
-
+// #include <libdivsufsort.h>
 //TODO: when creating rankPrefixSums, make sure that the prefix sum for A ia 1 (for the $ terminator)
 //TODO: awFmIndexCreate function.
 
-
-struct AwFmFileAccessCode awFmCreateIndex(struct AwFmIndex **indexPtr, const char *restrict const databaseSequence,
-  const size_t databaseSequenceLength){
-    if(indexPtr == NULL){
-      return AwFmAllocationFailure;
-    }
+enum AwFmReturnCode awFmIndexSetFileSrc(struct AwFmIndex *restrict const index, const char *restrict const fileSrc){
+  //check to make sure the fileSrc isn't null
+  if(__builtin_expect(fileSrc == NULL, 0)){
+    return AwFmNoFileSrcGiven;
   }
+
+  const void *nullTerminatorPosition = memchr(fileSrc, 0, MAXIMUM_FILE_PATH_LENGTH);
+  if(__builtin_expect(nullTerminatorPosition == NULL, 0)){
+    return AwFmGeneralFailure;
+  }
+
+  //allocate a copy of the fileSrc string, and copy it over (null terminator included)
+  const size_t fileSrcLength = (char*)nullTerminatorPosition - fileSrc;
+  index->fileSrc = malloc((fileSrcLength + 1) * sizeof(char));
+  if(__builtin_expect(index->fileSrc == NULL, 0)){
+    return AwFmAllocationFailure;
+  }
+
+  memcpy(index->fileSrc, fileSrc, (fileSrcLength + 1) * sizeof(char));
+
+  return AwFmSuccess;
+}
 
 
 /*
@@ -30,28 +44,11 @@ struct AwFmFileAccessCode awFmCreateIndex(struct AwFmIndex **indexPtr, const cha
  *  Returns:
  *    Pointer to the allocated aligned memory. Returns NULL on allocation failure.
  */
-struct AwFmIndex *alignedAllocAwFmIndex(const char *restrict const fileSrc){
-  struct AwFmIndex *restrict index = aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, sizeof(struct AwFmIndex));
+struct AwFmIndex *alignedAllocAwFmIndex(void){
+  struct AwFmIndex *index = aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, sizeof(struct AwFmIndex));
   if(index != NULL){
-
-    if(fileSrc != NULL){
-      //memchr acts as strlen, but won't crash if the null terminator isn't reached.
-      //GCC doesn't seem to find strnlen, so this will do instead.
-      const void *nullTerminatorPosition = memchr(fileSrc, 0, MAXIMUM_FILE_PATH_LENGTH);
-      if(nullTerminatorPosition != NULL){
-
-        //allocate a copy of the fileSrc string, and copy it over (null terminator included)
-        const size_t fileSrcLength = (char*)nullTerminatorPosition - fileSrc;
-        index->fileSrc = malloc((fileSrcLength + 1) * sizeof(char));
-        memcpy(index->fileSrc, fileSrc, fileSrcLength);
-      }
-      //if there was no null terminator in the fileSrc (UNLIKELY), set fileSrc to null.
-      else{
-        index->fileSrc = NULL;
-      }
-    }
+    memset(index, 0, sizeof(struct AwFmIndex));
   }
-
   return index;
 }
 
@@ -80,19 +77,19 @@ struct AwFmBlock *alignedAllocBlockList(const size_t numBlocks){
  *  Inputs:
  *    index: Index struct to be deallocated.
  */
-void deallocateFmIndex(struct AwFmIndex *restrict index){
+ void deallocateFmIndex(struct AwFmIndex *restrict index){
 
-  if(index != NULL){
-    if(index->fileSrc != NULL){
-      free(index->fileSrc);
-    }
-    if(index->blockList != NULL){
-      free(index->blockList);
-    }
+   if(index != NULL){
+     if(index->fileSrc != NULL){
+       free(index->fileSrc);
+     }
+     if(index->blockList != NULL){
+       free(index->blockList);
+     }
 
-    free(index);
-  }
-}
+     free(index);
+   }
+ }
 
 
 /*
@@ -108,7 +105,7 @@ void deallocateFmIndex(struct AwFmIndex *restrict index){
  *    Number of positions in the given range if the range is valid (startPtr < endPtr),
  *      or 0 otherwise, as that would imply that no instances of that kmer were found.
  */
-inline size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range){
+ size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range){
   uint64_t length = range->endPtr - range->startPtr;
   return (range->startPtr < range->endPtr)? length: 0;
 }
@@ -126,7 +123,7 @@ inline size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const
  *  Outputs:
  *    True if the position is sampled in the compressedSuffixArray, or false otherwise.
  */
-inline bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position){
+ bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position){
   return position % index->suffixArrayCompressionRatio;
 }
 
@@ -142,7 +139,7 @@ inline bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const inde
  *  Outputs:
 *     length of the BWT array for the given AwFmIndex.
  */
-inline uint64_t awFmGetBwtLength(const struct AwFmIndex *restrict const index){
+ uint64_t awFmGetBwtLength(const struct AwFmIndex *restrict const index){
   //the bwt length is stored in the prefix sums after all the actual amino acid prefix sums.
   //conceptually, the bwt length == prefix sum for a character after every alphabet letter.
   return index->rankPrefixSums[AMINO_CARDINALITY];
@@ -162,12 +159,12 @@ inline uint64_t awFmGetBwtLength(const struct AwFmIndex *restrict const index){
  *    length of the database sequence for the given AwFmIndex.
  */
 //the database sequence contains every character from the bwt, minus the null terminator $.
-inline uint64_t awFmGetDbSequenceLength(const struct AwFmIndex *restrict const index){
+ uint64_t awFmGetDbSequenceLength(const struct AwFmIndex *restrict const index){
   return awFmGetBwtLength(index) - 1;
 }
 
 
-inline uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index){
+ uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index){
   return awFmGetBwtLength(index) / index->suffixArrayCompressionRatio;
 }
 
@@ -185,6 +182,6 @@ inline uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restr
  *    True if this range represents a range of positions for the given kmer suffix in the database,
  *      or false if the database does not contain the given kmer suffix.
  */
-inline bool awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange){
+ bool awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange){
   return searchRange->startPtr < searchRange->endPtr;
 }

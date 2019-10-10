@@ -47,10 +47,10 @@ static const char    IndexFileFormatIdHeader[10]  = "AwFmIndex\n";
  *      If allowOverwrite is false, this function will return AwFmFileOpenFail.
  *
  *  Returns:
- *    AwFmFileAccessCode detailing the result of the write attempt.
+ *    AwFmReturnCode detailing the result of the write attempt.
  *      returns AwFmFileWriteOkay on success, AwFmFileOpenFail or AwFmFileWriteFail on failure.
  */
-enum AwFmFileAccessCode awFmCreateIndexFile(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const index,
   const size_t *restrict const fullSuffixArray, const char *restrict const databaseSequence,
   const bool allowOverwrite){
 
@@ -132,14 +132,14 @@ enum AwFmFileAccessCode awFmCreateIndexFile(const struct AwFmIndex *restrict con
  *      populated with the index from the given file.
  *
  *  Returns:
- *    AwFmFileAccessCode detailing the result of the read attempt. Possible return values:
+ *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
  *      AwFmFileReadOkay on success,
  *      AwFmAllocationFailure on failure to allocate memory for the index struct
  *      AwFmFileFormatError on error caused by reading a file that does not look like the correct format,
  *      AwFmFileOpenFail on failure opening the file,
  *      AwFmFileWriteFail on failure writing to the file.
  */
-enum AwFmFileAccessCode awFmLoadIndexFromFile(const char *restrict const fileSrc,
+enum AwFmReturnCode awFmLoadIndexFromFile(const char *restrict const fileSrc,
   struct AwFmIndex *restrict *restrict index){
 
   //make sure that the fileSrc was actually supplied
@@ -147,10 +147,12 @@ enum AwFmFileAccessCode awFmLoadIndexFromFile(const char *restrict const fileSrc
     return AwFmNoFileSrcGiven;
   }
   //allocate the index struct
-  *index = alignedAllocAwFmIndex(fileSrc);
+  *index = alignedAllocAwFmIndex();asdfasdf //TODO: also set the fileSrc here
   if(index == NULL){
     return AwFmAllocationFailure;
   }
+
+
 
   FILE *datafile = fopen(fileSrc, "r");
   if(datafile == NULL){
@@ -237,14 +239,14 @@ enum AwFmFileAccessCode awFmLoadIndexFromFile(const char *restrict const fileSrc
  *    positionArrayLength:    Length of the positionArray and offsetArray.
  *
  *  Returns:
- *    AwFmFileAccessCode detailing the result of the read attempt. Possible return values:
+ *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
  *      AwFmFileReadOkay on success,
  *      AwFmFileOpenFail on failure to open the AwFm Index file
  *      AwFmFileReadFail on failure to read as many characters as was expected by the sequence.
  *      AwFmIllegalPositionError on a suffix array position being out of bounds of
  *        the file's compressed suffix array.
  */
-enum AwFmFileAccessCode awFmDbSequencePositionsFromSuffixArrayFile(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode awFmDbSequencePositionsFromSuffixArrayFile(const struct AwFmIndex *restrict const index,
   uint64_t *restrict positionArray, const uint64_t *restrict const offsetArray,
   const uint64_t positionArrayLength){
 
@@ -311,12 +313,12 @@ enum AwFmFileAccessCode awFmDbSequencePositionsFromSuffixArrayFile(const struct 
  *      This may differ from the post-prior if either would violate the bounds of the sequence.
  *
  *  Returns:
- *    AwFmFileAccessCode detailing the result of the read attempt. Possible return values:
+ *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
  *      AwFmFileReadOkay on success,
  *      AwFmFileOpenFail on failure to open the AwFm Index file
  *      AwFmFileReadFail on failure to read as many characters as was expected by the sequence.
  */
-enum AwFmFileAccessCode awFmLoadSequenceSectionFromFile(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode awFmLoadSequenceSectionFromFile(const struct AwFmIndex *restrict const index,
   const size_t sequencePosition, const size_t priorFlankingSequenceLength, const size_t postFlankingSequenceLength,
   char **sequencePtr, size_t *charactersRead){
 

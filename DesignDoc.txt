@@ -1,15 +1,19 @@
 Project: AvxWindowFmIndex library
 
+//TODO: make deallocFmIndex deallocate everything in index.
+
 Goal: to provide a heavily optimized FM-index protein search implementation for use in bioinformatics pipelines.
 
 Currently, I am aiming to make this both a software library that can be linked to (as in LibDifSufSort),
 as well as a standalone executable version.
 
+
+
 Public API:
   building:
     build FM-index from ascii full-text, given as cmd line argument string
     build FM-index from ascii full-text, given as stdin pipe      (standalone only, I think.)
-    build FM-index from ascii full-text, given as raw text file
+    build FM-index from ascii full-text, given as raw text file (raw text, fasta, )
     build FM-index from ascii full-text, given as fasta file
     (maybe) build FM-index from ascii existing fm index file, as hmmer likes it
 
@@ -28,6 +32,8 @@ Public API:
 
     FullStringSearch: takes query sequence (or file), prebuilt FM-index. returns list of tuples [position in sequence, range of hits in bwt.] (lib only)
     FullStringQueryHits: takes query sequence (or file), prebuilt fm-index. returns array of tuples [position in sequence, position in database].
+
+    getDbSequenceAroundHit(hitPositionInDbSeq, numCharsBefore, numCharsAfter): seeks into file, grabbing sequence around hit as a char array.
 
 
 --------------------------------------------------------------------------------

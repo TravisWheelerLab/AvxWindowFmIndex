@@ -103,8 +103,8 @@ uint64_t awFmGetOccupancy(const struct AwFmIndex *const restrict index, const si
 uint_fast8_t awFmGetLetterAtBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition){
   const uint64_t      blockIndex          = getBlockIndexFromGlobalPosition(bwtPosition);
   const uint_fast8_t  blockQueryPosition  = getBlockQueryPositionFromGlobalPosition(bwtPosition);
-  const uint8_t       byteInAvxVector     = blockQueryPosition / 7;
-  const uint_fast8_t  bitInVectorByte     = blockQueryPosition % 7;
+  const uint8_t       byteInAvxVector     = blockQueryPosition / 8;
+  const uint_fast8_t  bitInVectorByte     = blockQueryPosition % 8;
 
   const __m256i *restrict const blockVectorPtr = index->blockList[blockIndex].letterBitVectors;
 
@@ -273,18 +273,19 @@ inline __m256i createBlockOccupancyVector(const struct AwFmBlock *restrict const
  *    256-bit vector where only bits before this position are allowed to be set (all bits >= query position are cleared).
  */
 inline __m256i applyQueryPositionBitmask(const __m256i occupancyVector, const uint8_t localQueryPosition){
-  const uint8_t numBytesToPreserveAllOnes = localQueryPosition / POSITIONS_PER_BYTE_IN_FM_BLOCK;
-  const uint8_t lastQueryByteBitmask      = (1 << (localQueryPosition % POSITIONS_PER_BYTE_IN_FM_BLOCK)) - 1;
+  const uint8_t numBytesToPreserveAllOnes = localQueryPosition / 8;
+  const uint8_t lastQueryByteBitmask      = (1 << (localQueryPosition % 8)) - 1;
 
-
-  uint8_t bitmaskArray[BYTES_PER_AVX2_REGISTER* 2];
-  for(size_t i = 0; i < BYTES_PER_AVX2_REGISTER; i+= sizeof(uint64_t)){
-    ((uint64_t*) bitmaskArray)[i] = ~0ULL;
+  uint8_t bitmaskArray[BYTES_PER_AVX2_REGISTER];
+  for(uint_fast8_t i = 0; i < numBytesToPreserveAllOnes; i++){
+    bitmaskArray[i] = 0xFF;
+  }
+  bitmaskArray[numBytesToPreserveAllOnes] = lastQueryByteBitmask;
+  for( uint_fast8_t i = numBytesToPreserveAllOnes; i < BYTES_PER_AVX2_REGISTER; i++){
+    bitmaskArray[i] = 0;
   }
 
-  //set the bits in the bite where the query position lands.
-  bitmaskArray[BYTES_PER_AVX2_REGISTER] = lastQueryByteBitmask;
-  __m256i * ptrToBitmask = (__m256i*)(bitmaskArray + POSITIONS_PER_BYTE_IN_FM_BLOCK - numBytesToPreserveAllOnes);
+  __m256i *ptrToBitmask = (__m256i*)bitmaskArray;
   return _mm256_lddqu_si256(ptrToBitmask);
 
 }
@@ -308,10 +309,14 @@ inline __m256i applyQueryPositionBitmask(const __m256i occupancyVector, const ui
  *   Returns:
  *    Count of how many bits were set in the maskedOccupancyVector.
  */
+ //NOTE: check high bit count to make sure 1 doesn't get shifted into bit7 of the bytes.
 inline uint_fast8_t countBitsInMaskedOccupancyVector(const __m256i maskedOccupancyVector, const __m256i lowBitsLookupTable, const __m256i highBitsLookupTable){
-  const __m256i lowNybbleBitCount           = _mm256_shuffle_epi8(lowBitsLookupTable, maskedOccupancyVector);
+
+  const __m256i lowNybbleBitmasked          = _mm256_and_si256(maskedOccupancyVector, _mm256_set1_epi8(0x0F));
+  const __m256i lowNybbleBitCount           = _mm256_shuffle_epi8(lowBitsLookupTable, lowNybbleBitmasked);
   const __m256i highNybbleBits              = _mm256_srli_si256(maskedOccupancyVector, 4);
-  const __m256i highNybbleNegativeBitCount  = _mm256_shuffle_epi8(highBitsLookupTable, highNybbleBits);
+  const __m256i highNybbleBitmasked         = _mm256_and_si256(highNybbleBits, _mm256_set1_epi8(0x0F));
+  const __m256i highNybbleNegativeBitCount  = _mm256_shuffle_epi8(highBitsLookupTable, highNybbleBitmasked);
   const __m256i sadCountVector              = _mm256_sad_epu8(lowNybbleBitCount, highNybbleNegativeBitCount);
 
   //shift and add, placing the final two 16-bit sums in the least significant bits of each 128-bit lane.

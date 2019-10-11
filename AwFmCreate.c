@@ -4,6 +4,10 @@
 #include <string.h>
 
 
+//temp extern while libdivsufsort isn't installed
+extern uint64_t divsufsort(const uint8_t *T, uint64_t *SA, uint64_t n);
+
+
 enum AwFmReturnCode awFmCreateFullSuffixArray(const uint8_t * databaseSequence,
   const uint64_t databaseSequenceLength, uint64_t **fullSuffixArrayOut);
 
@@ -11,8 +15,6 @@ enum AwFmReturnCode awFmCreateBlockList(const uint8_t *restrict const databaseSe
   const uint64_t databaseSequenceLength, struct AwFmIndex *restrict const index);
 
 
-//temp extern while libdivsufsort isn't installed
-extern uint64_t divsufsort(const uint8_t *T, uint64_t *SA, uint64_t n);
 
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *restrict const databaseSequence,
   const size_t databaseSequenceLength, const uint16_t suffixArrayCompressionRatio, const char *restrict const fileSrc){
@@ -67,6 +69,9 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *
     rankPrefixAccumulator += index->blockList[lastBlockIndex].baseOccupancies[i];
     index->rankPrefixSums[i + 1] = rankPrefixAccumulator;
   }
+
+  //TODO; check that this is a valid thing to return right now, I need to error check the function.
+  return AwFmSuccess;
 }
 
 
@@ -106,8 +111,8 @@ enum AwFmReturnCode awFmCreateBlockList(const uint8_t *restrict const databaseSe
     const uint_fast8_t blockStartingPosition = (blockIndex == 0)? 1: 0;
     for(uint_fast8_t i = blockStartingPosition; i < POSITIONS_PER_FM_BLOCK; i++){
 
-      const uint8_t byteInBlock             = i / POSITIONS_PER_BYTE_IN_FM_BLOCK;
-      const uint8_t bitInBlockByte          = i % POSITIONS_PER_BYTE_IN_FM_BLOCK;
+      const uint8_t byteInBlock             = i / 8;
+      const uint8_t bitInBlockByte          = i % 8;
       const uint64_t positionInSuffixArray  = (blockIndex * POSITIONS_PER_FM_BLOCK) + i;
 
       const uint64_t suffixArrayValue       = index->fullSuffixArray[positionInSuffixArray];

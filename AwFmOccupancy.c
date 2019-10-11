@@ -68,21 +68,10 @@ uint64_t awFmGetOccupancy(const struct AwFmIndex *const restrict index, const si
  */
  void awFmOccupancyDataPrefetch(const struct AwFmIndex *restrict const index, const uint64_t queryPosition){
    for(uint_fast16_t prefetchOffset = 0; prefetchOffset < sizeof(struct AwFmBlock); prefetchOffset += CACHE_LINE_SIZE_IN_BYTES){
-     #ifdef AVX_VECTOR_PREFETCH
-        //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
-        const uint64_t blockIndex    = getBlockIndexFromGlobalPosition(queryPosition);
-        const uint8_t *blockAddress  = (uint8_t*)(index->blockList + blockIndex);
-       _mm_prefetch(blockAddress + prefetchOffset, _MM_HINT_NTA);
-     #else
-     #ifdef AVX_VECTOR_GCC_BUILTIN_PREFETCH
-       //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
-       const uint64_t blockIndex    = getBlockIndexFromGlobalPosition(queryPosition);
-       const uint8_t *blockAddress  = (uint8_t*)(index->blockList + blockIndex);
-       const int PREFETCH_HINT_READ_ONLY             = 0;
-       const int PREFETCH_HINT_NO_TEMPORAL_LOCALITY  = 0;
-       __builtin_prefetch(blockAddress + prefetchOffset, PREFETCH_HINT_READ_ONLY, PREFETCH_HINT_NO_TEMPORAL_LOCALITY);
-     #endif
-     #endif
+      //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
+      const uint64_t blockIndex    = getBlockIndexFromGlobalPosition(queryPosition);
+      const uint8_t *blockAddress  = (uint8_t*)(index->blockList + blockIndex);
+     _mm_prefetch(blockAddress + prefetchOffset, _MM_HINT_NTA);
    }
  }
 

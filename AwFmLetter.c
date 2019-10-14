@@ -32,6 +32,9 @@ uint8_t awFmAsciiLetterToLetterIndexSrand(uint8_t asciiLetter, unsigned seed){
  * Transforms an ascii-encoded character into a frequency-encoded amino acid value.
  * These frequency encoded values are used internally in AwFm to better optimize memory usage and aid performance.
  *  CAUTION: characters that are not ASCII letters may alias to represent an amino acid. Only letters a-z, A-Z should be given.
+ *  NOTICE: this function resolves ambiguity codes via the rand() function.
+ *  In order to properly randomize the resolved amino acids, make sure rand is seeded with srand,
+ *  or use the awFmAsciiLetterToLetterIndexSrand function for this purpose.
  *
  *  Inputs:
  *    asciiLetter: ascii-encoded letter representing an amino acid, or an amino acid ambiguity character (b, z, or x)

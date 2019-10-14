@@ -9,7 +9,6 @@
 #include "../AwFmGlobals.h"
 
 
-#define AVX_VECTOR_GCC_BUILTIN_PREFETCH
 // #define AVX_VECTOR_PREFETCH
 
 uint32_t numQueries = 0;
@@ -57,22 +56,38 @@ void checkArgs(){
 }
 
 void performDbQueries(const struct AwFmIndex *restrict const index, uint64_t positionsInDb){
-  size_t startPtr = rand();
-  startPtr = startPtr % positionsInDb;
-  size_t endPtr   = rand()% positionsInDb;
+  // size_t startPtr = rand();
+  // startPtr = startPtr % positionsInDb;
+  // size_t endPtr   = rand()% positionsInDb;
+  size_t ptrs[2];
+  ptrs[0] = rand() % positionsInDb;
+  ptrs[1] = rand() % positionsInDb;
 
 
+  if(requestOccupancyPrefetching){
     for(uint32_t i = 0; i < numQueries; i++){
       uint8_t letter  = rand()% 20;
-      startPtr = awFmGetOccupancy(index, startPtr, letter) + index->rankPrefixSums[letter];
-      startPtr = startPtr % positionsInDb;
-      awFmOccupancyDataPrefetch(index, startPtr);
+      ptrs[0] = awFmGetOccupancy(index, ptrs[0], letter) + index->rankPrefixSums[letter];
+      ptrs[0] = ptrs[0] % positionsInDb;
+      awFmOccupancyDataPrefetch(index, ptrs[0]);
 
-      endPtr = awFmGetOccupancy(index, endPtr, letter) + index->rankPrefixSums[letter];
-      endPtr = endPtr % positionsInDb;
-      awFmOccupancyDataPrefetch(index, endPtr);
+      ptrs[1] = awFmGetOccupancy(index, ptrs[1], letter) + index->rankPrefixSums[letter];
+      ptrs[1] = ptrs[1] % positionsInDb;
+      awFmOccupancyDataPrefetch(index, ptrs[1]);
     }
+  }
+  else{
+    for(uint32_t i = 0; i < numQueries; i++){
+      uint8_t letter  = rand()% 20;
+      ptrs[0] = awFmGetOccupancy(index, ptrs[0], letter) + index->rankPrefixSums[letter];
+      ptrs[0] = ptrs[0] % positionsInDb;
+      // awFmOccupancyDataPrefetch(index, ptrs[0]);
 
+      ptrs[1] = awFmGetOccupancy(index, ptrs[1], letter) + index->rankPrefixSums[letter];
+      ptrs[1] = ptrs[1] % positionsInDb;
+      // awFmOccupancyDataPrefetch(index, ptrs[1]);
+    }
+  }
 }
 
 int main (int argc, char **argv){
@@ -109,7 +124,7 @@ int main (int argc, char **argv){
   clock_t timeElapsed = clock() - before;
 
   double seconds = (double)timeElapsed / CLOCKS_PER_SEC;
-  printf("completed test in %f seconds. queries: %d, numWindows: %d\n", seconds, numQueries, dbSizeInWindows);
+  printf("completed test in %f seconds. queries: %d, numWindows: %d\n\n\n", seconds, numQueries, dbSizeInWindows);
   free(index->blockList);
   free(index);
 

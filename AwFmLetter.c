@@ -63,7 +63,7 @@ uint8_t awFmAsciiLetterToLetterIndex(uint8_t asciiLetter){
   }
 
   uint8_t frequencyEncodedLetter = letterOffsets[asciiLetter];
-  if(frequencyEncodedLetter == 20){
+  if(__builtin_expect(frequencyEncodedLetter == 20, 0)){
     return rand() % 20;
   }
   else{

@@ -66,14 +66,16 @@ uint64_t awFmGetOccupancy(const struct AwFmIndex *const restrict index, const si
  *    queryPosition:  Position in the BWT that the occupancy call will calculate.
  *
  */
- void awFmOccupancyDataPrefetch(const struct AwFmIndex *restrict const index, const uint64_t queryPosition){
-   for(uint_fast16_t prefetchOffset = 0; prefetchOffset < sizeof(struct AwFmBlock); prefetchOffset += CACHE_LINE_SIZE_IN_BYTES){
-      //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
-      const uint64_t blockIndex    = getBlockIndexFromGlobalPosition(queryPosition);
-      const uint8_t *blockAddress  = (uint8_t*)(index->blockList + blockIndex);
-     _mm_prefetch(blockAddress + prefetchOffset, _MM_HINT_NTA);
-   }
- }
+ //TODO: figure out why _MM_HINT_T2 performs better on L1 cache misses than NTA
+void awFmOccupancyDataPrefetch(const struct AwFmIndex *restrict const index, const uint64_t queryPosition){
+  const uint64_t blockIndex    = getBlockIndexFromGlobalPosition(queryPosition);
+  //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
+  const uint8_t *blockAddress  = (uint8_t*)(index->blockList + blockIndex);
+
+  for(uint_fast16_t prefetchOffset = 0; prefetchOffset < sizeof(struct AwFmBlock); prefetchOffset += CACHE_LINE_SIZE_IN_BYTES){
+    _mm_prefetch(blockAddress + prefetchOffset, _MM_HINT_T2);
+  }
+}
 
 
  /*

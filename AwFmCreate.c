@@ -2,10 +2,10 @@
 #include "AwFmLetter.h"
 #include <stdlib.h>
 #include <string.h>
-
+#include <divsufsort64.h>
 
 //temp extern while libdivsufsort isn't installed
-extern uint64_t divsufsort(const uint8_t *T, uint64_t *SA, uint64_t n);
+// extern uint64_t divsufsort(const uint8_t *T, uint64_t *SA, uint64_t n);
 
 
 enum AwFmReturnCode awFmCreateFullSuffixArray(const uint8_t * databaseSequence,
@@ -146,8 +146,8 @@ enum AwFmReturnCode awFmCreateFullSuffixArray(const uint8_t * databaseSequence,
     if(fullSuffixArray == NULL){
       return AwFmAllocationFailure;
     }
-    uint64_t *suffixArrayAfterTerminator = fullSuffixArray + 1;
-    uint64_t divSufSortReturnCode = divsufsort(databaseSequence, suffixArrayAfterTerminator, databaseSequenceLength);
+    int64_t *suffixArrayAfterTerminator = (int64_t*)(fullSuffixArray + 1);
+    uint64_t divSufSortReturnCode = divsufsort64(databaseSequence, suffixArrayAfterTerminator, databaseSequenceLength);
 
     //the first position will be the location of the null terminator.
     fullSuffixArray[0] = databaseSequenceLength;

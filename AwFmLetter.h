@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+/*Seeds srand, then converts ASCII characters to frequency encoded values for query sequence*/
+uint8_t awFmAsciiLetterToLetterIndexSrand(uint8_t asciiLetter, unsigned seed);
 
 /*converts ASCII characters to frequency encoded values for query sequence*/
 uint8_t awFmAsciiLetterToLetterIndex(const uint8_t asciiLetter);

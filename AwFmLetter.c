@@ -1,5 +1,29 @@
 #include "AwFmLetter.h"
 #include <stdlib.h>
+#include <time.h>
+
+
+/*
+ * Function:  awFmAsciiLetterToLetterIndexSrand
+ * --------------------
+ * NOTICE: this function is exactly the same as awFmAsciiLetterToLetterIndex,
+ * but calls srand to seed the RNG for ambiguity code resolution.
+ *
+ * Transforms an ascii-encoded character into a frequency-encoded amino acid value.
+ * These frequency encoded values are used internally in AwFm to better optimize memory usage and aid performance.
+ *  CAUTION: characters that are not ASCII letters may alias to represent an amino acid. Only letters a-z, A-Z should be given.
+ *
+ *  Inputs:
+ *    asciiLetter: ascii-encoded letter representing an amino acid, or an amino acid ambiguity character (b, z, or x)
+ *
+ *  Returns:
+ *    Frequency-encoded value representing the amino acid.
+ *
+ */
+uint8_t awFmAsciiLetterToLetterIndexSrand(uint8_t asciiLetter, unsigned seed){
+  srand(seed);
+  return awFmAsciiLetterToLetterIndex(asciiLetter);
+}
 
 
 /*
@@ -37,16 +61,16 @@ uint8_t awFmAsciiLetterToLetterIndex(uint8_t asciiLetter){
   else if(asciiLetter == ('Z' & charBitmask)){
     asciiLetter = (rand() & 1)? 'E'& charBitmask: 'Q'& charBitmask;
   }
-  else if(asciiLetter == ('X' & charBitmask)){
-    //X is the ambiguity character for completely unknown, randomize the letter.
-    asciiLetter = (rand() % 19) + 1;
-    //if we randomized to another illegal character, add 1 to get a legal char.
-    if(letterOffsets[asciiLetter] == 20){
-      asciiLetter += 1;
-    }
+
+  uint8_t frequencyEncodedLetter = letterOffsets[asciiLetter];
+  if(frequencyEncodedLetter == 20){
+    return rand() % 20;
+  }
+  else{
+    return frequencyEncodedLetter;
+
   }
 
-  return letterOffsets[asciiLetter];
 }
 
 

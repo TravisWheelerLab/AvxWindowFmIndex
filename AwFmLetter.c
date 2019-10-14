@@ -21,14 +21,14 @@ uint8_t awFmAsciiLetterToLetterIndex(uint8_t asciiLetter){
   const char charBitmask = 0x1F;
   asciiLetter = asciiLetter & charBitmask;
 
-  //frequency indexed letter lookup table. values of 21 are illegal characters, and should not match to anything.
+  //frequency indexed letter lookup table. values of 20 are illegal characters, and should not match to anything.
   //by frequency, L,A,G,V,E,S,I,K,R,D,T,P,N,Q,F,Y,M,H,C,W
   const uint8_t letterOffsets[32] = {
     //letters A - Z
-    21, 1,21,18, 9, 4,14, 2,
-    17, 6,21, 7, 0,16,12,21,
-    11,13, 8, 5,10,21, 3,19,
-    21,15,21,21,21,21,21,21
+    20, 1,20,18, 9, 4,14, 2,
+    17, 6,20, 7, 0,16,12,20,
+    11,13, 8, 5,10,20, 3,19,
+    20,15,20,20,20,20,20,20
   };
 
   if(asciiLetter == ('B' & charBitmask)){
@@ -41,7 +41,7 @@ uint8_t awFmAsciiLetterToLetterIndex(uint8_t asciiLetter){
     //X is the ambiguity character for completely unknown, randomize the letter.
     asciiLetter = (rand() % 19) + 1;
     //if we randomized to another illegal character, add 1 to get a legal char.
-    if(letterOffsets[asciiLetter] == 21){
+    if(letterOffsets[asciiLetter] == 20){
       asciiLetter += 1;
     }
   }

@@ -4,9 +4,9 @@
 #include <stdbool.h>
 #include <time.h>
 
-#include "../AwFmIndex.h"
-#include "../AwFmOccupancy.h"
-#include "../AwFmGlobals.h"
+#include "../../AwFmIndex.h"
+#include "../../AwFmOccupancy.h"
+#include "../../AwFmGlobals.h"
 
 
 // #define AVX_VECTOR_PREFETCH

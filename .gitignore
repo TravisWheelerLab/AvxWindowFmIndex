@@ -54,3 +54,4 @@ dkms.conf
 
 # binaries
 occSpeedTest
+test/letterTest/letterTest

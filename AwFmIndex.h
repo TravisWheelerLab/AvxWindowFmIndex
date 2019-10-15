@@ -62,12 +62,12 @@ struct AwFmSearchRange{
 *   AwFmFileAccessAbandoned:  Something went wrong before attempting to open the file.
 *   AwFmNoFileSrcGiven:       The fileSrc was null.
 */
-enum AwFmReturnCode{AwFmSuccess = 1, AwFmFileReadOkay = 2, AwFmFileWriteOkay = 3,
-                    AwFmGeneralFailure = -1, AwFmUnsupportedVersionError = -2,
-                    AwFmAllocationFailure = -3, AwFmNullPtrError = -4, AwFmSuffixArrayCreationFailure = -5,
-                    AwFmIllegalPositionError = -6,
-                     AwFmNoFileSrcGiven = -7, AwFmNoDatabaseSequenceGiven = -8, AwFmFileFormatError = -9,
-                    AwFmFileOpenFail = -10, AwFmFileReadFail = -11, AwFmFileWriteFail = -12};
+enum AwFmReturnCode{
+  AwFmSuccess         = 1,    AwFmFileReadOkay                = 2,    AwFmFileWriteOkay         = 3,
+  AwFmGeneralFailure  = -1,   AwFmUnsupportedVersionError     = -2,   AwFmAllocationFailure     = -3,
+  AwFmNullPtrError    = -4,   AwFmSuffixArrayCreationFailure  = -5,   AwFmIllegalPositionError  = -6,
+  AwFmNoFileSrcGiven  = -7,   AwFmNoDatabaseSequenceGiven     = -8,   AwFmFileFormatError       = -9,
+  AwFmFileOpenFail    = -10,  AwFmFileReadFail                = -11,  AwFmFileWriteFail         = -12};
 
 
 /*Public Functions*/

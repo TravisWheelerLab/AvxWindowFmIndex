@@ -70,21 +70,16 @@ enum AwFmReturnCode{
   AwFmFileOpenFail    = -10,  AwFmFileReadFail                = -11,  AwFmFileWriteFail         = -12};
 
 
-/*Public Functions*/
-
-//API Function
-
-
 enum AwFmReturnCode awFmIndexSetFileSrc(struct AwFmIndex *restrict const index, const char *restrict const fileSrc);
 struct  AwFmIndex *alignedAllocAwFmIndex(void);
 struct  AwFmBlock *alignedAllocBlockList(const size_t numBlocks);
         void      deallocateFmIndex(struct AwFmIndex *restrict index);
         void      deallocSuffixArray(struct AwFmIndex *const restrict index);
-  bool      awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
-  size_t    awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range);
-  uint64_t  awFmGetBwtLength(const struct AwFmIndex *restrict const index);
-  uint64_t  awFmGetDbSequenceLength(const struct AwFmIndex *restrict const index);
-  uint64_t  awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
- bool       awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
+        bool      awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
+        size_t    awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range);
+        uint64_t  awFmGetBwtLength(const struct AwFmIndex *restrict const index);
+        uint64_t  awFmGetDbSequenceLength(const struct AwFmIndex *restrict const index);
+        uint64_t  awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
+        bool      awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

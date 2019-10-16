@@ -4,20 +4,52 @@
 #include <string.h>
 #include <divsufsort64.h>
 
-//temp extern while libdivsufsort isn't installed
-// extern uint64_t divsufsort(const uint8_t *T, uint64_t *SA, uint64_t n);
-
 
 enum AwFmReturnCode awFmCreateFullSuffixArray(const uint8_t * databaseSequence,
   const uint64_t databaseSequenceLength, uint64_t **fullSuffixArrayOut);
 
-enum AwFmReturnCode awFmCreateBlockList(const uint8_t *restrict const databaseSequence,
-  const uint64_t databaseSequenceLength, struct AwFmIndex *restrict const index);
+enum AwFmReturnCode awFmCreateBlockList(struct AwFmIndex *restrict const index,
+  const uint8_t *restrict const databaseSequence, const uint64_t databaseSequenceLength);
 
 
 
+///////TODO!!! refactor this function!
+/*
+ * Function:  awFmCreateIndex
+ * --------------------
+ * Create an AwFmIndex struct from a given database sequence.
+ *
+ *  Inputs:
+ *    indexPtr:                     Pointer to the AwFmIndex ptr to be allocated.
+ *    databaseSequence:             ASCII-encoded string representing the
+ *      amino-acid sequence to build the database from.
+ *    databaseSequenceLength:       length of the databaseSequence string to be copied
+ *      into the AwFmIndex struct.
+ *    suffixArrayCompressionRatio:  how often to sample the suffix array. Larger values
+ *      reduce the size of the Fm-index data file, but increase the time it takes to reconstruct
+ *      the database sequence positions when hits are found.
+ *    fileSrc: null terminated string representing the file path to the file associated with this
+ *      AwFmIndex. While this function does not write the AwFmIndex to a file, this file path
+ *      will be what's used to write it.
+ *
+ *  Returns:
+ *    AwFmReturnCode showing the result of this action. Possible returns are:
+ *      AwFmSuccess on success,
+ *      AwFmNullPtrError if the indexPtr, databaseSequence, or fileSrc were null.
+ *      AwFmAllocationFailure on failure to allocate the AwFmIndex, suffix array copy,
+ *        or block list.
+ *      AwFmNoFileSrcGiven if the fileSrc is null.
+ *      AwFmGeneralFailure if a null terminator is not found in the fileSrc in a
+ *        reasonable window (defined by macro MAXIMUM_FILE_PATH_LENGTH).
+ *      AwFmSuffixArrayCreationFailure on failure in building the suffix array (this error
+ *        is caused by internal failure in the libdivsufsort library).
+*/
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *restrict const databaseSequence,
   const size_t databaseSequenceLength, const uint16_t suffixArrayCompressionRatio, const char *restrict const fileSrc){
+
+  if(indexPtr == NULL || databaseSequence == NULL || fileSrc == NULL){
+    return AwFmNullPtrError;
+  }
 
   struct AwFmIndex *index = alignedAllocAwFmIndex();
   if(index == NULL){
@@ -39,7 +71,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *
   //set the database sequence by reference
   if(databaseSequence == NULL){
     deallocateFmIndex(index);
-    return AwFmAllocationFailure;
+    return AwFmNullPtrError;
   }
   index->databaseSequence = databaseSequence;
 
@@ -51,9 +83,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *
     return suffixArrayCreationReturnCode;
   }
 
-
-
-  enum AwFmReturnCode blockListCreationReturnCode = awFmCreateBlockList(databaseSequence, databaseSequenceLength, index);
+  enum AwFmReturnCode blockListCreationReturnCode = awFmCreateBlockList(index, databaseSequence, databaseSequenceLength);
   if(__builtin_expect(blockListCreationReturnCode < 0, 0)){
     deallocateFmIndex(index);
     return blockListCreationReturnCode;
@@ -75,11 +105,31 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *
 }
 
 
+//TODO: check this for correctness.
 //if failure, the caller may need to deallocate index.
-enum AwFmReturnCode awFmCreateBlockList(const uint8_t *restrict const databaseSequence,
-  const uint64_t databaseSequenceLength, struct AwFmIndex *const restrict index){
+/*
+ * Function:  awFmCreateBlockList
+ * --------------------
+ * Allocates and initializes the BlockList with the suffix array created by
+ *  the given database sequence.
+ *
+ *  Inputs:
+ *    index              AwFmIndex struct that's block list will be set.
+ *    databaseSequence:             ASCII-encoded string representing the
+ *      amino-acid sequence to build the blockList from.
+ *    databaseSequenceLength:       length of the databaseSequence string to be copied
+ *      into the AwFmIndex struct.
+ *
+ *  Returns:
+ *    AwFmReturnCode showing the result of this action. Possible returns are:
+ *      AwFmSuccess on success,
+ *      AwFmNullPtrError if the indexPtr or databaseSequence were null.
+ *      AwFmAllocationFailure on failure to allocate the block list.
+*/
+enum AwFmReturnCode awFmCreateBlockList(struct AwFmIndex *const restrict index,
+  const uint8_t *restrict const databaseSequence, const uint64_t databaseSequenceLength){
 
-  if(index == NULL){
+  if(index == NULL || databaseSequence == NULL){
     return AwFmNullPtrError;
   }
 
@@ -137,30 +187,49 @@ enum AwFmReturnCode awFmCreateBlockList(const uint8_t *restrict const databaseSe
 }
 
 
-enum AwFmReturnCode awFmCreateFullSuffixArray(const uint8_t * databaseSequence,
+/*
+ * Function:  awFmCreateFullSuffixArray
+ * --------------------
+ * Creates a fully-sampled suffix array from the given database sequence.
+ *
+ *  Inputs:
+ *    databaseSequence:       ASCII-encoded string representing the
+ *      amino-acid sequence to build the blockList from.
+ *    databaseSequenceLength: Length of the databaseSequence string to be copied
+ *      into the AwFmIndex struct.
+ *    fullSuffixArrayOut:     Pointer to the suffixArray ptr to be allocated and set
+ *      to the computed suffix array.
+ *
+ *  Returns:
+ *    AwFmReturnCode showing the result of this action. Possible returns are:
+ *      AwFmSuccess on success,
+ *      AwFmAllocationFailure on failure to allocate the suffix array.
+ *      AwFmNullPtrError if the indexPtr or databaseSequence were null.
+ *      AwFmSuffixArrayCreationFailure on failure in building the suffix array (this error
+ *        is caused by internal failure in the libdivsufsort library).
+*/
+enum AwFmReturnCode awFmCreateFullSuffixArray(const uint8_t *databaseSequence,
   const uint64_t databaseSequenceLength, uint64_t **fullSuffixArrayOut){
 
-    //suffix array is one longer than database sequence, since it needs to store the null terminating $.
-    const uint64_t suffixArrayLength = databaseSequenceLength + 1;
-    uint64_t *fullSuffixArray = malloc(suffixArrayLength * sizeof(uint64_t));
-    if(fullSuffixArray == NULL){
-      return AwFmAllocationFailure;
-    }
-    int64_t *suffixArrayAfterTerminator = (int64_t*)(fullSuffixArray + 1);
-    uint64_t divSufSortReturnCode = divsufsort64(databaseSequence, suffixArrayAfterTerminator, databaseSequenceLength);
+  //suffix array is one longer than database sequence, since it needs to store the null terminating $.
+  const uint64_t suffixArrayLength = databaseSequenceLength + 1;
+  uint64_t *fullSuffixArray = malloc(suffixArrayLength * sizeof(uint64_t));
+  if(fullSuffixArray == NULL){
+    return AwFmAllocationFailure;
+  }
+  int64_t *suffixArrayAfterTerminator = (int64_t*)(fullSuffixArray + 1);
+  uint64_t divSufSortReturnCode = divsufsort64(databaseSequence, suffixArrayAfterTerminator, databaseSequenceLength);
 
-    //the first position will be the location of the null terminator.
-    fullSuffixArray[0] = databaseSequenceLength;
+  //the first position will be the location of the null terminator.
+  fullSuffixArray[0] = databaseSequenceLength;
 
-    *fullSuffixArrayOut = fullSuffixArray;
+  *fullSuffixArrayOut = fullSuffixArray;
 
-    if(divSufSortReturnCode < 0){
-      free(fullSuffixArray);
-      return AwFmSuffixArrayCreationFailure;
-    }
-    else{
-      return AwFmSuccess;
-    }
-
-
+  if(divSufSortReturnCode < 0){
+    free(fullSuffixArray);
+    return AwFmSuffixArrayCreationFailure;
+  }
+  else{
+    return AwFmSuccess;
+  }
 }

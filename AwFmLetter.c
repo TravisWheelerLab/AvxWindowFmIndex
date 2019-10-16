@@ -103,6 +103,19 @@ uint8_t awFmAsciiLetterToCompressedVectorFormat(const uint8_t asciiLetter){
 }
 
 
+/*
+ * Function:  awFmCompressedVectorLetterToLetterIndex
+ * --------------------
+ * Transforms a compressed vector format-encoded character stored in
+ *  the AwFmIndex blockList character into a frequency-encoded character.
+ *
+ *  Inputs:
+ *    compressedVectorLetter: 5-bit compressed vector format letter assembled from the AwFmIndex block list.
+ *
+ *  Returns:
+ *    Value representing frequency-indexed letter.
+ *
+ */
 uint8_t awFmCompressedVectorLetterToLetterIndex(const uint8_t compressedVectorLetter){
   const uint8_t frequencyIndexLetters[32] = {
     20, 16, 17,  6, 18,  7,  9, 20,

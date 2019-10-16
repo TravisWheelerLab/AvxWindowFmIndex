@@ -9,7 +9,7 @@
  * --------------------
  * Sets the fileSrc member variable inside the index to the given fileSrc.
  *  On success, the fileSrc argument will be copied into a newly allocated string in the index.
- *  As such, the given fileSrc argument may be deallocated freely after calling this function.   
+ *  As such, the given fileSrc argument may be deallocated freely after calling this function.
  *
  *  Inputs:
  *    index:      Pointer to an allocated AwFmIndex struct that will have its fileSrc set.

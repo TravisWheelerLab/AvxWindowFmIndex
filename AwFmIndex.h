@@ -1,10 +1,10 @@
 #ifndef AW_FM_INDEX_STRUCTS_H
 #define AW_FM_INDEX_STRUCTS_H
 
+#include "AwFmGlobals.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <immintrin.h>
-#include "AwFmGlobals.h"
 
 
 #define AW_FM_INDEX_METADATA_BYTE_SIZE 64

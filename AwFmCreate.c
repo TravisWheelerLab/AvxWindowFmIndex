@@ -4,13 +4,13 @@
 #include <string.h>
 #include <divsufsort64.h>
 
-
-enum AwFmReturnCode awFmCreateFullSuffixArray(const uint8_t * databaseSequence,
+/*Creates the fully-sampled suffix array from the given database sequence.*/
+enum AwFmReturnCode awFmCreateFullSuffixArray(const uint8_t *databaseSequence,
   const uint64_t databaseSequenceLength, uint64_t **fullSuffixArrayOut);
 
+/*Creates the AwFmIndex blockList from the given database sequence.*/
 enum AwFmReturnCode awFmCreateBlockList(struct AwFmIndex *restrict const index,
   const uint8_t *restrict const databaseSequence, const uint64_t databaseSequenceLength);
-
 
 
 ///////TODO!!! refactor this function!

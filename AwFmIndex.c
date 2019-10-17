@@ -50,7 +50,7 @@ enum AwFmReturnCode awFmIndexSetFileSrc(struct AwFmIndex *restrict const index, 
 
 
 /*
- * Function:  alignedAllocAwFmIndex
+ * Function:  awFmAlignedAllocAwFmIndex
  * --------------------
  * Dynamically allocates memory for the AwFmIndex struct, aligned to a cache line (64 bytes).
  *  Inputs:
@@ -63,7 +63,7 @@ enum AwFmReturnCode awFmIndexSetFileSrc(struct AwFmIndex *restrict const index, 
  *  Returns:
  *    Pointer to the allocated aligned memory. Returns NULL on allocation failure.
  */
-struct AwFmIndex *alignedAllocAwFmIndex(void){
+struct AwFmIndex *awFmAlignedAllocAwFmIndex(void){
   struct AwFmIndex *index = aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, sizeof(struct AwFmIndex));
   if(index != NULL){
     memset(index, 0, sizeof(struct AwFmIndex));
@@ -73,7 +73,7 @@ struct AwFmIndex *alignedAllocAwFmIndex(void){
 
 
 /*
- * Function:  alignedAllocBlockList
+ * Function:  awFmAlignedAllocBlockList
  * --------------------
  * Dynamically allocates memory for the AwFmBlock array, aligned to a cache line (64 bytes).
  *
@@ -83,33 +83,57 @@ struct AwFmIndex *alignedAllocAwFmIndex(void){
  *  Returns:
  *    Pointer to the allocated aligned memory. As per C11 specs, will return NULL on allocation failure.
  */
-struct AwFmBlock *alignedAllocBlockList(const size_t numBlocks){
+struct AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks){
   return aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, numBlocks * sizeof(struct AwFmBlock));
 }
 
 
 /*
- * Function:  deallocateFmIndex
+ * Function:  AwFmDeallocateFmIndex
  * --------------------
- * Frees the memory associated with the given AwFmIndex. This also deallocates the block list.
+ * Frees the memory associated with the given AwFmIndex. This also deallocates
+ *  the block list and suffix array, if present.
+ *  All pointers to deallocated memory are set to NULL.
  *
  *  Inputs:
  *    index: Index struct to be deallocated.
  */
- void deallocateFmIndex(struct AwFmIndex *restrict index){
+ void awFmDeallocateFmIndex(struct AwFmIndex *restrict index){
 
    if(index != NULL){
-     if(index->fileSrc != NULL){
        free(index->fileSrc);
-     }
-     if(index->blockList != NULL){
        free(index->blockList);
-     }
-
-     free(index);
+       free(index->fullSuffixArray);
+       index->fileSrc         = NULL;
+       index->blockList       = NULL;
+       index->fullSuffixArray = NULL;
    }
+   free(index);
+   index = NULL;
  }
 
+
+ /*
+  * Function:  awFmDeallocFullSuffixArray
+  * --------------------
+  * Frees the memory associated with suffix array in the given AwFmIndex.
+  *   This is done automatically if awFmDeallocateFmIndex() is called,
+  *   but this function allows the suffix array to be deallocated if the
+  *   index has been written to a file (and as such the suffix array isn't
+  *   needed to be in memory), but the index should still be in memory for
+  *   future useage.
+  *
+  *   Once deallocated, the pointer to the suffix array is set to NULL.
+  *
+  *  Inputs:
+  *    index: Index struct that contains the suffix array to be deallocated.
+  */
+void awFmDeallocFullSuffixArray(struct AwFmIndex *const restrict index){
+  if(__builtin_expect(index != NULL, 1)){
+      free(index->fullSuffixArray);
+      index->fullSuffixArray = NULL;
+  }
+}
 
 /*
  * Function:  awFmSearchRangeLength

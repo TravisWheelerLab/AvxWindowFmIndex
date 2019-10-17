@@ -71,10 +71,10 @@ enum AwFmReturnCode{
 
 
 enum AwFmReturnCode awFmIndexSetFileSrc(struct AwFmIndex *restrict const index, const char *restrict const fileSrc);
-struct  AwFmIndex *alignedAllocAwFmIndex(void);
-struct  AwFmBlock *alignedAllocBlockList(const size_t numBlocks);
-        void      deallocateFmIndex(struct AwFmIndex *restrict index);
-        void      deallocSuffixArray(struct AwFmIndex *const restrict index);
+struct  AwFmIndex *awFmAlignedAllocAwFmIndex(void);
+struct  AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks);
+        void      awFmDeallocateFmIndex(struct AwFmIndex *restrict index);
+        void      awFmDeallocFullSuffixArray(struct AwFmIndex *const restrict index);
         bool      awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
         size_t    awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range);
         uint64_t  awFmGetBwtLength(const struct AwFmIndex *restrict const index);

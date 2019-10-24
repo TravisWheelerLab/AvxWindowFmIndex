@@ -228,3 +228,12 @@ void awFmDeallocFullSuffixArray(struct AwFmIndex *const restrict index){
  bool awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange){
   return searchRange->startPtr < searchRange->endPtr;
 }
+
+
+size_t awFmNumBlocksFromSuffixArrayLength(const size_t suffixArrayLength){
+  return  1 + ((suffixArrayLength -1) / POSITIONS_PER_FM_BLOCK);
+}
+
+size_t awFmNumBlocksFromSequenceLength(const size_t databaseSequenceLength){
+  return awFmNumBlocksFromSuffixArrayLength(databaseSequenceLength + 1);
+}

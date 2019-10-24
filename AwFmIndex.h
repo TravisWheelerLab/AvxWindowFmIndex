@@ -75,6 +75,8 @@ struct  AwFmIndex *awFmAlignedAllocAwFmIndex(void);
 struct  AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks);
         void      awFmDeallocateFmIndex(struct AwFmIndex *restrict index);
         void      awFmDeallocFullSuffixArray(struct AwFmIndex *const restrict index);
+        size_t    awFmNumBlocksFromSuffixArrayLength(const size_t suffixArrayLength);
+        size_t    awFmNumBlocksFromSequenceLength(const size_t databaseSequenceLength);
         bool      awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
         size_t    awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range);
         uint64_t  awFmGetBwtLength(const struct AwFmIndex *restrict const index);

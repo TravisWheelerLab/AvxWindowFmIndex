@@ -181,16 +181,16 @@ enum AwFmReturnCode awFmCreateBlockList(struct AwFmIndex *const restrict index,
   memset(totalOccupancies, 0,  AMINO_CARDINALITY * sizeof(uint64_t));
 
   for(uint64_t blockIndex = 0; blockIndex < index->numBlocks; blockIndex++){
-    awFmInitBlock(index, blockIndex, totalOccupancies);
+    awFmInitBlock(index, blockIndex, totalOccupancies, suffixArrayLength);
   }
 
   return AwFmSuccess;
 }
 
 
-//TODO: check for null terminator position in the suffix array!
-//TODO: refactor and check for correctness
-void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockIndex, uint64_t *totalOccupanciesSoFar){
+void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockIndex,
+  uint64_t *totalOccupanciesSoFar, const size_t suffixArrayLength){
+
   //copy the base occupancy over, and set the bit vectors to all zeros.
   memcpy(index->blockList[blockIndex].baseOccupancies, totalOccupanciesSoFar, AMINO_CARDINALITY * sizeof(uint64_t));
   memset(index->blockList[blockIndex].letterBitVectors, 0, sizeof(__m256i) * 5);
@@ -199,10 +199,13 @@ void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockI
   void *letterBitVectorsAsRawPtr = &index->blockList[blockIndex].letterBitVectors[0];
   uint64_t *letterBitVectorsAsBytes = letterBitVectorsAsRawPtr;
 
+  bool isLastBlock = blockIndex == (awFmNumBlocksFromSuffixArrayLength(suffixArrayLength) - 1);
+  //if we're in the last block, we need to stop at the actual end of the suffix array.
+  uint_fast8_t lengthOfThisBlock = isLastBlock? (suffixArrayLength % POSITIONS_PER_FM_BLOCK) - 1: POSITIONS_PER_FM_BLOCK;
 
   //if we're on the first block, start at position 1, since 0 will be the null terminator.
   const uint_fast8_t blockStartingPosition = (blockIndex == 0)? 1: 0;
-  for(uint_fast8_t i = blockStartingPosition; i < POSITIONS_PER_FM_BLOCK; i++){
+  for(uint_fast8_t i = blockStartingPosition; i < lengthOfThisBlock; i++){
 
     const uint8_t byteInBlock             = i / 8;
     const uint8_t bitInBlockByte          = i % 8;

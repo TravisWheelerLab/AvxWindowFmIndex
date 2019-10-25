@@ -21,7 +21,8 @@ enum AwFmReturnCode awFmCreateBlockList(struct AwFmIndex *restrict const index,
 
 void AwFmSetRankPrefixSums(struct AwFmIndex *restrict const index, const uint64_t *restrict const totalOccupancies);
 
-void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockIndex, uint64_t *totalOccupanciesSoFar);
+void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockIndex,
+  uint64_t *totalOccupanciesSoFar, const size_t suffixArrayLength);
 
 
 #endif /* end of include guard: AW_FM_INDEX_CREATE_H */

@@ -199,7 +199,7 @@ void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockI
   void *letterBitVectorsAsRawPtr = &index->blockList[blockIndex].letterBitVectors[0];
   uint64_t *letterBitVectorsAsBytes = letterBitVectorsAsRawPtr;
 
-  bool isLastBlock = blockIndex == (awFmNumBlocksFromSuffixArrayLength(suffixArrayLength) - 1);
+  bool isLastBlock = blockIndex == index->numBlocks;
   //if we're in the last block, we need to stop at the actual end of the suffix array.
   uint_fast8_t lengthOfThisBlock = isLastBlock? (suffixArrayLength % POSITIONS_PER_FM_BLOCK) - 1: POSITIONS_PER_FM_BLOCK;
 

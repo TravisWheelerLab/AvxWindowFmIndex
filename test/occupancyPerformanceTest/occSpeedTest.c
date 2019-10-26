@@ -9,7 +9,6 @@
 #include "../../AwFmGlobals.h"
 
 
-// #define AVX_VECTOR_PREFETCH
 
 uint32_t numQueries = 0;
 uint32_t dbSizeInWindows = 0;
@@ -56,9 +55,6 @@ void checkArgs(){
 }
 
 void performDbQueries(const struct AwFmIndex *restrict const index, uint64_t positionsInDb){
-  // size_t startPtr = rand();
-  // startPtr = startPtr % positionsInDb;
-  // size_t endPtr   = rand()% positionsInDb;
   size_t ptrs[2];
   ptrs[0] = rand() % positionsInDb;
   ptrs[1] = rand() % positionsInDb;
@@ -81,11 +77,9 @@ void performDbQueries(const struct AwFmIndex *restrict const index, uint64_t pos
       uint8_t letter  = rand()% 20;
       ptrs[0] = awFmGetOccupancy(index, ptrs[0], letter) + index->rankPrefixSums[letter];
       ptrs[0] = ptrs[0] % positionsInDb;
-      // awFmOccupancyDataPrefetch(index, ptrs[0]);
 
       ptrs[1] = awFmGetOccupancy(index, ptrs[1], letter) + index->rankPrefixSums[letter];
       ptrs[1] = ptrs[1] % positionsInDb;
-      // awFmOccupancyDataPrefetch(index, ptrs[1]);
     }
   }
 }
@@ -96,7 +90,7 @@ int main (int argc, char **argv){
   checkArgs();
   uint64_t positionsInDb = dbSizeInWindows *POSITIONS_PER_FM_BLOCK;
   //create the "database"
-  struct AwFmBlock *blockList = alignedAllocBlockList(dbSizeInWindows);
+  struct AwFmBlock *blockList = awFmAlignedAllocBlockList(dbSizeInWindows);
   if(blockList == NULL){
     printf("could not allocate block list... maybe window count of %d was too big?\n", dbSizeInWindows);
     exit(-2);
@@ -107,7 +101,7 @@ int main (int argc, char **argv){
     ((uint32_t*)blockList)[i] = rand();
   }
 
-  struct AwFmIndex *index = alignedAllocAwFmIndex();
+  struct AwFmIndex *index = awFmAlignedAllocAwFmIndex();
   if(index == NULL){
     printf("could not allocate index... wtf?\n");
     exit(-2);

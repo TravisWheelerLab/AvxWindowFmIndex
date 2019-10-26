@@ -108,7 +108,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *
     return blockListCreationReturnCode;
   }
 
-  AwFmSetRankPrefixSums(index, totalOccupancies);
+  awFmSetRankPrefixSums(index, totalOccupancies);
 
   //set the out pointer for the index.
   *indexPtr = index;
@@ -117,7 +117,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *
 }
 
 
-void AwFmSetRankPrefixSums(struct AwFmIndex *restrict const index, const uint64_t *restrict const totalOccupancies){
+void awFmSetRankPrefixSums(struct AwFmIndex *restrict const index, const uint64_t *restrict const totalOccupancies){
   //set the rank prefix sums
   //accumulator starts at 1 because of the null terminator $ being before all other letters
   uint64_t rankPrefixAccumulator = 1;
@@ -196,25 +196,33 @@ void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockI
   memset(index->blockList[blockIndex].letterBitVectors, 0, sizeof(__m256i) * 5);
 
   //create a uint8_t pointer to the letter bit vectors to more easily set individual bytes.
-  void *letterBitVectorsAsRawPtr = &index->blockList[blockIndex].letterBitVectors[0];
-  uint64_t *letterBitVectorsAsBytes = letterBitVectorsAsRawPtr;
+  void *restrict const letterBitVectorsAsRawPtr = &index->blockList[blockIndex].letterBitVectors[0];
+  uint8_t *restrict const letterBitVectorsAsBytes = letterBitVectorsAsRawPtr;
 
-  bool isLastBlock = blockIndex == index->numBlocks;
+  bool isLastBlock = blockIndex == index->numBlocks - 1;
   //if we're in the last block, we need to stop at the actual end of the suffix array.
-  uint_fast8_t lengthOfThisBlock = isLastBlock? (suffixArrayLength % POSITIONS_PER_FM_BLOCK) - 1: POSITIONS_PER_FM_BLOCK;
+  uint_fast16_t lengthOfThisBlock = isLastBlock?
+    (suffixArrayLength - (blockIndex*POSITIONS_PER_FM_BLOCK)):
+    POSITIONS_PER_FM_BLOCK;
 
-  //if we're on the first block, start at position 1, since 0 will be the null terminator.
-  const uint_fast8_t blockStartingPosition = (blockIndex == 0)? 1: 0;
-  for(uint_fast8_t i = blockStartingPosition; i < lengthOfThisBlock; i++){
+
+  for(uint_fast16_t i = 0; i < lengthOfThisBlock; i++){
 
     const uint8_t byteInBlock             = i / 8;
     const uint8_t bitInBlockByte          = i % 8;
     const uint64_t positionInSuffixArray  = (blockIndex * POSITIONS_PER_FM_BLOCK) + i;
 
     const uint64_t suffixArrayValue       = index->fullSuffixArray[positionInSuffixArray];
-    const uint8_t letterAsAscii           = index->databaseSequence[suffixArrayValue];
+    //the character in the BWT is the character immediately before the one represented
+    // in the suffix array. But, since we can point to the first character (at index 0),
+    // we need to check for 0 so we actually point to the last character, rather
+    //than overflowing.
+    const uint8_t letterAsAscii           = __builtin_expect(suffixArrayValue != 0, 1)?
+      index->databaseSequence[suffixArrayValue - 1]:
+      index->databaseSequence[suffixArrayLength - 1];
+
     const uint8_t letterAsFrequencyIndex  = awFmAsciiLetterToLetterIndex(letterAsAscii);
-    uint8_t letterAsVectorFormat          = awFmAsciiLetterToCompressedVectorFormat(letterAsAscii);
+    const uint8_t letterAsVectorFormat          = awFmAsciiLetterToCompressedVectorFormat(letterAsAscii);
 
     //accumulate the letter's occupancy.
     totalOccupanciesSoFar[letterAsFrequencyIndex]++;
@@ -222,8 +230,8 @@ void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockI
     //set the correct bits in the letterBitVectors
     for(uint_fast8_t bitInVectorLetter = 0; bitInVectorLetter < 5; bitInVectorLetter++){
       const uint8_t letterBit = (letterAsVectorFormat >> bitInVectorLetter) & 1;
-      const uint8_t byteInBlockVectors = (letterBit * BYTES_PER_AVX2_REGISTER) + byteInBlock;
-      //or in the shifted bit.
+      const uint8_t byteInBlockVectors = (bitInVectorLetter * BYTES_PER_AVX2_REGISTER) + byteInBlock;
+        //or in the shifted bit.
       letterBitVectorsAsBytes[byteInBlockVectors] |= (letterBit << bitInBlockByte);
     }
   }
@@ -261,7 +269,7 @@ enum AwFmReturnCode awFmCreateFullSuffixArray(const uint8_t *databaseSequence,
     return AwFmAllocationFailure;
   }
   int64_t *suffixArrayAfterTerminator = (int64_t*)(fullSuffixArray + 1);
-  uint64_t divSufSortReturnCode = divsufsort64(databaseSequence, suffixArrayAfterTerminator, databaseSequenceLength);
+  uint64_t divSufSortReturnCode = divsufsort64(databaseSequence, (int64_t *)suffixArrayAfterTerminator, (int64_t)databaseSequenceLength);
 
   //the first position will be the location of the null terminator.
   fullSuffixArray[0] = databaseSequenceLength;

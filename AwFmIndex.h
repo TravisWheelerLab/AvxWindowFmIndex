@@ -16,7 +16,7 @@ struct AwFmBlock{
 };
 
 struct AwFmIndexMetadata{
-  uint32_t  versionNumber;
+  uint32_t versionNumber;
 };
 
 union AwFmIndexPaddedMetadata{
@@ -25,14 +25,14 @@ union AwFmIndexPaddedMetadata{
 };
 
 struct AwFmIndex{
-  struct AwFmBlock *blockList;
-  uint64_t  rankPrefixSums[AMINO_CARDINALITY + 1]; //last position acts as BWT length
-  uint64_t  numBlocks;
-  uint16_t  suffixArrayCompressionRatio;
+  struct AwFmBlock              *blockList;
+  uint64_t                      rankPrefixSums[AMINO_CARDINALITY + 1]; //last position acts as BWT length
+  uint64_t                      numBlocks;
+  uint16_t                      suffixArrayCompressionRatio;
   union AwFmIndexPaddedMetadata metadata;
-  char            *fileSrc;
-  const uint8_t   *databaseSequence;  //usually NULL, used in construction and saving to file
-  uint64_t        *fullSuffixArray;   //usually NULL, used in construction and saving to file
+  char                          *fileSrc;
+  const uint8_t                 *databaseSequence;  //usually NULL, used in construction and saving to file
+  uint64_t                      *fullSuffixArray;   //usually NULL, used in construction and saving to file
 };
 
 struct AwFmSearchRange{

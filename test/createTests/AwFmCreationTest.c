@@ -35,6 +35,10 @@ const uint8_t asciiAminoLookupTable[] ={
   's','t','v','w','y','b','x'
 };
 
+const uint8_t frequencyIndexToAsciiTable[] = {
+  'l','a','g','v','e','s','i','k','r','d','t','p','n','q','f','y','m','h','c','w'
+};
+
 void parseArgs(int argc, char **argv){
   int option = 0;
   while((option = getopt(argc, argv, "vVl:n:t:")) != -1){
@@ -42,8 +46,8 @@ void parseArgs(int argc, char **argv){
     switch(option){
       case 'V':
       case 'v':
-      verbose = true;
-      printf("set to verbose output\n");
+        verbose = true;
+        printf("set to verbose output\n");
       break;
       case 'l':
         sscanf(optarg , "%zu" , &dbSequenceLength);
@@ -75,8 +79,9 @@ int main (int argc, char **argv){
     exit(EXIT_FAILURE);
   }
 
-  // suffixArrayCreationTest(dbSequenceLength);
-  blockInitTest(dbSequenceLength);
+  setRankPrefixSumTest(dbSequenceLength);
+    suffixArrayCreationTest(dbSequenceLength);
+    blockInitTest(dbSequenceLength);
 }
 
 uint8_t *allocAndAssignDbSequence(const size_t dbSequenceLength){
@@ -87,7 +92,6 @@ uint8_t *allocAndAssignDbSequence(const size_t dbSequenceLength){
 
   return dbSequence;
 }
-
 
 
 void suffixArrayCreationTest(const size_t dbSequenceLength){
@@ -191,14 +195,14 @@ void testBlockForCorrectLetters(const struct AwFmIndex *restrict const index,
 
   bool isLastBlock  = blockIndex == (index->numBlocks -1);
   //skip the null terminator on the first block, and stop at the end of the suffix array for the last block
-  uint_fast8_t blockEndingPosition = isLastBlock? suffixArrayLength - (blockIndex * POSITIONS_PER_FM_BLOCK): POSITIONS_PER_FM_BLOCK;
+  uint_fast16_t blockEndingPosition = isLastBlock? suffixArrayLength - (blockIndex * POSITIONS_PER_FM_BLOCK): POSITIONS_PER_FM_BLOCK;
 
-  for(uint_fast8_t i = 0; i < blockEndingPosition; i++){
+  for(uint_fast16_t i = 0; i < blockEndingPosition; i++){
     uint8_t assembledVectorLetter  = 0;
     uint8_t byteInLetterVectors    = i / 8;
     uint8_t bitInLetterVectorByte  = i % 8;
 
-    for(int_fast8_t bitIndex = 5; bitIndex >= 0; bitIndex--){
+    for(int_fast8_t bitIndex = 4; bitIndex >= 0; bitIndex--){
       uint8_t *thisBitsLetterVectorAsBytePtr = (uint8_t *)(&index->blockList[blockIndex].letterBitVectors[bitIndex]);
       uint8_t thisBit = (thisBitsLetterVectorAsBytePtr[byteInLetterVectors] >> bitInLetterVectorByte) & 1;
       assembledVectorLetter = (assembledVectorLetter << 1) | thisBit;
@@ -217,10 +221,10 @@ void testBlockForCorrectLetters(const struct AwFmIndex *restrict const index,
       uint8_t databaseLetterAsFrequencyFormat = awFmAsciiLetterToLetterIndex(asciiLetterAtBwtPosition);
 
       sprintf(stringBuffer,
-        "letter as SA position %zu (database position %zu) found a frequency index %i in database, but found a %i in the letter bit vectors.",
-        positionInSuffixArray, suffixArrayValue, databaseLetterAsFrequencyFormat, thisLetterAsFrequencyFormat);
+        "letter as SA position %zu (database position %zu) found a frequency index %i in database, but found a %i in the letter bit vectors. Assmebled letter = 0x%x.",
+        positionInSuffixArray, suffixArrayValue, databaseLetterAsFrequencyFormat, thisLetterAsFrequencyFormat, assembledVectorLetter);
 
-        testAssertString(thisLetterAsFrequencyFormat == databaseLetterAsFrequencyFormat, stringBuffer);
+      testAssertString(thisLetterAsFrequencyFormat == databaseLetterAsFrequencyFormat, stringBuffer);
     }
   }
 }
@@ -331,16 +335,26 @@ void setRankPrefixSumTest(const size_t dbSequenceLength){
   char stringBuffer[2048];
   size_t fullOccupanciesExpected[20];
   size_t rankPrefixSumsExpected[21];
+
+  memset(fullOccupanciesExpected, 0, 20 * sizeof(size_t));
+
   struct AwFmIndex *index;
   uint8_t *dbSequence = malloc(dbSequenceLength * sizeof(uint8_t));
 
 
   for(size_t i = 0; i < dbSequenceLength; i++){
     const uint8_t letterAtThisPosition = rand() %20;
-    dbSequence[i] = asciiAminoLookupTable[letterAtThisPosition];
+    dbSequence[i] = frequencyIndexToAsciiTable[letterAtThisPosition];
     fullOccupanciesExpected[letterAtThisPosition]++;
   }
 
+  if(verbose){
+    printf("db sequence: ");
+    for(size_t i = 0; i < dbSequenceLength; i++){
+      printf("%c",dbSequence[i]);
+    }
+    printf("\n");
+  }
 
   //generate the expected rankPrefixSums
   //start with a 1, since the null terminationg $ is below 'a'
@@ -351,9 +365,35 @@ void setRankPrefixSumTest(const size_t dbSequenceLength){
   }
   rankPrefixSumsExpected[20] = lettersBelowThisValue;
 
+  if(verbose){
+    printf("prefix sums:\t\t\t");
+    for(uint8_t i = 0; i < 21; i++){
+      printf("(%i, %zu), ", i, rankPrefixSumsExpected[i]);
+    }
+    printf("\n");
+  }
   //run the creation code
   enum AwFmReturnCode creationReturnCode = awFmCreateIndex(&index, dbSequence,
     dbSequenceLength, 1, "test.awfmi");
+
+  if(verbose){
+    printf("suffix array: ");
+    for( size_t i = 0; i < dbSequenceLength + 1; i++){
+      printf("%zu, ", index->fullSuffixArray[i]);
+    }
+
+    printf("\nbwt:\t");
+    for(size_t i = 0; i < dbSequenceLength + 1; i++){
+      size_t suffixArrayValue = index->fullSuffixArray[i];
+      printf("%c",suffixArrayValue == 0? '$': dbSequence[suffixArrayValue-1]);
+    }
+
+    printf("\ncomputed rank prefix sums:\t");
+    for(uint8_t i = 0; i < 21; i++){
+      printf("(%i, %zu), ", i, index->rankPrefixSums[i]);
+    }
+    printf("\n");
+  }
 
   sprintf(stringBuffer, "awfmi creation returned failure code %i", creationReturnCode);
   testAssertString(creationReturnCode >= 0, stringBuffer);

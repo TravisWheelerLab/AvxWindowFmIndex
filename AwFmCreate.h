@@ -9,9 +9,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *
 
 
 
-
-
-//includes for testing
+//includes for testing, not part of public API
 enum AwFmReturnCode awFmCreateFullSuffixArray(const uint8_t *databaseSequence,
   const uint64_t databaseSequenceLength, uint64_t **fullSuffixArrayOut);
 

@@ -217,22 +217,22 @@ void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockI
     // in the suffix array. But, since we can point to the first character (at index 0),
     // we need to check for 0 so we actually point to the last character, rather
     //than overflowing.
-    const uint8_t letterAsAscii           = __builtin_expect(suffixArrayValue != 0, 1)?
-      index->databaseSequence[suffixArrayValue - 1]:
-      index->databaseSequence[suffixArrayLength - 1];
 
-    const uint8_t letterAsFrequencyIndex  = awFmAsciiLetterToLetterIndex(letterAsAscii);
-    const uint8_t letterAsVectorFormat          = awFmAsciiLetterToCompressedVectorFormat(letterAsAscii);
 
-    //accumulate the letter's occupancy.
-    totalOccupanciesSoFar[letterAsFrequencyIndex]++;
+    if(__builtin_expect(suffixArrayValue != 0, 1)){
+      const uint8_t letterAsAscii           = index->databaseSequence[suffixArrayValue - 1];
+      const uint8_t letterAsFrequencyIndex  = awFmAsciiLetterToLetterIndex(letterAsAscii);
+      const uint8_t letterAsVectorFormat    = awFmAsciiLetterToCompressedVectorFormat(letterAsAscii);
+      //accumulate the letter's occupancy.
+      totalOccupanciesSoFar[letterAsFrequencyIndex]++;
 
-    //set the correct bits in the letterBitVectors
-    for(uint_fast8_t bitInVectorLetter = 0; bitInVectorLetter < 5; bitInVectorLetter++){
-      const uint8_t letterBit = (letterAsVectorFormat >> bitInVectorLetter) & 1;
-      const uint8_t byteInBlockVectors = (bitInVectorLetter * BYTES_PER_AVX2_REGISTER) + byteInBlock;
+      //set the correct bits in the letterBitVectors
+      for(uint_fast8_t bitInVectorLetter = 0; bitInVectorLetter < 5; bitInVectorLetter++){
+        const uint8_t letterBit = (letterAsVectorFormat >> bitInVectorLetter) & 1;
+        const uint8_t byteInBlockVectors = (bitInVectorLetter * BYTES_PER_AVX2_REGISTER) + byteInBlock;
         //or in the shifted bit.
-      letterBitVectorsAsBytes[byteInBlockVectors] |= (letterBit << bitInBlockByte);
+        letterBitVectorsAsBytes[byteInBlockVectors] |= (letterBit << bitInBlockByte);
+      }
     }
   }
 }

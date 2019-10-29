@@ -14,8 +14,7 @@ enum AwFmReturnCode awFmLoadIndexFromFile(const char *restrict const fileSrc,
   struct AwFmIndex *restrict *restrict index);
 
 /*Loads the positions in the database sequence corresponding the the given array of BWT positions.
-*   NOTE: positionArray is an array of BWT positions, not compressed suffix array indices.
-*/
+*   NOTE: positionArray is an array of BWT positions, not compressed suffix array indices.*/
 enum AwFmReturnCode awFmDbSequencePositionsFromSuffixArrayFile(const struct AwFmIndex *restrict const index,
   uint64_t *restrict positionArray, const uint64_t *restrict const offsetArray,
   const uint64_t positionArrayLength);

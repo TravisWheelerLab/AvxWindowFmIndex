@@ -56,7 +56,6 @@ static const char    IndexFileFormatIdHeader[10]  = "AwFmIndex\n";
 enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const index,
   const char *restrict const fileSrc, const bool allowOverwrite){
 
-  //check to make sure the fileSrc seems valid
   if(fileSrc == NULL){
     return AwFmNoFileSrcGiven;
   }
@@ -70,7 +69,8 @@ enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const i
   }
 
   char fileOpenMode[3] = {'w', (allowOverwrite? 'x':0), 0};
-  //open file to save to, and check for
+
+  //open file to save to, and check to make sure it opened correctly.
   FILE *datafile = fopen(fileSrc, fileOpenMode);
   if(datafile == NULL){
     fclose(datafile);
@@ -168,6 +168,8 @@ enum AwFmReturnCode awFmLoadIndexFromFile(const char *restrict const fileSrc,
   if(datafile == NULL){
     return AwFmFileOpenFail;
   }
+  //set the fileHandle associated with this index
+  (*index)->fileHandle = datafile;
 
   size_t elementsRead;
   char headerLabelBuffer[IndexFileFormatIdHeaderLength];
@@ -222,8 +224,6 @@ enum AwFmReturnCode awFmLoadIndexFromFile(const char *restrict const fileSrc,
     return AwFmFileReadFail;
   }
 
-  //set the fileHandle associated with this index
-  (*index)->fileHandle = datafile;
 
   return AwFmFileReadOkay;
 }
@@ -485,6 +485,6 @@ enum AwFmReturnCode awFmOpenReadFile(struct AwFmIndex *const restrict index, con
   return AwFmFileReadOkay;
 }
 
-void awFmCLoseFile(const struct AwFmIndex *restrict const index){
+void awFmCloseFile(const struct AwFmIndex *restrict const index){
   fclose(index->fileHandle);
 }

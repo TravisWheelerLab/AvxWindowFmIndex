@@ -5,8 +5,7 @@
 #include <stdint.h>
 
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *restrict const databaseSequence,
-  const size_t databaseSequenceLength, const uint16_t suffixArrayCompressionRatio, const char *restrict const fileSrc);
-
+  const size_t databaseSequenceLength, const uint16_t suffixArrayCompressionRatio);
 
 
 //includes for testing, not part of public API

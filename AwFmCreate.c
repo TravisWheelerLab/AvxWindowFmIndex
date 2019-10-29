@@ -40,26 +40,20 @@
  *    suffixArrayCompressionRatio:  how often to sample the suffix array. Larger values
  *      reduce the size of the Fm-index data file, but increase the time it takes to reconstruct
  *      the database sequence positions when hits are found.
- *    fileSrc: null terminated string representing the file path to the file associated with this
- *      AwFmIndex. While this function does not write the AwFmIndex to a file, this file path
- *      will be what's used to write it.
  *
  *  Returns:
  *    AwFmReturnCode showing the result of this action. Possible returns are:
  *      AwFmSuccess on success,
- *      AwFmNullPtrError if the indexPtr, databaseSequence, or fileSrc were null.
+ *      AwFmNullPtrError if the indexPtr or databaseSequence were null.
  *      AwFmAllocationFailure on failure to allocate the AwFmIndex, suffix array copy,
  *        or block list.
- *      AwFmNoFileSrcGiven if the fileSrc is null.
- *      AwFmGeneralFailure if a null terminator is not found in the fileSrc in a
- *        reasonable window (defined by macro MAXIMUM_FILE_PATH_LENGTH).
  *      AwFmSuffixArrayCreationFailure on failure in building the suffix array (this error
  *        is caused by internal failure in the libdivsufsort library).
 */
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *restrict const databaseSequence,
-  const size_t databaseSequenceLength, const uint16_t suffixArrayCompressionRatio, const char *restrict const fileSrc){
+  const size_t databaseSequenceLength, const uint16_t suffixArrayCompressionRatio){
 
-  if(indexPtr == NULL || databaseSequence == NULL || fileSrc == NULL){
+  if(indexPtr == NULL || databaseSequence == NULL){
     return AwFmNullPtrError;
   }
 
@@ -70,15 +64,6 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *
 
   //set the suffix array compression ratio
   index->suffixArrayCompressionRatio = suffixArrayCompressionRatio;
-
-  //set the fileSrc, or return the error code if it failed.
-  if(fileSrc != NULL){
-    const enum AwFmReturnCode setFileSrcReturnCode = awFmIndexSetFileSrc(index, fileSrc);
-    if(__builtin_expect(setFileSrcReturnCode < 0, 0)){
-      awFmDeallocateFmIndex(index);
-      return setFileSrcReturnCode;
-    }
-  }
 
   //set the database sequence by reference
   if(databaseSequence == NULL){

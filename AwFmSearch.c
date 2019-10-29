@@ -23,15 +23,15 @@
  *    the given kmer suffix does not exist in the database sequence.
  */
 struct AwFmSearchRange AwFmIterativeRangeBackwardSearch(const struct AwFmIndex *restrict const index,
-  const struct AwFmSearchRange *restrict const currentRange, const uint8_t queryLetter){
+  const struct AwFmSearchRange *restrict const currentRange, const uint8_t prefixLetter){
 
   struct AwFmSearchRange range;
-  const uint64_t letterRankPrefixSum = index->rankPrefixSums[queryLetter];
+  const uint64_t letterRankPrefixSum = index->rankPrefixSums[prefixLetter];
 
-  range.startPtr = awFmGetOccupancy(index, currentRange->startPtr, queryLetter) + letterRankPrefixSum;
+  range.startPtr = awFmGetOccupancy(index, currentRange->startPtr, prefixLetter) + letterRankPrefixSum;
   awFmOccupancyDataPrefetch(index, range.startPtr);
 
-  range.endPtr = awFmGetOccupancy(index, currentRange->endPtr, queryLetter) + letterRankPrefixSum;
+  range.endPtr = awFmGetOccupancy(index, currentRange->endPtr, prefixLetter) + letterRankPrefixSum;
   awFmOccupancyDataPrefetch(index, range.endPtr);
 
   return range;

@@ -3,7 +3,7 @@
 #include "AwFmSearch.h"
 
 /*
- * Function:  awFmSearchIterativePrefix
+ * Function:  AwFmIterativeRangeBackwardSearch
  * --------------------
  *  Queries the FM-Index to iteratively add an additional letter to the
  *    implicit kmer suffix, and return a new range of positions in the BWT where
@@ -22,7 +22,7 @@
  *    kmer suffixmay be found, as long as startPtr < endPtr. Otherwise (startPtr >= endPtr),
  *    the given kmer suffix does not exist in the database sequence.
  */
-struct AwFmSearchRange awFmSearchIterativePrefix(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange AwFmIterativeRangeBackwardSearch(const struct AwFmIndex *restrict const index,
   const struct AwFmSearchRange *restrict const currentRange, const uint8_t queryLetter){
 
   struct AwFmSearchRange range;
@@ -149,7 +149,7 @@ const char *restrict const kmer, const uint16_t kmerLength){
   awFmOccupancyDataPrefetch(index, searchRange.endPtr);
   do{
     kmerQueryPosition--;
-    searchRange = awFmSearchIterativePrefix(index, &searchRange, kmer[kmerQueryPosition]);
+    searchRange = AwFmIterativeRangeBackwardSearch(index, &searchRange, kmer[kmerQueryPosition]);
   }while(__builtin_expect(awFmSearchRangeIsValid(&searchRange) && kmerQueryPosition, 1));
 
   return searchRange;

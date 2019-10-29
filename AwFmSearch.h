@@ -12,7 +12,7 @@
 
 /*Given the range of BWT positions where current kmer suffix is found, returns the
     range where the suffix can be found after prepending the next letter.*/
-struct AwFmSearchRange awFmSearchIterativePrefix(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange AwFmIterativeRangeBackwardSearch(const struct AwFmIndex *restrict const index,
   const struct AwFmSearchRange *restrict const currentRange, const uint8_t queryLetter);
 
 /*Returns an array of positions in the database sequence that are represented by the

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <immintrin.h>
+#include <stdio.h>
 
 
 #define AW_FM_INDEX_METADATA_BYTE_SIZE 64
@@ -30,9 +31,9 @@ struct AwFmIndex{
   uint64_t                      numBlocks;
   uint16_t                      suffixArrayCompressionRatio;
   union AwFmIndexPaddedMetadata metadata;
-  char                          *fileSrc;
   const uint8_t                 *databaseSequence;  //usually NULL, used in construction and saving to file
   uint64_t                      *fullSuffixArray;   //usually NULL, used in construction and saving to file
+  FILE                          *fileHandle;
 };
 
 struct AwFmSearchRange{
@@ -74,7 +75,6 @@ bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode){
   return returnCode >= 0;
 }
 
-enum AwFmReturnCode awFmIndexSetFileSrc(struct AwFmIndex *restrict const index, const char *restrict const fileSrc);
 struct  AwFmIndex *awFmAlignedAllocAwFmIndex(void);
 struct  AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks);
         void      awFmDeallocateFmIndex(struct AwFmIndex *restrict index);
@@ -87,5 +87,6 @@ struct  AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks);
         uint64_t  awFmGetDbSequenceLength(const struct AwFmIndex *restrict const index);
         uint64_t  awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
         bool      awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
+        void      awFmDestroyIndex(struct AwFmIndex *restrict index);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

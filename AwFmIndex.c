@@ -4,49 +4,6 @@
 #include <stdlib.h>
 
 
-/*
- * Function:  awFmIndexSetFileSrc
- * --------------------
- * Sets the fileSrc member variable inside the index to the given fileSrc.
- *  On success, the fileSrc argument will be copied into a newly allocated string in the index.
- *  As such, the given fileSrc argument may be deallocated freely after calling this function.
- *
- *  Inputs:
- *    index:      Pointer to an allocated AwFmIndex struct that will have its fileSrc set.
- *    fileSrc:    Null-terminated string representing the absolute location of the file
- *      referenced by this FM-index.
- *
- *  Returns:
- *    AwFmReturnCode showing the result of this action. Possible returns are:
- *      AwFmSuccess on success,
- *      AwFmNoFileSrcGiven if the fileSrc was null,
- *      AwFmGeneralFailure if a null terminator is not found in the fileSrc in a reasonable
- *        number of characters. This function will look for as many characters as the value
- *        in the MAXIMUM_FILE_PATH_LENGTH macro.
- *      AwFmAllocationFailure if the dynamic allocation of the copy of the fileSrc.
- */
-enum AwFmReturnCode awFmIndexSetFileSrc(struct AwFmIndex *restrict const index, const char *restrict const fileSrc){
-  //check to make sure the fileSrc isn't null
-  if(__builtin_expect(fileSrc == NULL, 0)){
-    return AwFmNoFileSrcGiven;
-  }
-
-  const void *nullTerminatorPosition = memchr(fileSrc, 0, MAXIMUM_FILE_PATH_LENGTH);
-  if(__builtin_expect(nullTerminatorPosition == NULL, 0)){
-    return AwFmGeneralFailure;
-  }
-
-  //allocate a copy of the fileSrc string, and copy it over (null terminator included)
-  const size_t fileSrcLength = (char*)nullTerminatorPosition - fileSrc;
-  index->fileSrc = malloc((fileSrcLength + 1) * sizeof(char));
-  if(__builtin_expect(index->fileSrc == NULL, 0)){
-    return AwFmAllocationFailure;
-  }
-
-  memcpy(index->fileSrc, fileSrc, (fileSrcLength + 1) * sizeof(char));
-
-  return AwFmSuccess;
-}
 
 
 /*
@@ -101,15 +58,12 @@ struct AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks){
  void awFmDeallocateFmIndex(struct AwFmIndex *restrict index){
 
    if(index != NULL){
-       free(index->fileSrc);
        free(index->blockList);
        free(index->fullSuffixArray);
-       index->fileSrc         = NULL;
        index->blockList       = NULL;
        index->fullSuffixArray = NULL;
    }
    free(index);
-   index = NULL;
  }
 
 
@@ -236,4 +190,10 @@ size_t awFmNumBlocksFromSuffixArrayLength(const size_t suffixArrayLength){
 
 size_t awFmNumBlocksFromSequenceLength(const size_t databaseSequenceLength){
   return awFmNumBlocksFromSuffixArrayLength(databaseSequenceLength + 1);
+}
+
+void awFmDestroyIndex(struct AwFmIndex *restrict index){
+  fclose(index->fileHandle);
+  index->fileHandle = NULL;
+  awFmDeallocateFmIndex(index);
 }

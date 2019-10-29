@@ -1,5 +1,5 @@
-#include "AwFmFile.h"
 #include "AwFmIndex.h"
+#include "AwFmFile.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -35,6 +35,9 @@ static const char    IndexFileFormatIdHeader[10]  = "AwFmIndex\n";
  * --------------------
  * Creates an AwFm-Index file from the given data. The file contains the index data structure,
  *  as well as the original database sequence and compressed suffix array.
+ *  NOTE: This function requires that the database sequence and full suffix array
+ *  be set in the AwFmIndex struct. This is done automatically when the index is
+ *  constructed from a database sequence, but won't be done when loaded from a file.
  *
  *  Inputs:
  *    index:            prebuilt AwFmIndex struct to be saved to file.
@@ -50,16 +53,20 @@ static const char    IndexFileFormatIdHeader[10]  = "AwFmIndex\n";
  *    AwFmReturnCode detailing the result of the write attempt.
  *      returns AwFmFileWriteOkay on success, AwFmFileOpenFail or AwFmFileWriteFail on failure.
  */
-enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const index,
-  const size_t *restrict const fullSuffixArray, const char *restrict const databaseSequence,
-  const bool allowOverwrite){
+enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const index, const bool allowOverwrite){
 
   //check to make sure the fileSrc seems valid
   if(index->fileSrc == NULL){
     return AwFmNoFileSrcGiven;
   }
 
-  ;
+  if(index->databaseSequence == NULL){
+    return AwFmErrorDbSequenceNull;
+  }
+
+  if(index->fullSuffixArray == NULL){
+    return AwFmErrorSuffixArrayNull;
+  }
   const char *const fileOpenMode = allowOverwrite? "w": "wx";
   //open file to save to, and check for
   FILE *datafile = fopen(index->fileSrc, fileOpenMode);
@@ -97,7 +104,7 @@ enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const i
   const uint64_t bwtLength = awFmGetBwtLength(index);
 
   for(size_t suffixArrayIndex = 0; suffixArrayIndex < bwtLength; suffixArrayIndex += suffixArrayCompressionRatio){
-    elementsWritten = fwrite(fullSuffixArray + suffixArrayIndex, sizeof(uint64_t), 1, datafile);
+    elementsWritten = fwrite(index->fullSuffixArray + suffixArrayIndex, sizeof(uint64_t), 1, datafile);
     if(elementsWritten != 1){
       fclose(datafile);
       return AwFmFileWriteFail;
@@ -105,7 +112,7 @@ enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const i
   }
 
   //write the database sequence.
-  elementsWritten = fwrite(databaseSequence, sizeof(char), awFmGetDbSequenceLength(index), datafile);
+  elementsWritten = fwrite(index->databaseSequence, sizeof(char), awFmGetDbSequenceLength(index), datafile);
   if(elementsWritten != 1){
     fclose(datafile);
     return AwFmFileWriteFail;
@@ -147,7 +154,7 @@ enum AwFmReturnCode awFmLoadIndexFromFile(const char *restrict const fileSrc,
     return AwFmNoFileSrcGiven;
   }
   //allocate the index struct
-  *index = alignedAllocAwFmIndex();asdfasdf //TODO: also set the fileSrc here
+  *index = awFmAlignedAllocAwFmIndex(); //TODO: also set the fileSrc here
   if(index == NULL){
     return AwFmAllocationFailure;
   }

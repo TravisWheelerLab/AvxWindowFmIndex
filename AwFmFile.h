@@ -6,9 +6,7 @@
 
 
 /*Create an Awfmi file from the supplied AwFmIndex.*/
-enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const index,
-  const size_t *restrict const fullSuffixArray, const char *restrict const databaseSequence,
-  const bool allowOverwrite);
+enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const index, const bool allowOverwrite);
 
 /*Allocate memory to the AwFmIndex pointer, and load it from the given fileSrc.*/
 enum AwFmReturnCode awFmLoadIndexFromFile(const char *restrict const fileSrc,

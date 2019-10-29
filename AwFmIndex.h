@@ -63,12 +63,16 @@ struct AwFmSearchRange{
 *   AwFmNoFileSrcGiven:       The fileSrc was null.
 */
 enum AwFmReturnCode{
-  AwFmSuccess         = 1,    AwFmFileReadOkay                = 2,    AwFmFileWriteOkay         = 3,
-  AwFmGeneralFailure  = -1,   AwFmUnsupportedVersionError     = -2,   AwFmAllocationFailure     = -3,
-  AwFmNullPtrError    = -4,   AwFmSuffixArrayCreationFailure  = -5,   AwFmIllegalPositionError  = -6,
-  AwFmNoFileSrcGiven  = -7,   AwFmNoDatabaseSequenceGiven     = -8,   AwFmFileFormatError       = -9,
-  AwFmFileOpenFail    = -10,  AwFmFileReadFail                = -11,  AwFmFileWriteFail         = -12};
+  AwFmSuccess             = 1,    AwFmFileReadOkay                = 2,    AwFmFileWriteOkay         = 3,
+  AwFmGeneralFailure      = -1,   AwFmUnsupportedVersionError     = -2,   AwFmAllocationFailure     = -3,
+  AwFmNullPtrError        = -4,   AwFmSuffixArrayCreationFailure  = -5,   AwFmIllegalPositionError  = -6,
+  AwFmNoFileSrcGiven      = -7,   AwFmNoDatabaseSequenceGiven     = -8,   AwFmFileFormatError       = -9,
+  AwFmFileOpenFail        = -10,  AwFmFileReadFail                = -11,  AwFmFileWriteFail         = -12,
+  AwFmErrorDbSequenceNull = -13,  AwFmErrorSuffixArrayNull        = -14};
 
+bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode){
+  return returnCode >= 0;
+}
 
 enum AwFmReturnCode awFmIndexSetFileSrc(struct AwFmIndex *restrict const index, const char *restrict const fileSrc);
 struct  AwFmIndex *awFmAlignedAllocAwFmIndex(void);

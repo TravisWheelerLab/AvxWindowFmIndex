@@ -374,7 +374,7 @@ void setRankPrefixSumTest(const size_t dbSequenceLength){
   }
   //run the creation code
   enum AwFmReturnCode creationReturnCode = awFmCreateIndex(&index, dbSequence,
-    dbSequenceLength, 1, "test.awfmi");
+    dbSequenceLength, 1);
 
   if(verbose){
     printf("suffix array: ");

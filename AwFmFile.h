@@ -22,8 +22,8 @@ enum AwFmReturnCode awFmDbSequencePositionsFromSuffixArrayFile(const struct AwFm
 
 /*Loads a section of the database sequence from the Awmfi file.*/
 enum AwFmReturnCode awFmLoadSequenceSectionFromFile(const struct AwFmIndex *restrict const index,
-  const size_t sequencePosition, const size_t priorFlankingSequenceLength, const size_t postFlankingSequenceLength,
-  char **sequencePtr, size_t *charactersRead);
+  const size_t sequencePosition, const size_t leftFlankingSequenceLength,
+  const size_t rightFlankingSequenceLength, char **sequencePtr, size_t *charactersRead);
 
 
 enum AwFmReturnCode awFmOpenReadFile(struct AwFmIndex *const restrict index, const char *restrict const fileSrc);

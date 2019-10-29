@@ -310,8 +310,8 @@ enum AwFmReturnCode awFmDbSequencePositionsFromSuffixArrayFile(const struct AwFm
  *  Inputs:
  *    index:                        Pointer to the valid AwFmIndex struct so that we can determine the location in the file.
  *    sequencePosition:             position in the sequence to load, usually a hit from the FmIndex.
- *    priorFlankingSequenceLength:  How many characters to load before the given position.
- *    postFlankingSequenceLength:   How many characters to load after the given position.
+ *    leftFlankingSequenceLength:  How many characters to load before the given position.
+ *    rightFlankingSequenceLength:   How many characters to load after the given position.
  *    sequencePtr:                  pointer to the array to load the sequence into.
  *      NOTE: The buffer located at this pointer must be allocated by the caller, and
  *      the lifetime of the given buffer is the caller's responsibility.
@@ -324,15 +324,15 @@ enum AwFmReturnCode awFmDbSequencePositionsFromSuffixArrayFile(const struct AwFm
  *      AwFmFileReadFail on failure to read as many characters as was expected by the sequence.
  */
 enum AwFmReturnCode awFmLoadSequenceSectionFromFile(const struct AwFmIndex *restrict const index,
-  const size_t sequencePosition, const size_t priorFlankingSequenceLength, const size_t postFlankingSequenceLength,
-  char **sequencePtr, size_t *charactersRead){
+  const size_t sequencePosition, const size_t leftFlankingSequenceLength,
+  const size_t rightFlankingSequenceLength, char **sequencePtr, size_t *charactersRead){
 
   //calculate the start position in the sequence, and how many characters to read.
   const size_t databaseSequenceLength       = awFmGetDbSequenceLength(index);
   const size_t sequenceSegmentStartPosition = getSequenceSegmentStartPositionWithoutUnderflow(index,
-    sequencePosition, priorFlankingSequenceLength);
+    sequencePosition, leftFlankingSequenceLength);
   const size_t sequenceSegmentEndPosition   = getSequenceSegmentEndPositionWithoutOverflow(index,
-    sequencePosition, postFlankingSequenceLength, databaseSequenceLength);
+    sequencePosition, rightFlankingSequenceLength, databaseSequenceLength);
   const size_t sequenceSegmentLength        = sequenceSegmentEndPosition - sequenceSegmentStartPosition;
 
   //find the byte offset from the start of the file where the sequence segment starts

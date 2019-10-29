@@ -30,6 +30,8 @@ static inline size_t fileOffsetForSuffixArrayPosition(const struct AwFmIndex *re
 static const uint8_t IndexFileFormatIdHeaderLength = 10;
 static const char    IndexFileFormatIdHeader[10]  = "AwFmIndex\n";
 
+
+//TODO: update block comment for new args
 /*
  * Function:  awFmCreateIndexFile
  * --------------------
@@ -39,11 +41,14 @@ static const char    IndexFileFormatIdHeader[10]  = "AwFmIndex\n";
  *  be set in the AwFmIndex struct. This is done automatically when the index is
  *  constructed from a database sequence, but won't be done when loaded from a file.
  *
+ *
+ *
  *  Inputs:
  *    index:            prebuilt AwFmIndex struct to be saved to file.
  *    fullSuffixArray:  uncompresseed suffix array, that will be compressed by the
  *      ratio stored in the index's metadata
  *    databaseSequence: sequence used to build the given AwFmIndex and suffix array
+ *    fileSrc:          location of the file to write.
  *    allowOverwrite:   flag that determines behavior if the index's fileSrc member data
  *      points to an existing file.
  *      If allowOverwrite is true, the file will be overwritten with the new index.
@@ -53,10 +58,11 @@ static const char    IndexFileFormatIdHeader[10]  = "AwFmIndex\n";
  *    AwFmReturnCode detailing the result of the write attempt.
  *      returns AwFmFileWriteOkay on success, AwFmFileOpenFail or AwFmFileWriteFail on failure.
  */
-enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const index, const bool allowOverwrite){
+enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const index,
+  const char *restrict const fileSrc, const bool allowOverwrite){
 
   //check to make sure the fileSrc seems valid
-  if(index->fileSrc == NULL){
+  if(fileSrc == NULL){
     return AwFmNoFileSrcGiven;
   }
 
@@ -69,7 +75,7 @@ enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const i
   }
   const char *const fileOpenMode = allowOverwrite? "w": "wx";
   //open file to save to, and check for
-  FILE *datafile = fopen(index->fileSrc, fileOpenMode);
+  FILE *datafile = fopen(fileSrc, fileOpenMode);
   if(datafile == NULL){
     fclose(datafile);
     return AwFmFileOpenFail;
@@ -132,6 +138,9 @@ enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const i
  *  While the AwFmIndex file contains index, database sequence, and compressed suffix array, this function
  *    only reads the index struct, and does not read the database sequence or compressed suffix array.
  *
+ *  This function sets the associated fileHandle in the index struct, and keeps the file open for reading
+ *    the suffix array and database sequence in the future. To close it, call awFmCloseFile() or awFmDestroyIndex().
+ *
  *  Inputs:
  *    fileSrc:          Fully qualified file path to load the index from. the index's fileSrc member data
  *      will be set to this value. The fileSrc is not copied,
@@ -158,8 +167,6 @@ enum AwFmReturnCode awFmLoadIndexFromFile(const char *restrict const fileSrc,
   if(index == NULL){
     return AwFmAllocationFailure;
   }
-
-
 
   FILE *datafile = fopen(fileSrc, "r");
   if(datafile == NULL){
@@ -219,7 +226,9 @@ enum AwFmReturnCode awFmLoadIndexFromFile(const char *restrict const fileSrc,
     return AwFmFileReadFail;
   }
 
-  fclose(datafile);
+  //set the fileHandle associated with this index
+  (*index)->fileHandle = datafile;
+
   return AwFmFileReadOkay;
 }
 
@@ -248,7 +257,6 @@ enum AwFmReturnCode awFmLoadIndexFromFile(const char *restrict const fileSrc,
  *  Returns:
  *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
  *      AwFmFileReadOkay on success,
- *      AwFmFileOpenFail on failure to open the AwFm Index file
  *      AwFmFileReadFail on failure to read as many characters as was expected by the sequence.
  *      AwFmIllegalPositionError on a suffix array position being out of bounds of
  *        the file's compressed suffix array.
@@ -257,14 +265,7 @@ enum AwFmReturnCode awFmDbSequencePositionsFromSuffixArrayFile(const struct AwFm
   uint64_t *restrict positionArray, const uint64_t *restrict const offsetArray,
   const uint64_t positionArrayLength){
 
-  if(index->fileSrc == NULL){
-    return AwFmNoFileSrcGiven;
-  }
   //open the file
-  FILE *datafile = fopen( index->fileSrc, "r");
-  if(datafile == NULL){
-    return AwFmFileOpenFail;
-  }
 
   const uint64_t compressedSuffixArrayLength = awFmGetCompressedSuffixArrayLength(index);
   for(uint64_t i = 0; i < positionArrayLength; i++){
@@ -277,40 +278,38 @@ enum AwFmReturnCode awFmDbSequencePositionsFromSuffixArrayFile(const struct AwFm
 
     //seek to the correct value in the compressed suffix array
     const size_t suffixFileOffset = fileOffsetForSuffixArrayPosition(index, compressedSuffixArrayPosition);
-    fseek(datafile, suffixFileOffset, SEEK_SET);
+    fseek(index->fileHandle, suffixFileOffset, SEEK_SET);
 
-    size_t elementsRead = fread(positionArray + i, sizeof(uint64_t), 1 , datafile);
+    size_t elementsRead = fread(positionArray + i, sizeof(uint64_t), 1 , index->fileHandle);
 
     if(elementsRead != 1){
-      fclose(datafile);
+      fclose(index->fileHandle);
       return AwFmFileReadFail;
-    }
-    else{
-      fclose(datafile);
-      return AwFmFileReadOkay;
     }
 
     //add the offset to the position read from file
     positionArray[i] += offsetArray[i];
   }
 
-  fclose(datafile);
   return AwFmFileReadOkay;
-
 }
 
 
+//TODO: update block comment for new args
 /*
  * Function:  awFmLoadSequenceSectionFromFile
  * --------------------
  * Loads a section of the database sequence from the AwFm Index file. If the specified range
  *  would start before the sequence's beginning, or would end after the sequence end, the range is trimmed
- *  to the sequence beginning or end
+ *  to the sequence beginning or end.
+ *  NOTE: the data file must have been opened for reading before running this function.
+ *    This is done automatically when the awfmi file is read, and the file handle stays open
+ *    until manually closed with awFmCloseFile() or awFmDestroyIndex().
  *
  *
  *  Inputs:
  *    index:                        Pointer to the valid AwFmIndex struct so that we can determine the location in the file.
- *    sequencePosition:             position in the sequence segment to load, usually a hit from the FmIndex.
+ *    sequencePosition:             position in the sequence to load, usually a hit from the FmIndex.
  *    priorFlankingSequenceLength:  How many characters to load before the given position.
  *    postFlankingSequenceLength:   How many characters to load after the given position.
  *    sequencePtr:                  pointer to the array to load the sequence into.
@@ -322,17 +321,11 @@ enum AwFmReturnCode awFmDbSequencePositionsFromSuffixArrayFile(const struct AwFm
  *  Returns:
  *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
  *      AwFmFileReadOkay on success,
- *      AwFmFileOpenFail on failure to open the AwFm Index file
  *      AwFmFileReadFail on failure to read as many characters as was expected by the sequence.
  */
 enum AwFmReturnCode awFmLoadSequenceSectionFromFile(const struct AwFmIndex *restrict const index,
   const size_t sequencePosition, const size_t priorFlankingSequenceLength, const size_t postFlankingSequenceLength,
   char **sequencePtr, size_t *charactersRead){
-
-  //check to make sure that the fileSrc is valid
-  if(index->fileSrc == NULL){
-    return AwFmNoFileSrcGiven;
-  }
 
   //calculate the start position in the sequence, and how many characters to read.
   const size_t databaseSequenceLength       = awFmGetDbSequenceLength(index);
@@ -347,24 +340,17 @@ enum AwFmReturnCode awFmLoadSequenceSectionFromFile(const struct AwFmIndex *rest
     sequenceSegmentStartPosition);
 
 
-  //open the file
-
-  FILE *datafile = fopen(index->fileSrc, "r");
-  if(datafile == NULL){
-    return AwFmFileOpenFail;
-  }
-
   //in the AwFmIndex file, seek to the beginning of the sequence segment
-  int fseekResult = fseek(datafile, fileOffsetForSequenceSegmentStartPosition, SEEK_SET);
+  int fseekResult = fseek(index->fileHandle, fileOffsetForSequenceSegmentStartPosition, SEEK_SET);
 
   if(fseekResult != 0){
-    fclose(datafile);
+    fclose(index->fileHandle);
     return AwFmFileReadFail;
   }
 
-  *charactersRead = fread(*sequencePtr, sizeof(char), sequenceSegmentLength, datafile);
+  *charactersRead = fread(*sequencePtr, sizeof(char), sequenceSegmentLength, index->fileHandle);
   if(*charactersRead != sequenceSegmentLength){
-    fclose(datafile);
+    fclose(index->fileHandle);
     return AwFmFileReadFail;
   }
 
@@ -487,4 +473,24 @@ inline size_t fileOffsetForSuffixArrayPosition(const struct AwFmIndex *restrict 
 
   return fileOffsetForSequenceBeginning(index) + databaseSequenceSize + byteOffsetInSuffixArray;
 
+}
+
+enum AwFmReturnCode awFmOpenReadFile(struct AwFmIndex *const restrict index, const char *restrict const fileSrc){
+  if(index == NULL){
+    return AwFmNullPtrError;
+  }
+  if(fileSrc == NULL){
+    return AwFmNoFileSrcGiven;
+  }
+
+  index->fileHandle = fopen(fileSrc, "r");
+  if(index->fileHandle == NULL){
+    return AwFmFileOpenFail;
+  }
+
+  return AwFmFileReadOkay;
+}
+
+void awFmCLoseFile(const struct AwFmIndex *restrict const index){
+  fclose(index->fileHandle);
 }

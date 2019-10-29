@@ -31,7 +31,6 @@ static const uint8_t IndexFileFormatIdHeaderLength = 10;
 static const char    IndexFileFormatIdHeader[10]  = "AwFmIndex\n";
 
 
-//TODO: update block comment for new args
 /*
  * Function:  awFmCreateIndexFile
  * --------------------
@@ -41,12 +40,8 @@ static const char    IndexFileFormatIdHeader[10]  = "AwFmIndex\n";
  *  be set in the AwFmIndex struct. This is done automatically when the index is
  *  constructed from a database sequence, but won't be done when loaded from a file.
  *
- *
- *
  *  Inputs:
  *    index:            prebuilt AwFmIndex struct to be saved to file.
- *    fullSuffixArray:  uncompresseed suffix array, that will be compressed by the
- *      ratio stored in the index's metadata
  *    databaseSequence: sequence used to build the given AwFmIndex and suffix array
  *    fileSrc:          location of the file to write.
  *    allowOverwrite:   flag that determines behavior if the index's fileSrc member data
@@ -73,7 +68,8 @@ enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const i
   if(index->fullSuffixArray == NULL){
     return AwFmErrorSuffixArrayNull;
   }
-  const char *const fileOpenMode = allowOverwrite? "w": "wx";
+
+  char fileOpenMode[3] = {'w', (allowOverwrite? 'x':0), 0};
   //open file to save to, and check for
   FILE *datafile = fopen(fileSrc, fileOpenMode);
   if(datafile == NULL){
@@ -150,7 +146,7 @@ enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const i
  *  Returns:
  *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
  *      AwFmFileReadOkay on success,
- *      AwFmAllocationFailure on failure to allocate memory for the index struct
+ *      AwFmAllocationFailure on failure to allocate memory for the index struct,
  *      AwFmFileFormatError on error caused by reading a file that does not look like the correct format,
  *      AwFmFileOpenFail on failure opening the file,
  *      AwFmFileWriteFail on failure writing to the file.
@@ -250,7 +246,7 @@ enum AwFmReturnCode awFmLoadIndexFromFile(const char *restrict const fileSrc,
  *    positionArray:          Array of positions in the implied full suffix array to load.
  *      This function will convert these positions to indices in the compressed suffix array,
  *      as long as the positions are multiples of the suffix array compression ratio.
- *    offsetArray:  array of offsets to be added to the database sequence positions.
+ *    offsetArray:            Array of offsets to be added to the database sequence positions.
  *      This is needed because we can only query the suffix array on positions that are sampled.
  *    positionArrayLength:    Length of the positionArray and offsetArray.
  *
@@ -295,7 +291,6 @@ enum AwFmReturnCode awFmDbSequencePositionsFromSuffixArrayFile(const struct AwFm
 }
 
 
-//TODO: update block comment for new args
 /*
  * Function:  awFmLoadSequenceSectionFromFile
  * --------------------
@@ -350,7 +345,6 @@ enum AwFmReturnCode awFmLoadSequenceSectionFromFile(const struct AwFmIndex *rest
 
   *charactersRead = fread(*sequencePtr, sizeof(char), sequenceSegmentLength, index->fileHandle);
   if(*charactersRead != sequenceSegmentLength){
-    fclose(index->fileHandle);
     return AwFmFileReadFail;
   }
 

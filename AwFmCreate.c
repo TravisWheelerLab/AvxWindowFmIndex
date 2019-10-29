@@ -62,6 +62,8 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *
     return AwFmAllocationFailure;
   }
 
+  //set the version number. this is currently hard-coded to 1, but may later be set to differing versions.
+  index->metadata.data.versionNumber = 1;
   //set the suffix array compression ratio
   index->suffixArrayCompressionRatio = suffixArrayCompressionRatio;
 

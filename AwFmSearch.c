@@ -1,11 +1,11 @@
 #include "AwFmIndex.h"
-#include "AwFmOccupancy.h"
+#include "AwFmOccurances.h"
 #include "AwFmSearch.h"
 
 /*
  * Function:  AwFmIterativeRangeBackwardSearch
  * --------------------
- *  Queries the FM-Index to iteratively add an additional letter to the
+ *  Queries the FM-Index to iteratively prepend an additional letter to the
  *    implicit kmer suffix, and return a new range of positions in the BWT where
  *    the extended kmer suffix may be found.
  *
@@ -15,7 +15,7 @@
  *  Inputs:
  *    index:          Pointer to the valid AwFmIndex struct.
  *    currentRange:   Range of positions in the BWT where the current kmer suffix may be found.
- *    queryLetter:    Letter that will be used to extend the kmer suffix.
+ *    prefixLetter:   Letter that will be prepended to the implicit kmer to extend the kmer suffix.
  *
  *  Returns:
  *    AwFmSearch range representing the range of BWT positions where the implicit
@@ -28,14 +28,51 @@ struct AwFmSearchRange AwFmIterativeRangeBackwardSearch(const struct AwFmIndex *
   struct AwFmSearchRange range;
   const uint64_t letterRankPrefixSum = index->rankPrefixSums[prefixLetter];
 
-  range.startPtr = awFmGetOccupancy(index, currentRange->startPtr, prefixLetter) + letterRankPrefixSum;
-  awFmOccupancyDataPrefetch(index, range.startPtr);
+  range.startPtr = awFmGetOccurances(index, currentRange->startPtr, prefixLetter) + letterRankPrefixSum;
+  awFmOccurancesDataPrefetch(index, range.startPtr);
 
-  range.endPtr = awFmGetOccupancy(index, currentRange->endPtr, prefixLetter) + letterRankPrefixSum;
-  awFmOccupancyDataPrefetch(index, range.endPtr);
+  range.endPtr = awFmGetOccurances(index, currentRange->endPtr, prefixLetter) + letterRankPrefixSum;
+  awFmOccurancesDataPrefetch(index, range.endPtr);
 
   return range;
 }
+
+//TODO: check this functionality against the literature.
+/*
+ * Function:  AwFmIterativeRangeForwardSearch
+ * --------------------
+ *  Queries the FM-Index to iteratively append an additional letter to the
+ *    implicit kmer suffix, and return a new range of positions in the BWT where
+ *    the extended kmer suffix may be found.
+ *
+ *  If the given kmer is not found, the AwFmSearch Range will result in a false value
+ *   when given to the awFmSearchRangeIsValid function.
+ *
+ *  Inputs:
+ *    index:          Pointer to the valid AwFmIndex struct.
+ *    currentRange:   Range of positions in the BWT where the current kmer suffix may be found.
+ *    suffixLetter:   Letter that will be appended to the implicit kmer to extend the kmer suffix.
+ *
+ *  Returns:
+ *    AwFmSearch range representing the range of BWT positions where the implicit
+ *    kmer suffixmay be found, as long as startPtr < endPtr. Otherwise (startPtr >= endPtr),
+ *    the given kmer suffix does not exist in the database sequence.
+ */
+struct AwFmSearchRange AwFmIterativeRangeForwardSearch(const struct AwFmIndex *restrict const index,
+  const struct AwFmSearchRange *restrict const currentRange, const uint8_t suffixLetter){
+
+      struct AwFmSearchRange range;
+      const uint64_t letterRankPrefixSum = index->rankPrefixSums[suffixLetter];
+
+      range.startPtr = awFmGetOccurances(index, currentRange->startPtr, suffixLetter) + letterRankPrefixSum;
+      awFmOccurancesDataPrefetch(index, range.startPtr);
+
+      range.endPtr = awFmGetOccurances(index, currentRange->endPtr, suffixLetter) + letterRankPrefixSum;
+      awFmOccurancesDataPrefetch(index, range.endPtr);
+
+      return range;
+}
+
 
 
 /*
@@ -89,7 +126,7 @@ uint64_t *awFmFindDatabaseHitPositionsFromSearchRange(const struct AwFmIndex *re
 
   //call a prefetch for each block that contains the positions that we need to start querying
   for(uint64_t i = searchRange->startPtr; i < searchRange->endPtr; i += POSITIONS_PER_FM_BLOCK){
-    awFmOccupancyDataPrefetch(index, i);
+    awFmOccurancesDataPrefetch(index, i);
   }
 
   //backtrace each position until we have a list of the positions in the database sequence.
@@ -144,9 +181,9 @@ const char *restrict const kmer, const uint16_t kmerLength){
   const uint8_t firstSuffixLetter = kmer[kmerQueryPosition];
   struct AwFmSearchRange searchRange = {index->rankPrefixSums[firstSuffixLetter], index->rankPrefixSums[firstSuffixLetter + 1]};
 
-  //request the data be prefetched for each occupancy call.
-  awFmOccupancyDataPrefetch(index, searchRange.startPtr);
-  awFmOccupancyDataPrefetch(index, searchRange.endPtr);
+  //request the data be prefetched for each occurance call.
+  awFmOccurancesDataPrefetch(index, searchRange.startPtr);
+  awFmOccurancesDataPrefetch(index, searchRange.endPtr);
   do{
     kmerQueryPosition--;
     searchRange = AwFmIterativeRangeBackwardSearch(index, &searchRange, kmer[kmerQueryPosition]);

@@ -1,5 +1,5 @@
 #include "AwFmLetter.h"
-#include "AwFmOccupancy.h"
+#include "AwFmOccurances.h"
 #include "AwFmGlobals.h"
 #include <immintrin.h>
 #include <stdbool.h>
@@ -12,62 +12,62 @@ static inline size_t        getBlockIndexFromGlobalPosition(const uint64_t globa
 static inline uint_fast8_t  getBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition);
 
 /*constructs the AVX2 vector representing the positions in the AwFmBlock where the given letter can be found.*/
-static inline __m256i       createBlockOccupancyVector(const struct AwFmBlock *const restrict blockList,
+static inline __m256i       createBlockOccuranceVector(const struct AwFmBlock *const restrict blockList,
   const size_t blockIndex, const uint8_t letter);
 
-/*Creates and applies a mask vector to the occupancy vector to zero out all positions after the query position.*/
-static inline __m256i       applyQueryPositionBitmask(const __m256i occupancyVector,
+/*Creates and applies a mask vector to the occurance vector to zero out all positions after the query position.*/
+static inline __m256i       applyQueryPositionBitmask(const __m256i OccuranceVector,
   const uint8_t localQueryPosition);
 
-/*performs a popcount operation on the given maskedOccupancyVector to determine the occupancy
+/*performs a popcount operation on the given maskedOccuranceVector to determine the Occurances
   of this block before query position.*/
-static inline uint_fast8_t  countBitsInMaskedOccupancyVector(const __m256i maskedOccupancyVector,
+static inline uint_fast8_t  countBitsInMaskedOccuranceVector(const __m256i maskedOccuranceVector,
   const __m256i lowBitsLookupTable, const __m256i highBitsLookupTable);
 
 
 /*
- * Function:  awFmGetOccupancy
+ * Function:  awFmGetOccurances
  * --------------------
- * Calculates the BWT's occupancy at the given position for the given letter.
- *    Occupancy is calculated by creating an AVX2 vector representing the positions in the block that contain the specified letter.
+ * Calculates the BWT's occurancy at the given position for the given letter.
+ *    Occurancy is calculated by creating an AVX2 vector representing the positions in the block that contain the specified letter.
  *    Then, a position mask is applied to make sure no positions after the given query position are included.
  *
  *  Inputs:
  *    blockList:      Pointer to the array of blocks that make up the BWT array.
- *    queryPosition:  Position in the BWT that the occupancy call will calculate.
- *    letter:         Frequency-indexed letter that's occupancy is being queried.
+ *    queryPosition:  Position in the BWT that the occurancy call will calculate.
+ *    letter:         Frequency-indexed letter that's occurancy is being queried.
  */
-uint64_t awFmGetOccupancy(const struct AwFmIndex *const restrict index, const size_t queryPosition, const uint8_t letter){
+uint64_t awFmGetOccurancy(const struct AwFmIndex *const restrict index, const size_t queryPosition, const uint8_t letter){
   const uint_fast8_t queryLocalPosition = getBlockQueryPositionFromGlobalPosition(queryPosition);
   const size_t blockIndex               = getBlockIndexFromGlobalPosition(queryPosition);
-  const __m256i occupancyVector         = createBlockOccupancyVector(index->blockList, blockIndex, letter);
-  const __m256i maskedOccVector         = applyQueryPositionBitmask(occupancyVector, queryLocalPosition);
-  //make lookup tables for computing the occupancy popcount.
+  const __m256i occuranceVector         = createBlockOccuranceVector(index->blockList, blockIndex, letter);
+  const __m256i maskedOccVector         = applyQueryPositionBitmask(occuranceVector, queryLocalPosition);
+  //make lookup tables for computing the occurance popcount.
   //high bits is negative because the SAD intrinsic we use to horizontal add actual subtracts. so subtracting negative == adding!
   const __m256i lowBitsLookupTable      = _mm256_setr_epi8( 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0, 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0);
   const __m256i highBitsLookupTable     = _mm256_setr_epi8(-4,-3,-3,-2,-3,-2,-2,-1,-3,-2,-2,-1,-2,-1,-1, 0,-4,-3,-3,-2,-3,-2,-2,-1,-3,-2,-2,-1,-2,-1,-1, 0);
-  const uint_fast8_t blockOccupancy     = countBitsInMaskedOccupancyVector(maskedOccVector, lowBitsLookupTable, highBitsLookupTable);
-  const uint64_t blockBaseOccupancy     = index->blockList[blockIndex].baseOccupancies[letter];
+  const uint_fast8_t blockOccurancy     = countBitsInMaskedOccuranceVector(maskedOccVector, lowBitsLookupTable, highBitsLookupTable);
+  const uint64_t blockBaseOccurancy     = index->blockList[blockIndex].baseOccurances[letter];
 
-  const uint64_t occupancy              = blockOccupancy + blockBaseOccupancy;
-  return occupancy;
+  const uint64_t occurancy              = blockOccurancy + blockBaseOccurancy;
+  return occurancy;
 }
 
 
 /*
- * Function:  awFmOccupancyDataPrefetch
+ * Function:  awFmOccuranceDataPrefetch
  * --------------------
- *  Manually request cache prefetching for the data to be read for the occupancy call.
+ *  Manually request cache prefetching for the data to be read for the occurance call.
  *  Prefetching is done using either the _mm_prefetch intel intrinsic, or the __builtin_prefetch GCC extension.
  *    The correct block to prefetch is computed from the position.
  *
  *  Inputs:
  *    blockList:      Pointer to the array of blocks that make up the BWT array.
- *    queryPosition:  Position in the BWT that the occupancy call will calculate.
+ *    queryPosition:  Position in the BWT that the occurance call will calculate.
  *
  */
  //TODO: figure out why _MM_HINT_T2 performs better on L1 cache misses than NTA
-void awFmOccupancyDataPrefetch(const struct AwFmIndex *restrict const index, const uint64_t queryPosition){
+void awFmOccuranceDataPrefetch(const struct AwFmIndex *restrict const index, const uint64_t queryPosition){
   const uint64_t blockIndex    = getBlockIndexFromGlobalPosition(queryPosition);
   //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
   const uint8_t *blockAddress  = (uint8_t*)(index->blockList + blockIndex);
@@ -126,15 +126,15 @@ uint_fast8_t awFmGetLetterAtBwtPosition(const struct AwFmIndex *restrict const i
  */
 inline size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition){
   const uint8_t frequencyIndexLetter = awFmGetLetterAtBwtPosition(index, bwtPosition);
-  const uint64_t occupancy = awFmGetOccupancy(index, bwtPosition, frequencyIndexLetter);
-  const uint64_t backtraceBwtPosition = occupancy + index->rankPrefixSums[frequencyIndexLetter];
+  const uint64_t occurancy = awFmGetOccurancy(index, bwtPosition, frequencyIndexLetter);
+  const uint64_t backtraceBwtPosition = occurancy + index->rankPrefixSums[frequencyIndexLetter];
 
-  //prefetch the next occupancy call if needed.
+  //prefetch the next occurancy call if needed.
   const bool backtraceNotFinished = backtraceBwtPosition % index->suffixArrayCompressionRatio;
 
   //using __builtin_expect helps the branch prediction expect that it's likely to need to prefetch more.
   if(__builtin_expect(backtraceNotFinished, 1)){
-    awFmOccupancyDataPrefetch(index, backtraceBwtPosition);
+    awFmOccuranceDataPrefetch(index, backtraceBwtPosition);
   }
 
   return backtraceBwtPosition;
@@ -147,7 +147,7 @@ inline size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const ind
  *  Computes the block index, given the full BWT query position.
  *
  *  Inputs:
- *    globalQueryPosition: Position in the BWT that the occupancy function is requesting
+ *    globalQueryPosition: Position in the BWT that the occurancy function is requesting
  *
  *   Returns:
  *     Index of the block where the given query position resides.
@@ -163,7 +163,7 @@ inline size_t getBlockIndexFromGlobalPosition(const size_t globalQueryPosition){
  *  Computes bit position inside the block that represents the given full BWT position.
  *
  *  Inputs:
- *    globalQueryPosition: Position in the BWT that the occupancy function is requesting
+ *    globalQueryPosition: Position in the BWT that the occurancy function is requesting
  *
  *   Returns:
  *     Bit position into the block's AVX2 vectors where the query position lands.
@@ -174,7 +174,7 @@ inline uint_fast8_t getBlockQueryPositionFromGlobalPosition(const size_t globalQ
 
 
 /*
- * Function:  createBlockOccupancyVector
+ * Function:  createBlockOccuranceVector
  * --------------------
  *  Loads the block's letter bit vectors into YMM registers, and uses a switch table to compress them
  *  into a vector where each bit represents whether the letter was found at that position.
@@ -182,12 +182,12 @@ inline uint_fast8_t getBlockQueryPositionFromGlobalPosition(const size_t globalQ
  *  Inputs:
  *    blockList: ptr to the array of BWT blocks.
  *    blockIndex: Index of the block we will load.
- *    letter: letter to generate an occupancy vector of.
+ *    letter: letter to generate an occurance vector of.
  *
  *   Returns:
  *    256-bit AVX2 vector with bits set at every position where the given letter was found.
  */
-inline __m256i createBlockOccupancyVector(const struct AwFmBlock *restrict const blockList, const size_t blockIndex, const uint8_t letter){
+inline __m256i createBlockOccuranceVector(const struct AwFmBlock *restrict const blockList, const size_t blockIndex, const uint8_t letter){
   //load the letter bit vectors
   const __m256i *restrict const blockVectorPtr = blockList[blockIndex].letterBitVectors;
   const __m256i bit0Vector = _mm256_load_si256(blockVectorPtr);
@@ -250,20 +250,21 @@ inline __m256i createBlockOccupancyVector(const struct AwFmBlock *restrict const
     }
 }
 
+//TODO: check if this is right, it isn't using the occurance vector?
 /*
  * Function:  applyQueryPositionBitmask
  * --------------------
  *  creates a bitmask based on the block's local query position, and sets
- *  all positions after the query position to zero in the occupancy vector.
+ *  all positions after the query position to zero in the occurance vector.
  *
  *  Inputs:
- *    occupancyVector: AVX2 vector generated from the createBlockOccupancyVector function.
- *    localQueryPosition: position in the block queried in the occupancy function.
+ *    occuranceVector: AVX2 vector generated from the createBlockOccuranceVector function.
+ *    localQueryPosition: position in the block queried in the occurance function.
  *
  *   Returns:
  *    256-bit vector where only bits before this position are allowed to be set (all bits >= query position are cleared).
  */
-inline __m256i applyQueryPositionBitmask(const __m256i occupancyVector, const uint8_t localQueryPosition){
+inline __m256i applyQueryPositionBitmask(const __m256i occuranceVector, const uint8_t localQueryPosition){
   const uint8_t numBytesToPreserveAllOnes = localQueryPosition / 8;
   const uint8_t lastQueryByteBitmask      = (1 << (localQueryPosition % 8)) - 1;
 
@@ -283,29 +284,29 @@ inline __m256i applyQueryPositionBitmask(const __m256i occupancyVector, const ui
 
 
 /*
- * Function:  countBitsInMaskedOccupancyVector
+ * Function:  countBitsInMaskedOccuranceVector
  * --------------------
- *  Performs a popcount on the given AVX2 masked occupancy vector.
+ *  Performs a popcount on the given AVX2 masked occurance vector.
  *  Loosely based on technique in Mula et.al, 2016
  *
  *  Significant performance gains are realized over Mula by keeping the MSb of each byte unpopulated,
  *    and by using two lookup table vectors to allow the SAD intrinsic to add the nybble counts while it horizontal adds.
  *
  *  Inputs:
- *    maskedOccupancyVector: Position masked AVX2 popcount vector generated from the applyQueryPositionBitmask function.
+ *    maskedOccuranceVector: Position masked AVX2 popcount vector generated from the applyQueryPositionBitmask function.
  *    lowBitsLookupTable: AVX2 register where each byte contains the number of bits set in the integer that shares the lower nybble with it's index.
  *    highBitsLookupTable: same as lowBitsLookupTable, but negated, so the SAD intrinsic adds them (SAD finds the absolute difference,
  *      so subtracting a negative adds them together).
  *
  *   Returns:
- *    Count of how many bits were set in the maskedOccupancyVector.
+ *    Count of how many bits were set in the maskedOccuranceVector.
  */
  //NOTE: check high bit count to make sure 1 doesn't get shifted into bit7 of the bytes.
-inline uint_fast8_t countBitsInMaskedOccupancyVector(const __m256i maskedOccupancyVector, const __m256i lowBitsLookupTable, const __m256i highBitsLookupTable){
+inline uint_fast8_t countBitsInMaskedOccuranceVector(const __m256i maskedOccuranceVector, const __m256i lowBitsLookupTable, const __m256i highBitsLookupTable){
 
-  const __m256i lowNybbleBitmasked          = _mm256_and_si256(maskedOccupancyVector, _mm256_set1_epi8(0x0F));
+  const __m256i lowNybbleBitmasked          = _mm256_and_si256(maskedOccuranceVector, _mm256_set1_epi8(0x0F));
   const __m256i lowNybbleBitCount           = _mm256_shuffle_epi8(lowBitsLookupTable, lowNybbleBitmasked);
-  const __m256i highNybbleBits              = _mm256_srli_si256(maskedOccupancyVector, 4);
+  const __m256i highNybbleBits              = _mm256_srli_si256(maskedOccuranceVector, 4);
   const __m256i highNybbleBitmasked         = _mm256_and_si256(highNybbleBits, _mm256_set1_epi8(0x0F));
   const __m256i highNybbleNegativeBitCount  = _mm256_shuffle_epi8(highBitsLookupTable, highNybbleBitmasked);
   const __m256i sadCountVector              = _mm256_sad_epu8(lowNybbleBitCount, highNybbleNegativeBitCount);

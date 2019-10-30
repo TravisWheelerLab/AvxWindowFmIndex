@@ -15,6 +15,11 @@
 struct AwFmSearchRange AwFmIterativeRangeBackwardSearch(const struct AwFmIndex *restrict const index,
   const struct AwFmSearchRange *restrict const currentRange, const uint8_t prefixLetter);
 
+/*Given the range of BWT positions where current kmer suffix is found, returns the
+    range where the suffix can be found after appending the next suffix letter.*/
+struct AwFmSearchRange AwFmIterativeRangeForwardSearch(const struct AwFmIndex *restrict const index,
+  const struct AwFmSearchRange *restrict const currentRange, const uint8_t queryLetter);
+
 /*Returns an array of positions in the database sequence that are represented by the
     given searchRange. The length of the returned array is equal to the difference
     between the searchRange pointers. It is the caller's responsibility to free the

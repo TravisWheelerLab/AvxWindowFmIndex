@@ -14,12 +14,12 @@ enum AwFmReturnCode awFmCreateFullSuffixArray(const uint8_t *databaseSequence,
 
 enum AwFmReturnCode awFmCreateBlockList(struct AwFmIndex *restrict const index,
   const uint8_t *restrict const databaseSequence, const uint64_t databaseSequenceLength,
-  uint64_t *totalOccupancies);
+  uint64_t *totalOccurances);
 
-void awFmSetRankPrefixSums(struct AwFmIndex *restrict const index, const uint64_t *restrict const totalOccupancies);
+void awFmSetRankPrefixSums(struct AwFmIndex *restrict const index, const uint64_t *restrict const totalOccurances);
 
 void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockIndex,
-  uint64_t *totalOccupanciesSoFar, const size_t suffixArrayLength);
+  uint64_t *totalOccurancesSoFar, const size_t suffixArrayLength);
 
 
 #endif /* end of include guard: AW_FM_INDEX_CREATE_H */

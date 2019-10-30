@@ -12,12 +12,12 @@
 /*Creates the AwFmIndex blockList from the given database sequence.*/
 // enum AwFmReturnCode awFmCreateBlockList(struct AwFmIndex *restrict const index,
 //   const uint8_t *restrict const databaseSequence, const uint64_t databaseSequenceLength,
-//   uint64_t *totalOccupancies);
+//   uint64_t *totalOccurances);
 
 /*sets the rankPrefixSums array. This function requires that the blockList and suffix array already be set..*/
-// void AwFmSetRankPrefixSums(struct AwFmIndex *restrict const index, const uint64_t *restrict const totalOccupancies);
+// void AwFmSetRankPrefixSums(struct AwFmIndex *restrict const index, const uint64_t *restrict const totalOccurances);
 
-// void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockIndex, uint64_t *totalOccupanciesSoFar);
+// void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockIndex, uint64_t *totalOccurancesSoFar);
 
 /*
  * Function:  awFmCreateIndex
@@ -82,20 +82,20 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *
     return suffixArrayCreationReturnCode;
   }
 
-  //the occupancy values will accumulate into this array.
+  //the occurances values will accumulate into this array.
   // the +1 leaves one slot at the end for unrecognized letters to accumulate into,
   // and will be treated as a garbage data slot so that illegal characters don't crash the application.
-  uint64_t totalOccupancies[AMINO_CARDINALITY + 1];
+  uint64_t totalOccurances[AMINO_CARDINALITY + 1];
   //create the block list
   enum AwFmReturnCode blockListCreationReturnCode = awFmCreateBlockList(index,
-    databaseSequence, databaseSequenceLength, totalOccupancies);
+    databaseSequence, databaseSequenceLength, totalOccurances);
 
   if(__builtin_expect(blockListCreationReturnCode < 0, 0)){
     awFmDeallocateFmIndex(index);
     return blockListCreationReturnCode;
   }
 
-  awFmSetRankPrefixSums(index, totalOccupancies);
+  awFmSetRankPrefixSums(index, totalOccurances);
 
   //set the out pointer for the index.
   *indexPtr = index;
@@ -104,14 +104,14 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex **indexPtr, const uint8_t *
 }
 
 
-void awFmSetRankPrefixSums(struct AwFmIndex *restrict const index, const uint64_t *restrict const totalOccupancies){
+void awFmSetRankPrefixSums(struct AwFmIndex *restrict const index, const uint64_t *restrict const totalOccurances){
   //set the rank prefix sums
   //accumulator starts at 1 because of the null terminator $ being before all other letters
   uint64_t rankPrefixAccumulator = 1;
 
   index->rankPrefixSums[0] = rankPrefixAccumulator;
   for(uint_fast8_t i = 0; i < AMINO_CARDINALITY; i++){
-    rankPrefixAccumulator += totalOccupancies[i];
+    rankPrefixAccumulator += totalOccurances[i];
     index->rankPrefixSums[i + 1] = rankPrefixAccumulator;
   }
 }
@@ -132,22 +132,22 @@ void awFmSetRankPrefixSums(struct AwFmIndex *restrict const index, const uint64_
  *      amino-acid sequence to build the blockList from.
  *    databaseSequenceLength:       length of the databaseSequence string to be copied
  *      into the AwFmIndex struct.
- *    totalOccupancies:   Array of at least length 21 (AMINO_CARDINALITY + 1) whose
- *      values will be assigned the full occupancies for each amino over the entire database.
+ *    totalOccurances:   Array of at least length 21 (AMINO_CARDINALITY + 1) whose
+ *      values will be assigned the full occurances for each amino over the entire database.
  *      the array has one final element at the end so that the null terminator has
  *      somewhere to accumulate to, which will later be thrown away.
  *
  *  Returns:
  *    AwFmReturnCode showing the result of this action. Possible returns are:
  *      AwFmSuccess on success,
- *      AwFmNullPtrError if the indexPtr, databaseSequence, or totalOccupancies were null.
+ *      AwFmNullPtrError if the indexPtr, databaseSequence, or totalOccurances were null.
  *      AwFmAllocationFailure on failure to allocate the block list.
 */
 enum AwFmReturnCode awFmCreateBlockList(struct AwFmIndex *const restrict index,
   const uint8_t *restrict const databaseSequence, const uint64_t databaseSequenceLength,
-  uint64_t *totalOccupancies){
+  uint64_t *totalOccurances){
 
-  if(index == NULL || databaseSequence == NULL || totalOccupancies == NULL){
+  if(index == NULL || databaseSequence == NULL || totalOccurances == NULL){
     return AwFmNullPtrError;
   }
 
@@ -162,13 +162,13 @@ enum AwFmReturnCode awFmCreateBlockList(struct AwFmIndex *const restrict index,
     return AwFmAllocationFailure;
   }
 
-  //keep an accumulator for the baseOccupancies and current position in suffix array
+  //keep an accumulator for the baseOccurances and current position in suffix array
   //by adding 1 to the length, anything that parses incorrectly won't crash the program,
   //but will accumulate into an unused value
-  memset(totalOccupancies, 0,  AMINO_CARDINALITY * sizeof(uint64_t));
+  memset(totalOccurances, 0,  AMINO_CARDINALITY * sizeof(uint64_t));
 
   for(uint64_t blockIndex = 0; blockIndex < index->numBlocks; blockIndex++){
-    awFmInitBlock(index, blockIndex, totalOccupancies, suffixArrayLength);
+    awFmInitBlock(index, blockIndex, totalOccurances, suffixArrayLength);
   }
 
   return AwFmSuccess;
@@ -176,10 +176,10 @@ enum AwFmReturnCode awFmCreateBlockList(struct AwFmIndex *const restrict index,
 
 
 void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockIndex,
-  uint64_t *totalOccupanciesSoFar, const size_t suffixArrayLength){
+  uint64_t *totalOccurancesSoFar, const size_t suffixArrayLength){
 
-  //copy the base occupancy over, and set the bit vectors to all zeros.
-  memcpy(index->blockList[blockIndex].baseOccupancies, totalOccupanciesSoFar, AMINO_CARDINALITY * sizeof(uint64_t));
+  //copy the base occurances over, and set the bit vectors to all zeros.
+  memcpy(index->blockList[blockIndex].baseOccurances, totalOccurancesSoFar, AMINO_CARDINALITY * sizeof(uint64_t));
   memset(index->blockList[blockIndex].letterBitVectors, 0, sizeof(__m256i) * 5);
 
   //create a uint8_t pointer to the letter bit vectors to more easily set individual bytes.
@@ -210,8 +210,8 @@ void awFmInitBlock(struct AwFmIndex *const restrict index, const uint64_t blockI
       const uint8_t letterAsAscii           = index->databaseSequence[suffixArrayValue - 1];
       const uint8_t letterAsFrequencyIndex  = awFmAsciiLetterToLetterIndex(letterAsAscii);
       const uint8_t letterAsVectorFormat    = awFmAsciiLetterToCompressedVectorFormat(letterAsAscii);
-      //accumulate the letter's occupancy.
-      totalOccupanciesSoFar[letterAsFrequencyIndex]++;
+      //accumulate the letter's occurances.
+      totalOccurancesSoFar[letterAsFrequencyIndex]++;
 
       //set the correct bits in the letterBitVectors
       for(uint_fast8_t bitInVectorLetter = 0; bitInVectorLetter < 5; bitInVectorLetter++){

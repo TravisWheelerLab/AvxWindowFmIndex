@@ -36,4 +36,6 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *
 bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const char *restrict const kmer,
   const uint16_t kmerLength);
 
+size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range);
+
 #endif /* end of include guard: AW_FM_INDEX_SEARCH_H */

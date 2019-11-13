@@ -1,5 +1,5 @@
 #include "AwFmIndex.h"
-#include "AwFmOccurances.h"
+#include "AwFmOccurrence.h"
 #include "AwFmSearch.h"
 
 /*
@@ -214,4 +214,24 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
   const uint16_t kmerLength){
     struct AwFmSearchRange kmerRange = awFmDatabaseSingleKmerExactMatch(index, kmer, kmerLength);
     return kmerRange.startPtr < kmerRange.endPtr;
+}
+
+
+
+/*
+ * Function:  awFmSearchRangeLength
+ * --------------------
+ * Gets the number of positions included in the given AwFmSearchRange
+ *
+ *  Inputs:
+ *    range: Range of positions in the BWT that corresponds to some number of
+ *      instances of a given kmer.
+ *
+ *  Outputs:
+ *    Number of positions in the given range if the range is valid (startPtr < endPtr),
+ *      or 0 otherwise, as that would imply that no instances of that kmer were found.
+ */
+ size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range){
+  uint64_t length = range->endPtr - range->startPtr;
+  return (range->startPtr < range->endPtr)? length: 0;
 }

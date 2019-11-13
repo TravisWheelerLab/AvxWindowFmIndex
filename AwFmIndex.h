@@ -8,32 +8,69 @@
 #include <stdio.h>
 
 
+//TODO: move this to AwFmFile.c
 #define AW_FM_INDEX_METADATA_BYTE_SIZE 64
 
+
+//TODO: support nucleotide search, change blockList ptr to union of Amino block list ptr, nucleotide block list ptr
+
+#define AwFmAlphabetAminoAcid                   1
+#define AwFmAlphabetAminoAcidVectorsPerWindow   5
+#define AwFmAlphabetAminoAcidCardinality        20
+
+#define AwFmAlphabetNucleotide                  2
+#define AwFMAlphabetNucleotideVectorsPerWindow  2
+#define AwFmAlphabetNucleotideCardinality       4
+
+enum AwFmAlphabetType{
+  AwFmAlphabetTypeAmino = 1, AwFmAlphabetTypeNucleotide = 2};
+
+enum AwFmBwtType{
+  AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeForwardOnly = 2, AwFmBwtTypeBiDirectional = 3};
+
 /*Structs*/
-struct AwFmBlock{
-  __m256i   letterBitVectors[5];
-  uint64_t  baseOccupancies[20];
+struct AwFmAminoBlock{
+  __m256i   letterBitVectors[AwFmAlphabetAminoAcidVectorsPerWindow];
+  uint64_t  baseOccurrences[AwFmAlphabetAminoAcidCardinality];
 };
 
+struct AwFmNucleotideBlock{
+  __m256i letterBitVectors[AwFMAlphabetNucleotideVectorsPerWindow];
+  uint64_t baseOccurrences[AwFmAlphabetNucleotideCardinality];
+};
+
+union AwFmBwtBlockList{
+  struct AwFmNucleotideBlock  *asNucleotide;
+  struct AwFmAminoBlock       *asAmino;
+};
+
+/*Struct for the metadata in the AwFmIndex struct.
+* This contains data that helps to build the index, or to determine how the index
+* will function.*/
 struct AwFmIndexMetadata{
-  uint32_t versionNumber;
+  uint32_t              versionNumber;
+  uint16_t              suffixArrayCompressionRatio;
+  enum AwFmAlphabetType alphabetType;
+  enum AwFmBwtType      bwtType;
+  bool is64Bit;
 };
 
-union AwFmIndexPaddedMetadata{
-  struct AwFmIndexMetadata data;
-  uint8_t padding[AW_FM_INDEX_METADATA_BYTE_SIZE];
-};
+// union AwFmIndexPaddedMetadata{
+//   struct AwFmIndexMetadata data;
+//   uint8_t padding[AW_FM_INDEX_METADATA_BYTE_SIZE];
+// };
 
 struct AwFmIndex{
-  struct AwFmBlock              *blockList;
-  uint64_t                      rankPrefixSums[AMINO_CARDINALITY + 1]; //last position acts as BWT length
-  uint64_t                      numBlocks;
-  uint16_t                      suffixArrayCompressionRatio;
-  union AwFmIndexPaddedMetadata metadata;
-  const uint8_t                 *databaseSequence;  //usually NULL, used in construction and saving to file
-  uint64_t                      *fullSuffixArray;   //usually NULL, used in construction and saving to file
-  FILE                          *fileHandle;
+  union   AwFmBwtBlockList  forwardBwtBlockList;
+  union   AwFmBwtBlockList  backwardBwtBlockList;
+          uint64_t          *rankPrefixSums;
+          uint64_t          suffixArrayLength;
+          uint64_t          numBlocks;
+  struct  AwFmIndexMetadata metadata;
+          FILE              *fileHandle;
+  //todo: remove these from AwFmIndex struct, give them as args.
+  // const uint8_t                 *databaseSequence;  //usually NULL, used in construction and saving to file
+  // uint64_t                      *fullSuffixArray;   //usually NULL, used in construction and saving to file
 };
 
 struct AwFmSearchRange{
@@ -64,28 +101,29 @@ struct AwFmSearchRange{
 *   AwFmNoFileSrcGiven:       The fileSrc was null.
 */
 enum AwFmReturnCode{
-  AwFmSuccess             = 1,    AwFmFileReadOkay                = 2,    AwFmFileWriteOkay         = 3,
-  AwFmGeneralFailure      = -1,   AwFmUnsupportedVersionError     = -2,   AwFmAllocationFailure     = -3,
-  AwFmNullPtrError        = -4,   AwFmSuffixArrayCreationFailure  = -5,   AwFmIllegalPositionError  = -6,
-  AwFmNoFileSrcGiven      = -7,   AwFmNoDatabaseSequenceGiven     = -8,   AwFmFileFormatError       = -9,
-  AwFmFileOpenFail        = -10,  AwFmFileReadFail                = -11,  AwFmFileWriteFail         = -12,
-  AwFmErrorDbSequenceNull = -13,  AwFmErrorSuffixArrayNull        = -14};
+  AwFmSuccess             = 1,    AwFmFileReadOkay                = 2,    AwFmFileWriteOkay             = 3,
+  AwFmGeneralFailure      = -1,   AwFmUnsupportedVersionError     = -2,   AwFmAllocationFailure         = -3,
+  AwFmNullPtrError        = -4,   AwFmSuffixArrayCreationFailure  = -5,   AwFmIllegalPositionError      = -6,
+  AwFmNoFileSrcGiven      = -7,   AwFmNoDatabaseSequenceGiven     = -8,   AwFmFileFormatError           = -9,
+  AwFmFileOpenFail        = -10,  AwFmFileReadFail                = -11,  AwFmFileWriteFail             = -12,
+  AwFmErrorDbSequenceNull = -13,  AwFmErrorSuffixArrayNull        = -14,  AwFmUnsupportedAlphabetError  = -15};
 
 bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode){
   return returnCode >= 0;
 }
 
-struct  AwFmIndex *awFmAlignedAllocAwFmIndex(void);
-struct  AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks);
-        void      awFmDeallocateFmIndex(struct AwFmIndex *restrict index);
-        void      awFmDeallocFullSuffixArray(struct AwFmIndex *const restrict index);
-        size_t    awFmNumBlocksFromSuffixArrayLength(const size_t suffixArrayLength);
-        size_t    awFmNumBlocksFromSequenceLength(const size_t databaseSequenceLength);
-        bool      awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
-        uint64_t  awFmGetBwtLength(const struct AwFmIndex *restrict const index);
-        uint64_t  awFmGetDbSequenceLength(const struct AwFmIndex *restrict const index);
-        uint64_t  awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
-        bool      awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
-        void      awFmDestroyIndex(struct AwFmIndex *restrict index);
+struct AwFmIndex            *awFmAlignedAllocAwFmIndex(void);
+struct AwFmAminoBlock       *awFmAlignedAllocAminoAcidBlockList(const size_t numBlocks);
+struct AwFmNucleotideBlock  *awFmAlignedNucleotideAminoAcidBlockList(const size_t numBlocks);
+
+void      awFmDeallocateFmIndex(struct AwFmIndex *restrict index);
+size_t    awFmNumBlocksFromSuffixArrayLength(const size_t suffixArrayLength);
+size_t    awFmNumBlocksFromSequenceLength(const size_t databaseSequenceLength);
+bool      awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
+uint64_t  awFmGetBwtLength(const struct AwFmIndex *restrict const index);
+uint64_t  awFmGetDbSequenceLength(const struct AwFmIndex *restrict const index);
+uint64_t  awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
+bool      awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
+void      awFmDestroyIndex(struct AwFmIndex *restrict index);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

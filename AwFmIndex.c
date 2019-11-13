@@ -30,19 +30,35 @@ struct AwFmIndex *awFmAlignedAllocAwFmIndex(void){
 
 
 /*
- * Function:  awFmAlignedAllocBlockList
+ * Function:  awFmAlignedAllocAminoAcidBlockList
  * --------------------
- * Dynamically allocates memory for the AwFmBlock array, aligned to a cache line (64 bytes).
+ * Dynamically allocates memory for the AwFmAminoBlock array, aligned to a cache line (64 bytes).
  *
  *  Inputs:
- *    numBlocks: size of the allocated AwFmBlock array.
+ *    numBlocks: size of the allocated AwFmAminoBlock array.
  *
  *  Returns:
  *    Pointer to the allocated aligned memory. As per C11 specs, will return NULL on allocation failure.
  */
-struct AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks){
-  return aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, numBlocks * sizeof(struct AwFmBlock));
+struct AwFmAminoBlock *awFmAlignedAllocAminoAcidBlockList(const size_t numBlocks){
+  return aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, numBlocks * sizeof(struct AwFmAminoBlock));
 }
+
+/*
+ * Function:  awFmAlignedNucleotideAminoAcidBlockList
+ * --------------------
+ * Dynamically allocates memory for the AwFmNucleotideBlock array, aligned to a cache line (64 bytes).
+ *
+ *  Inputs:
+ *    numBlocks: size of the allocated AwFmNucleotideBlock array.
+ *
+ *  Returns:
+ *    Pointer to the allocated aligned memory. As per C11 specs, will return NULL on allocation failure.
+ */
+struct AwFmNucleotideBlock *awFmAlignedNucleotideAminoAcidBlockList(const size_t numBlocks){
+  return aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, numBlocks * sizeof(struct AwFmNucleotideBlock));
+}
+
 
 
 /*
@@ -56,12 +72,14 @@ struct AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks){
  *    index: Index struct to be deallocated.
  */
  void awFmDeallocateFmIndex(struct AwFmIndex *restrict index){
-
    if(index != NULL){
-       free(index->blockList);
-       free(index->fullSuffixArray);
-       index->blockList       = NULL;
-       index->fullSuffixArray = NULL;
+     //note, if either are missing, they should be set to NULL.
+     //in this case, free will perform no action.
+     //Since the two pointers in the AwFmBwtBlockList union just act
+     //to cast the pointer to the desired type, freeing the nucleotide list
+     // will always free the blockList.
+     free(index->forwardBwtBlockList.asNucleotide);
+     free(index->backwardBwtBlockList.asNucleotide);
    }
    free(index);
  }
@@ -84,7 +102,7 @@ struct AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks){
  *    True if the position is sampled in the compressedSuffixArray, or false otherwise.
  */
  bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position){
-  return position % index->suffixArrayCompressionRatio;
+  return position % index->metadata.suffixArrayCompressionRatio;
 }
 
 /*
@@ -125,7 +143,7 @@ struct AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks){
 
 
  uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index){
-  return awFmGetBwtLength(index) / index->suffixArrayCompressionRatio;
+  return awFmGetBwtLength(index) / index->metadata.suffixArrayCompressionRatio;
 }
 
 

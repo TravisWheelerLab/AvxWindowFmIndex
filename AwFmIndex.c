@@ -67,27 +67,6 @@ struct AwFmBlock *awFmAlignedAllocBlockList(const size_t numBlocks){
  }
 
 
- /*
-  * Function:  awFmDeallocFullSuffixArray
-  * --------------------
-  * Frees the memory associated with suffix array in the given AwFmIndex.
-  *   This is done automatically if awFmDeallocateFmIndex() is called,
-  *   but this function allows the suffix array to be deallocated if the
-  *   index has been written to a file (and as such the suffix array isn't
-  *   needed to be in memory), but the index should still be in memory for
-  *   future useage.
-  *
-  *   Once deallocated, the pointer to the suffix array is set to NULL.
-  *
-  *  Inputs:
-  *    index: Index struct that contains the suffix array to be deallocated.
-  */
-void awFmDeallocFullSuffixArray(struct AwFmIndex *const restrict index){
-  if(__builtin_expect(index != NULL, 1)){
-      free(index->fullSuffixArray);
-      index->fullSuffixArray = NULL;
-  }
-}
 
 /*
  * Function:  awFmSearchRangeLength

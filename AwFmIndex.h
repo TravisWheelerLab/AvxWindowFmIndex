@@ -26,7 +26,7 @@ enum AwFmAlphabetType{
   AwFmAlphabetTypeAmino = 1, AwFmAlphabetTypeNucleotide = 2};
 
 enum AwFmBwtType{
-  AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeForwardOnly = 2, AwFmBwtTypeBiDirectional = 3};
+  AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2};
 
 /*Structs*/
 struct AwFmAminoBlock{
@@ -52,7 +52,6 @@ struct AwFmIndexMetadata{
   uint16_t              suffixArrayCompressionRatio;
   enum AwFmAlphabetType alphabetType;
   enum AwFmBwtType      bwtType;
-  bool is64Bit;
 };
 
 // union AwFmIndexPaddedMetadata{

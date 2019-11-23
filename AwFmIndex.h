@@ -66,6 +66,7 @@ struct AwFmIndex{
           uint64_t          suffixArrayLength;
           uint64_t          numBlocks;
   struct  AwFmIndexMetadata metadata;
+          uint64_t sentinelCharacterPosition; //only used for Nucleotide FM-index
           FILE              *fileHandle;
   //todo: remove these from AwFmIndex struct, give them as args.
   // const uint8_t                 *databaseSequence;  //usually NULL, used in construction and saving to file

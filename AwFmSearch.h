@@ -8,21 +8,6 @@
 
 
 
-struct AwFmBackwardRange{
-  uint64_t startPtr;
-  uint64_t endPtr;
-};
-
-struct AwFmBiDirectionalRange{
-  uint64_t startPtr;
-  uint64_t endPtr;
-  uint64_t startPrimePtr;
-};
-
-enum AwFmSearchDirection{
-  AwFmSearchDirectionBackward,
-  AwFmSearchDirectionForward
-};
 
 void awFmIterativeStepBidirectionalNucleotideSearch(const struct AwFmIndex *restrict const index,
   enum AwFmSearchDirection searchDirection, struct AwFmBiDirectionalRange *restrict const range, const uint8_t letter);

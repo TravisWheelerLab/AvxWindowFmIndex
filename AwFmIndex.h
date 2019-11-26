@@ -22,6 +22,23 @@
 #define AwFMAlphabetNucleotideVectorsPerWindow  2
 #define AwFmAlphabetNucleotideCardinality       4
 
+
+struct AwFmBackwardRange{
+  uint64_t startPtr;
+  uint64_t endPtr;
+};
+
+struct AwFmBiDirectionalRange{
+  uint64_t startPtr;
+  uint64_t endPtr;
+  uint64_t startPrimePtr;
+};
+
+enum AwFmSearchDirection{
+  AwFmSearchDirectionBackward,
+  AwFmSearchDirectionForward
+};
+
 enum AwFmAlphabetType{
   AwFmAlphabetTypeAmino = 1, AwFmAlphabetTypeNucleotide = 2};
 

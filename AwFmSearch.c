@@ -103,7 +103,6 @@ void awFmIterativeStepBidirectionalAminoAcidSearch(const struct AwFmIndex *restr
 }
 
 
-
 void awFmIterativeStepBackwardNucleotideSearch(const struct AwFmIndex *restrict const index,
 struct AwFmBackwardRange *restrict const range, const uint8_t letter){
 
@@ -199,7 +198,7 @@ void awFmIterativeStepBackwardAminoAcidSearch(const struct AwFmIndex *restrict c
  *        the file's compressed suffix array.
  */
 uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
-  const struct AwFmSearchRange *restrict const searchRange,
+  const struct AwFmBackwardRange *restrict const searchRange,
   enum AwFmReturnCode *restrict fileAccessResult){
 
   const uint64_t numPositionsInRange  = awFmSearchRangeLength(searchRange);
@@ -288,14 +287,14 @@ const char *restrict const kmer, const uint16_t kmerLength){
       while(__builtin_expect(awFmSearchRangeIsValid(&searchRange) && kmerQueryPosition, 1)){
         kmerQueryPosition--;
         const uint8_t letter = kmer[kmerQueryPosition];
-        AwFmIterativeStepBackwardNucleotideSearch(index, &searchRange,letter);
+        awFmIterativeStepBackwardNucleotideSearch(index, &searchRange,letter);
       }
     }
     else{
       while(__builtin_expect(awFmSearchRangeIsValid(&searchRange) && kmerQueryPosition, 1)){
         kmerQueryPosition--;
         const uint8_t letter = kmer[kmerQueryPosition];
-        AwFmIterativeStepBackwardAminoAcidSearch(index, &searchRange,letter);
+        awFmIterativeStepBackwardAminoAcidSearch(index, &searchRange,letter);
       }
     }
 
@@ -342,7 +341,7 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
  *    Number of positions in the given range if the range is valid (startPtr < endPtr),
  *      or 0 otherwise, as that would imply that no instances of that kmer were found.
  */
- size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range){
+ size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range){
   uint64_t length = range->endPtr - range->startPtr;
   return (range->startPtr < range->endPtr)? length: 0;
 }

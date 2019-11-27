@@ -52,8 +52,8 @@ struct AwFmAminoBlock{
 };
 
 struct AwFmNucleotideBlock{
-  __m256i letterBitVectors[AwFMAlphabetNucleotideVectorsPerWindow];
-  uint64_t baseOccurrences[AwFmAlphabetNucleotideCardinality];
+  __m256i   letterBitVectors[AwFMAlphabetNucleotideVectorsPerWindow];
+  uint64_t  baseOccurrences[AwFmAlphabetNucleotideCardinality];
 };
 
 union AwFmBwtBlockList{
@@ -67,6 +67,7 @@ union AwFmBwtBlockList{
 struct AwFmIndexMetadata{
   uint32_t              versionNumber;
   uint16_t              suffixArrayCompressionRatio;
+  uint64_t              lengthOfKmersInMemoizedPtrTable;
   enum AwFmAlphabetType alphabetType;
   enum AwFmBwtType      bwtType;
 };
@@ -82,18 +83,19 @@ struct AwFmIndex{
           uint64_t          *rankPrefixSums;
           uint64_t          suffixArrayLength;
           uint64_t          numBlocks;
+          uint64_t          *memoizedKmerStartPtrTable;
   struct  AwFmIndexMetadata metadata;
-          uint64_t sentinelCharacterPosition; //only used for Nucleotide FM-index
+          uint64_t          sentinelCharacterPosition; //only used for Nucleotide FM-index
           FILE              *fileHandle;
   //todo: remove these from AwFmIndex struct, give them as args.
   // const uint8_t                 *databaseSequence;  //usually NULL, used in construction and saving to file
   // uint64_t                      *fullSuffixArray;   //usually NULL, used in construction and saving to file
 };
 
-struct AwFmSearchRange{
-  uint64_t startPtr;
-  uint64_t endPtr;
-};
+// struct AwFmSearchRange{
+//   uint64_t startPtr;
+//   uint64_t endPtr;
+// };
 
 //TODO: update this block comment
 /* enum AwFmReturnCode
@@ -140,7 +142,7 @@ bool      awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index,
 uint64_t  awFmGetBwtLength(const struct AwFmIndex *restrict const index);
 uint64_t  awFmGetDbSequenceLength(const struct AwFmIndex *restrict const index);
 uint64_t  awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
-bool      awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
+bool      awFmSearchRangeIsValid(const struct AwFmBackwardRange *restrict const searchRange);
 void      awFmDestroyIndex(struct AwFmIndex *restrict index);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

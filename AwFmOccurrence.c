@@ -199,8 +199,8 @@ inline uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector){
   //and extracting out values at end from both nybble vectors.
 
   //shift and add, placing the final two 16-bit sums in the least significant bits of each 128-bit lane.
-  const __m256i laneVectorSums  = _mm256_add_epi16(_mm256_slli_si256 (sadCountVector, 8), sadCountVector);
-  const uint16_t finalSum       = _mm256_extract_epi16(laneVectorSums, 0) + _mm256_extract_epi16(laneVectorSums, 8);
+  const uint16_t finalSum = _mm256_extract_epi16(sadCountVector, 0) + _mm256_extract_epi16(sadCountVector, 4) +
+    _mm256_extract_epi16(sadCountVector, 8) + _mm256_extract_epi16(sadCountVector, 12);
   return finalSum;
 }
 

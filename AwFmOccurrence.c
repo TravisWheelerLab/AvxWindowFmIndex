@@ -97,85 +97,85 @@ inline void awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *r
 
   //create the occurrence vectors
   switch(__builtin_expect(letter, 0)){
-    case 0:   /*L (leucine). Group One, encoding 0b11100*/
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
-      vectorPair->occurrenceGteVector  = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, bit2Vector));
+    case 0:   /*A (alanine) encoding 0b01100*/
+      vectorPair->occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit2Vector));
+      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, bit2Vector));
       break;
-    case 1:   /*A (alanine). Group One, encoding 0b11010*/
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
-      vectorPair->occurrenceGteVector  = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
+    case 1:   /*C (cysteine) encoding 0b10111*/
+      vectorPair->occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
+      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
       break;
-    case 2:   /*G (glycine). Group One, encoding 0b10110*/
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
-      vectorPair->occurrenceGteVector  = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
+    case 2:   /*D (aspartic acid) encoding 0b00011*/
+      vectorPair->occurrenceVector    = _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
       break;
-    case 3:   /*V (valine). Group One, encoding 0b11001*/
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
-      vectorPair->occurrenceGteVector  = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+    case 3:   /*E (Glutamic acid) encoding 0b00110*/
+      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
+      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
       break;
-    case 4:   /*E (glutamic acid). Group One, encoding 0b10101*/
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
-      vectorPair->occurrenceGteVector  = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+    case 4:   /*F (Phenylalanine) encoding 0b11110*/
+      vectorPair->occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit1Vector))));
+      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
       break;
-    case 5:   /*S (serine). Group One, encoding 0b10011*/
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, bit4Vector));
-      vectorPair->occurrenceGteVector  =  _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
+    case 5:   /*G (Glycine) encoding 0b11010*/
+      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
       break;
-    case 6:   /*I (isoleucine). Group One, encoding 0b00011*/
-      vectorPair->occurrenceVector     = _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
-      vectorPair->occurrenceGteVector  = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
+    case 6:   /*H (Histidine) encoding 0b11011*/
+      vectorPair->occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit2Vector, bit0Vector))));
+      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
       break;
-    case 7:   /*K (lysine). Group One, encoding 0b00101*/
-      vectorPair->occurrenceVector     = _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
-      vectorPair->occurrenceGteVector  = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+    case 7:   /*I (Isoleucine) encoding 0b11001*/
+      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
+      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
       break;
-    case 8:   /*R (arginine). Group One, encoding 0b01001*/
-      vectorPair->occurrenceVector     = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
-      vectorPair->occurrenceGteVector  = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+    case 8:   /*K (Lysine) encoding 0b10101*/
+      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
+      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
       break;
-    case 9:   /*D (aspartic acid). Group One, encoding 0b00110*/
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
-      vectorPair->occurrenceGteVector  = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
+    case 9:   /*L (aspartic acid) encoding 0b11100*/
+      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, bit2Vector));
       break;
-    case 10:  /*T (threonine). Group One, encoding 0b01010*/
-      vectorPair->occurrenceVector     = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
-      vectorPair->occurrenceGteVector  = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
+    case 10:  /*M (Methionine) encoding 0b11101*/
+      vectorPair->occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit0Vector))));
+      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
       break;
-    case 11:  /*P (proline). Group One, encoding 0b01100*/
-      vectorPair->occurrenceVector     = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit2Vector));
-      vectorPair->occurrenceGteVector  = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, bit2Vector));
-      break;
-    case 12:  /*N (asparagine). Group Two, encoding 0b11110*/
-      vectorPair->occurrenceVector     = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit1Vector))));
-      vectorPair->occurrenceGteVector  = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
-      break;
-    case 13:  /*Q (glutamine). Group Two, encoding 0b11101*/
-      vectorPair->occurrenceVector     = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit0Vector))));
-      vectorPair->occurrenceGteVector  = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
-      break;
-    case 14:  /*F (phenylalanine). Group Two, encoding 0b11011*/
-      vectorPair->occurrenceVector     = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit2Vector, bit0Vector))));
-      vectorPair->occurrenceGteVector  = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
-      break;
-    case 15:  /*Y (tyrosine), Group Two, encoding 0b10111*/
-      vectorPair->occurrenceVector     = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
-      vectorPair->occurrenceGteVector  = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
-      break;
-    case 16:  /*M (methionine). Group Two, encoding 0b00001*/
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit4Vector, _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit0Vector))));
-      vectorPair->occurrenceGteVector  = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
-      break;
-    case 17:  /*H (histidine). Group Two, encoding 0b00010*/
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit4Vector, _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit1Vector))));
-      vectorPair->occurrenceGteVector  = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
-      break;
-    case 18:  /*C (cysteine). Group Two, encoding 0b00100*/
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit4Vector, _mm256_andnot_si256(bit3Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, bit2Vector))));
-      vectorPair->occurrenceGteVector  = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, bit2Vector));
-      break;
-    case 19:  /*W (tryptophan), Group Two, encoding 0b01000*/
-      vectorPair->occurrenceVector = _mm256_andnot_si256(bit4Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
+    case 11:  /*N (Asparagine) encoding 0b01000*/
+      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit4Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
       vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, bit3Vector);
+      break;
+    case 12:  /*P (Proline) encoding 0b01001*/
+      vectorPair->occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+      break;
+    case 13:  /*Q (glutamine) encoding 0b00100*/
+      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, _mm256_andnot_si256(bit4Vector, bit2Vector))));
+      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, bit2Vector));
+      break;
+    case 14:  /*R (Arginine) encoding 0b10011*/
+      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, bit4Vector));
+      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
+      break;
+    case 15:  /*S (Serine) encoding 0b01010*/
+      vectorPair->occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
+      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
+      break;
+    case 16:  /*T (Threonine) encoding 0b00101*/
+      vectorPair->occurrenceVector    = _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+      break;
+    case 17:  /*V (Valine) encoding 0b10110*/
+      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
+      break;
+    case 18:  /*W (Tryptophan) encoding 0b00001*/
+      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector))));
+      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+      break;
+    case 19:  /*Y (Tyrosine) encoding 0b00010*/
+      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, _mm256_andnot_si256(bit4Vector, bit1Vector))));
+      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
       break;
     default: __builtin_unreachable();   //GCC respects this, doesn't check for letters that aren't valid
   }
@@ -183,6 +183,7 @@ inline void awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *r
   vectorPair->occurrenceVector    = _mm256_and_si256(bitmask, vectorPair->occurrenceVector);
   vectorPair->occurrenceGteVector = _mm256_and_si256(bitmask, vectorPair->occurrenceGteVector);
 }
+
 
 
 inline uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector){

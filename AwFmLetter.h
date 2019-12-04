@@ -1,18 +1,19 @@
 #ifndef AW_FM_LETTER_H
 #define AW_FM_LETTER_H
 
+#include "AwFmIndex.h"
 #include <stdint.h>
 
-/*Seeds srand, then converts ASCII characters to frequency encoded values for query sequence*/
-uint8_t awFmAsciiLetterToLetterIndexSrand(uint8_t asciiLetter, unsigned seed);
+uint8_t awFmLetterToLetterIndex(const uint8_t asciiLetter, const enum AwFmAlphabetType alphabet);
 
-/*converts ASCII characters to frequency encoded values for query sequence*/
-uint8_t awFmAsciiLetterToLetterIndex(const uint8_t asciiLetter);
+uint8_t awFmNucleotideLetterIndexToAscii(const uint8_t letterIndex);
 
-/*converts ASCII characters to stridex, compressed vector format for database sequence*/
-uint8_t awFmAsciiLetterToCompressedVectorFormat(const uint8_t asciiLetter);
+uint8_t awFmAminoAcidAsciiLetterToCompressedVectorFormat(const uint8_t asciiLetter);
 
-/*converts a compressed vector format letter into a frequency encoded letter.*/
-uint8_t awFmCompressedVectorLetterToLetterIndex(const uint8_t compressedVectorLetter);
+uint8_t awFmAminoAcidCompressedVectorToLetterIndex(const uint8_t compressedVectorLetter);
+
+uint8_t awFmAminoAcidCompressedVectorToAscii(const uint8_t compressedVectorLetter);
+
+uint8_t awFmAminoAcidLetterIndexToAscii(const uint8_t letterIndex);
 
 #endif /* end of include guard: AW_FM_LETTER_H */

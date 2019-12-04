@@ -67,7 +67,7 @@ union AwFmBwtBlockList{
 struct AwFmIndexMetadata{
   uint32_t              versionNumber;
   uint16_t              suffixArrayCompressionRatio;
-  uint64_t              lengthOfKmersInMemoizedPtrTable;
+  uint8_t               kmerLengthInSeedTable;
   enum AwFmAlphabetType alphabetType;
   enum AwFmBwtType      bwtType;
 };
@@ -83,7 +83,7 @@ struct AwFmIndex{
           uint64_t          *rankPrefixSums;
           uint64_t          suffixArrayLength;
           uint64_t          numBlocks;
-          uint64_t          *memoizedKmerStartPtrTable;
+          uint64_t          *kmerSeedTable;
   struct  AwFmIndexMetadata metadata;
           uint64_t          sentinelCharacterPosition; //only used for Nucleotide FM-index
           FILE              *fileHandle;

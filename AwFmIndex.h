@@ -80,7 +80,7 @@ struct AwFmIndexMetadata{
 struct AwFmIndex{
   union   AwFmBwtBlockList  forwardBwtBlockList;
   union   AwFmBwtBlockList  backwardBwtBlockList;
-          uint64_t          *rankPrefixSums;
+          uint64_t          *prefixSums;
           uint64_t          suffixArrayLength;
           uint64_t          numBlocks;
           uint64_t          *kmerSeedTable;

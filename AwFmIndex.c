@@ -130,7 +130,7 @@ uint64_t *awFmAlignedAllocKmerTable(const uint8_t kmerLengthInSeedTable,
  * Function:  awFmGetBwtLength
  * --------------------
  * Gets the length of the BWT from the AwFmIndex data structure.
- *   The AwFmIndex stores the BWT length at the end of the rankPrefixSums array.
+ *   The AwFmIndex stores the BWT length at the end of the prefixSums array.
  *
  *  Inputs:
  *    index: AwFmIndex struct to query.
@@ -141,7 +141,7 @@ uint64_t *awFmAlignedAllocKmerTable(const uint8_t kmerLengthInSeedTable,
  uint64_t awFmGetBwtLength(const struct AwFmIndex *restrict const index){
   //the bwt length is stored in the prefix sums after all the actual amino acid prefix sums.
   //conceptually, the bwt length == prefix sum for a character after every alphabet letter.
-  return index->rankPrefixSums[AMINO_CARDINALITY];
+  return index->prefixSums[AMINO_CARDINALITY];
 }
 
 /*

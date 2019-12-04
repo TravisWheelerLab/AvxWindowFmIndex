@@ -1,3 +1,4 @@
+#include "AwFmIndex.h"
 #include "AwFmLetter.h"
 #include "AwFmOccurrence.h"
 #include "AwFmGlobals.h"
@@ -290,8 +291,7 @@ inline __m256i createQueryPositionBitmask(const uint8_t localQueryPosition, bool
 inline size_t awFmBacksetpBwtPosition(const struct AwFmIndex *restrict const index,
   const uint64_t bwtPosition){
     const enum AwFmAlphabetType alphabet        = index->metadata.alphabetType;
-    // const struct AwFmAminoBlock *blockList      = index->backwardBwtBlockList.asAmino;
-    const uint64_t *rankPrefixSums              = index->rankPrefixSums;
+    const uint64_t *prefixSums                  = index->prefixSums;
     const uint64_t sentinelCharacterPosition    = index->sentinelCharacterPosition;
     const uint64_t  blockIndex                  = getBlockIndexFromGlobalPosition(bwtPosition);
 
@@ -311,7 +311,7 @@ inline size_t awFmBacksetpBwtPosition(const struct AwFmIndex *restrict const ind
     }
 
     const uint_fast8_t vectorPopcount = awFmVectorPopcount(occurrenceVectors.occurrenceVector);
-    backtraceBwtPosition = rankPrefixSums[frequencyIndexLetter] + vectorPopcount;
+    backtraceBwtPosition = prefixSums[frequencyIndexLetter] + vectorPopcount;
 
     return backtraceBwtPosition;
   }

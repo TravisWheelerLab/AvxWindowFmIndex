@@ -131,9 +131,10 @@ bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode){
   return returnCode >= 0;
 }
 
-struct AwFmIndex            *awFmAlignedAllocAwFmIndex(void);
-struct AwFmAminoBlock       *awFmAlignedAllocAminoAcidBlockList(const size_t numBlocks);
-struct AwFmNucleotideBlock  *awFmAlignedNucleotideAminoAcidBlockList(const size_t numBlocks);
+struct AwFmIndex       *awFmAlignedAllocAwFmIndex(void);
+union AwFmBwtBlockList awFmAlignedAllocBlockList(const size_t numBlocks, const enum AwFmAlphabetType alphabet);
+uint64_t               *awFmAlignedAllocKmerTable(const uint8_t kmerLengthInSeedTable,
+  const enum AwFmAlphabetType alphabet);
 
 void      awFmDeallocateFmIndex(struct AwFmIndex *restrict index);
 size_t    awFmNumBlocksFromSuffixArrayLength(const size_t suffixArrayLength);
@@ -143,6 +144,5 @@ uint64_t  awFmGetBwtLength(const struct AwFmIndex *restrict const index);
 uint64_t  awFmGetDbSequenceLength(const struct AwFmIndex *restrict const index);
 uint64_t  awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
 bool      awFmSearchRangeIsValid(const struct AwFmBackwardRange *restrict const searchRange);
-void      awFmDestroyIndex(struct AwFmIndex *restrict index);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

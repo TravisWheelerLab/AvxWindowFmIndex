@@ -30,35 +30,54 @@ struct AwFmIndex *awFmAlignedAllocAwFmIndex(void){
 
 
 /*
- * Function:  awFmAlignedAllocAminoAcidBlockList
+ * Function:  awFmAlignedAllocBlockList
  * --------------------
- * Dynamically allocates memory for the AwFmAminoBlock array, aligned to a cache line (64 bytes).
+ * Dynamically allocates memory for the blockList array, aligned to a cache line (64 bytes).
  *
  *  Inputs:
- *    numBlocks: size of the allocated AwFmAminoBlock array.
+ *    numBlocks: number of blocks to allocate.
+ *    alphabet: alphabet (nucleotide or amino) of blocks to allocate
  *
  *  Returns:
  *    Pointer to the allocated aligned memory. As per C11 specs, will return NULL on allocation failure.
  */
-struct AwFmAminoBlock *awFmAlignedAllocAminoAcidBlockList(const size_t numBlocks){
-  return aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, numBlocks * sizeof(struct AwFmAminoBlock));
+union AwFmBwtBlockList awFmAlignedAllocBlockList(const size_t numBlocks, const enum AwFmAlphabetType alphabet){
+  union AwFmBwtBlockList blockList;
+  if(alphabet == AwFmAlphabetNucleotide){
+    blockList.asNucleotide  = aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, numBlocks * sizeof(struct AwFmNucleotideBlock));
+  }
+  else{
+    blockList.asAmino       = aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, numBlocks * sizeof(struct AwFmAminoBlock));
+  }
+  return blockList;
 }
+
 
 /*
- * Function:  awFmAlignedNucleotideAminoAcidBlockList
+ * Function:  awFmAlignedAllocKmerTable
  * --------------------
- * Dynamically allocates memory for the AwFmNucleotideBlock array, aligned to a cache line (64 bytes).
+ * Dynamically allocates memory for the kmer seed table.
  *
  *  Inputs:
- *    numBlocks: size of the allocated AwFmNucleotideBlock array.
+ *    kmerLengthInSeedTable: length of the kmers to be memoized in this table
+ *    alphabet: alphabet (nucleotide or amino) of kmers to memoize
  *
  *  Returns:
- *    Pointer to the allocated aligned memory. As per C11 specs, will return NULL on allocation failure.
+ *    Pointer to the allocated kmer table.
  */
-struct AwFmNucleotideBlock *awFmAlignedNucleotideAminoAcidBlockList(const size_t numBlocks){
-  return aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, numBlocks * sizeof(struct AwFmNucleotideBlock));
-}
+uint64_t *awFmAlignedAllocKmerTable(const uint8_t kmerLengthInSeedTable,
+  const enum AwFmAlphabetType alphabet){
+  //compute the number of elements needed in the table.
+  //the for loop acts as a power function.
+  uint64_t tableLength = 1;
+  uint64_t alphabetCardinality = alphabet == AwFmAlphabetNucleotide? 4: 20;
 
+  for(size_t i = 0; i < kmerLengthInSeedTable; i++){
+    tableLength *= alphabetCardinality;
+  }
+
+  return aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, tableLength * sizeof(uint64_t));
+}
 
 
 /*
@@ -73,13 +92,15 @@ struct AwFmNucleotideBlock *awFmAlignedNucleotideAminoAcidBlockList(const size_t
  */
  void awFmDeallocateFmIndex(struct AwFmIndex *restrict index){
    if(index != NULL){
-     //note, if either are missing, they should be set to NULL.
-     //in this case, free will perform no action.
+     //note, if any of these are missing, they should be set to NULL.
+     //in this case, fclose or free will perform no action.
      //Since the two pointers in the AwFmBwtBlockList union just act
      //to cast the pointer to the desired type, freeing the nucleotide list
      // will always free the blockList.
+     fclose(index->fileHandle);
      free(index->forwardBwtBlockList.asNucleotide);
      free(index->backwardBwtBlockList.asNucleotide);
+     free(index->kmerSeedTable);
    }
    free(index);
  }
@@ -160,8 +181,8 @@ struct AwFmNucleotideBlock *awFmAlignedNucleotideAminoAcidBlockList(const size_t
  *    True if this range represents a range of positions for the given kmer suffix in the database,
  *      or false if the database does not contain the given kmer suffix.
  */
- bool awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange){
-  return searchRange->startPtr < searchRange->endPtr;
+ bool awFmSearchRangeIsValid(const struct AwFmBackwardRange *restrict const searchRange){
+  return searchRange->startPtr <= searchRange->endPtr;
 }
 
 
@@ -171,10 +192,4 @@ size_t awFmNumBlocksFromSuffixArrayLength(const size_t suffixArrayLength){
 
 size_t awFmNumBlocksFromSequenceLength(const size_t databaseSequenceLength){
   return awFmNumBlocksFromSuffixArrayLength(databaseSequenceLength + 1);
-}
-
-void awFmDestroyIndex(struct AwFmIndex *restrict index){
-  fclose(index->fileHandle);
-  index->fileHandle = NULL;
-  awFmDeallocateFmIndex(index);
 }

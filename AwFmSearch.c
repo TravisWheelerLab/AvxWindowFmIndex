@@ -2,7 +2,23 @@
 #include "AwFmOccurrence.h"
 #include "AwFmSearch.h"
 
-
+/*
+ * Function:  awFmIterativeStepBiDirectionalSearch
+ * --------------------
+ * Performs a single bi-directional search step on the given index. This can either search
+ *  backward or forward, depending on the searchDirection argument.
+ *  In lieu of returning an additional value, this function updates the data pointed to by
+ *  the range ptr.
+ *
+ *  Inputs:
+ *    index: AwFmIndex struct to search
+ *    searchDirection: determines whether to search backwards (prepending a prefix character), or
+ *    forward (appending a suffix character)
+ *    range: range in the BWT that corresponds to the implicit kmer that is about to be extended.
+ *      this acts as an out-parameter, and will update to the newly extended range once finished.
+ *    letter: letter of the prefix or suffix character.
+ *
+ */
 void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const index,
   const enum AwFmSearchDirection searchDirection, struct AwFmBiDirectionalRange *restrict const range,
   const uint8_t letter){
@@ -107,8 +123,23 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
   range->startPrimePtr  = newStartPrimePtr;
 }
 
+
+/*
+ * Function:  awFmIterativeStepBackwardSearch
+ * --------------------
+ * Performs a single backwared search step on the given index.
+ *  In lieu of returning an additional value, this function updates the data pointed to by
+ *  the range ptr.
+ *
+ *  Inputs:
+ *    index: AwFmIndex struct to search
+ *    range: range in the BWT that corresponds to the implicit kmer that is about to be extended.
+ *      this acts as an out-parameter, and will update to the newly extended range once finished.
+ *    letter: letter of the prefix or suffix character.
+ *
+ */
 void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
-  const enum AwFmSearchDirection searchDirection, struct AwFmBackwardRange *restrict const range, const uint8_t letter){
+  struct AwFmBackwardRange *restrict const range, const uint8_t letter){
 
   const bool alphabetIsNucleotide     = index->metadata.alphabetType == AwFmAlphabetNucleotide;
   const size_t blockByteWidth         = alphabetIsNucleotide? sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
@@ -456,7 +487,7 @@ struct AwFmBackwardRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex
   while(__builtin_expect(awFmSearchRangeIsValid(&searchRange) && kmerQueryPosition, 1)){
     kmerQueryPosition--;
     const uint8_t letter = kmer[kmerQueryPosition];
-    awFmIterativeStepBackwardSearch(index, AwFmSearchDirectionBackward, &searchRange, letter);
+    awFmIterativeStepBackwardSearch(index, &searchRange, letter);
   }
 
   return searchRange;

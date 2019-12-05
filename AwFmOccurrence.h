@@ -15,12 +15,6 @@ struct AwFmOccurrenceVectorPair{
   __m256i occurrenceGteVector;
 };
 
-inline struct AwFmNucleotideBlock *awFmGetNucleotideBlockPtr(const struct AwFmIndex *restrict const index,
-  const enum AwFmSearchDirection searchDirection, const uint64_t queryPosition);
-
-inline struct AwFmAminoBlock *awFmGetAminoBlockPtr(const struct AwFmIndex *restrict const index,
-  const enum AwFmSearchDirection searchDirection, const uint64_t queryPosition);
-
 inline void awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBlock *restrict const blockPtr,
   const uint64_t queryPosition, const uint8_t letter, const uint64_t sentinelCharacterPosition,
   struct AwFmOccurrenceVectorPair *occurrenceVectors);

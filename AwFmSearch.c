@@ -203,10 +203,8 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
 
   const uint64_t numPositionsInRange  = awFmSearchRangeLength(searchRange);
 
-  //allocate the position array and offsetArray (uses one malloc call, only needs 1 free call)
-  //restrict keywords should be okay, since they shouldn't read/write to overlapping elements
-  uint64_t *const restrict positionArray  = malloc(numPositionsInRange * sizeof(uint64_t) * 2);
-  uint64_t *const restrict offsetArray    = positionArray + numPositionsInRange;
+  uint64_t *const restrict positionArray  = malloc(numPositionsInRange * sizeof(uint64_t));
+  uint64_t *const restrict offsetArray    = malloc(numPositionsInRange * sizeof(uint64_t));
   //check for allocation failures
   if(__builtin_expect(positionArray == NULL, 0)){
     *fileAccessResult = AwFmAllocationFailure;

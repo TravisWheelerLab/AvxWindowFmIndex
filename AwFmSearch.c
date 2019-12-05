@@ -343,7 +343,7 @@ void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const inde
  *  Note: When using a bi-directional FM-index, the range given should correspond the the
  *    traditional backward BWT, not the forward BWT.
  *
- *  It is the caller's responsibility to free() the returned sequence position array.
+ *  It is the caller's responsibility to free() the returned sequence position array and offset array.
  *
  *  This function will overwrite the data in the positionArray, returning the
  *    database sequence positions in the corresponding elements of the positionArray.
@@ -412,6 +412,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
 }
 
 
+
 /*
  * Function:  awFmDatabaseSingleKmerExactMatch
  * --------------------
@@ -435,37 +436,28 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
  *    the given kmer does not exist in the database sequence.
  */
 struct AwFmBackwardRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *restrict const index,
-const char *restrict const kmer, const uint16_t kmerLength){
+  const char *restrict const kmer, const uint16_t kmerLength){
 
-  bool isNucleotideDatabase = index->metadata.alphabetType == AwFmAlphabetNucleotide;
+  uint_fast16_t kmerQueryPosition = kmerLength - 1;
 
-    uint_fast16_t kmerQueryPosition = kmerLength - 1;
+  //set the initial range from the prefixSums
+  const uint8_t firstSuffixLetter = kmer[kmerQueryPosition];
+  struct AwFmBackwardRange searchRange = {index->prefixSums[firstSuffixLetter], index->prefixSums[firstSuffixLetter + 1] - 1};
 
-    //set the initial range from the prefixSums
-    const uint8_t firstSuffixLetter = kmer[kmerQueryPosition];
-    struct AwFmBackwardRange searchRange = {index->prefixSums[firstSuffixLetter] + 1, index->prefixSums[firstSuffixLetter + 1]};
+  const uint_fast16_t blockWidth = (index->metadata.alphabetType == AwFmAlphabetNucleotide)?
+    sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
 
-    const uint_fast16_t blockWidth = (index->metadata.alphabetType == AwFmAlphabetNucleotide)?
-      sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
+  //request the data be prefetched for each occurance call.
+  awFmBlockPrefetch((uint8_t*)index->backwardBwtBlockList.asAmino, blockWidth, searchRange.startPtr - 1);
+  awFmBlockPrefetch((uint8_t*)index->backwardBwtBlockList.asAmino, blockWidth, searchRange.endPtr);
 
-    //request the data be prefetched for each occurance call.
-    awFmBlockPrefetch((uint8_t*)index->backwardBwtBlockList.asAmino, blockWidth, searchRange.startPtr);
-    awFmBlockPrefetch((uint8_t*)index->backwardBwtBlockList.asAmino, blockWidth, searchRange.endPtr);
 
-    if(isNucleotideDatabase){
-      while(__builtin_expect(awFmSearchRangeIsValid(&searchRange) && kmerQueryPosition, 1)){
-        kmerQueryPosition--;
-        const uint8_t letter = kmer[kmerQueryPosition];
-        awFmIterativeStepBackwardNucleotideSearch(index, &searchRange,letter);
-      }
-    }
-    else{
-      while(__builtin_expect(awFmSearchRangeIsValid(&searchRange) && kmerQueryPosition, 1)){
-        kmerQueryPosition--;
-        const uint8_t letter = kmer[kmerQueryPosition];
-        awFmIterativeStepBackwardAminoAcidSearch(index, &searchRange,letter);
-      }
-    }
+
+  while(__builtin_expect(awFmSearchRangeIsValid(&searchRange) && kmerQueryPosition, 1)){
+    kmerQueryPosition--;
+    const uint8_t letter = kmer[kmerQueryPosition];
+    awFmIterativeStepBackwardSearch(index, AwFmSearchDirectionBackward, &searchRange, letter);
+  }
 
   return searchRange;
 }
@@ -492,7 +484,7 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
   const uint16_t kmerLength){
 
   struct AwFmBackwardRange kmerRange = awFmDatabaseSingleKmerExactMatch(index, kmer, kmerLength);
-  return kmerRange.startPtr < kmerRange.endPtr;
+  return kmerRange.startPtr <= kmerRange.endPtr;
 }
 
 
@@ -512,5 +504,5 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
  */
  size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range){
   uint64_t length = range->endPtr - range->startPtr;
-  return (range->startPtr < range->endPtr)? length: 0;
+  return (range->startPtr < range->endPtr)? length + 1: 0;
 }

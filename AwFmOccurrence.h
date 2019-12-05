@@ -27,10 +27,6 @@ inline uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector);
 inline void awFmBlockPrefetch(const uint8_t *restrict const baseBlockListPtr, const uint64_t blockByteWidth,
   const uint64_t nextQueryPosition);
 
-inline uint64_t awFmGetNucleotideBaseOccurrenceGte(const struct AwFmNucleotideBlock *restrict const blockPtr, const uint8_t letter);
-
-inline uint64_t awFmGetAminoAcidBaseOccurrenceGte(const struct AwFmAminoBlock *restrict const blockPtr, const uint8_t letter);
-
 inline uint8_t awFmGetLetterAtBwtPosition(const union AwFmBwtBlockList blockList, const enum AwFmAlphabetType alphabet, const uint64_t bwtPosition);
 
 

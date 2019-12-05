@@ -136,7 +136,6 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
  *    range: range in the BWT that corresponds to the implicit kmer that is about to be extended.
  *      this acts as an out-parameter, and will update to the newly extended range once finished.
  *    letter: letter of the prefix or suffix character.
- *
  */
 void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
   struct AwFmBackwardRange *restrict const range, const uint8_t letter){
@@ -379,4 +378,23 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
  size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range){
   uint64_t length = range->endPtr - range->startPtr;
   return (range->startPtr < range->endPtr)? length + 1: 0;
+}
+
+/*
+ * Function:  awFmSwapBiDirectionalRangePointerDirection
+ * --------------------
+ * Swaps the direction of the bidirectional range struct in order to search in the opposite direction.
+ *  This function works in place on the given range, swapping the startPtr and startPrimePtr, and
+ *  updating the endPtr to reflect the correct end for the new startPtr.
+ *
+ *  Inputs:
+ *    range: bidirectional range in the Bwt. This act as an out-argument, and will be updated by this function.
+ */
+void awFmSwapBiDirectionalRangePointerDirection(struct AwFmBiDirectionalRange *restrict const range){
+  uint64_t rangeSize = range->endPtr - range->startPtr;
+  uint64_t tempStartPrimePtr = range->startPtr;
+
+  range->startPtr = range->startPrimePtr;
+  range->endPtr = range->startPtr + rangeSize;
+  range->startPrimePtr = tempStartPrimePtr;
 }

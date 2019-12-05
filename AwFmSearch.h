@@ -33,4 +33,7 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
 
 size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range);
 
+
+void awFmSwapBiDirectionalRangePointerDirection(struct AwFmBiDirectionalRange *restrict const range);
+
 #endif /* end of include guard: AW_FM_INDEX_SEARCH_H */

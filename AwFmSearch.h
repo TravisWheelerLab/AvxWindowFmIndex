@@ -15,19 +15,6 @@ void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const inde
   struct AwFmBackwardRange *restrict const range, const uint8_t letter);
 
 
-// void awFmIterativeStepBidirectionalNucleotideSearch(const struct AwFmIndex *restrict const index,
-//   enum AwFmSearchDirection searchDirection, struct AwFmBiDirectionalRange *restrict const range, const uint8_t letter);
-//
-// void awFmIterativeStepBidirectionalAminoAcidSearch(const struct AwFmIndex *restrict const index,
-//   enum AwFmSearchDirection searchDirection, struct AwFmBiDirectionalRange *restrict const range, const uint8_t letter);
-//
-// void awFmIterativeStepBackwardNucleotideSearch(const struct AwFmIndex *restrict const index,
-//   struct AwFmBackwardRange *restrict const range, const uint8_t letter);
-//
-// void awFmIterativeStepBackwardAminoAcidSearch(const struct AwFmIndex *restrict const index,
-//   struct AwFmBackwardRange *restrict const range, const uint8_t letter);
-
-
 /*Returns an array of positions in the database sequence that are represented by the
     given searchRange. The length of the returned array is equal to the difference
     between the searchRange pointers. It is the caller's responsibility to free the

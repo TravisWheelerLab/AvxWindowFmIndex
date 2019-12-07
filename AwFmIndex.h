@@ -81,11 +81,11 @@ struct AwFmIndex{
   union   AwFmBwtBlockList  forwardBwtBlockList;
   union   AwFmBwtBlockList  backwardBwtBlockList;
           uint64_t          *prefixSums;
-          uint64_t          suffixArrayLength;
-          uint64_t          numBlocks;
+          uint64_t          bwtLength;
           uint64_t          *kmerSeedTable;
   struct  AwFmIndexMetadata metadata;
-          uint64_t          sentinelCharacterPosition; //only used for Nucleotide FM-index
+          uint64_t          backwardSentinelCharacterPosition;
+          uint64_t          forwardSentinelCharacterPosition;
           FILE              *fileHandle;
   //todo: remove these from AwFmIndex struct, give them as args.
   // const uint8_t                 *databaseSequence;  //usually NULL, used in construction and saving to file

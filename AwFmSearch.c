@@ -25,12 +25,17 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
   const bool alphabetIsNucleotide     = index->metadata.alphabetType == AwFmAlphabetNucleotide;
   const size_t blockByteWidth         = alphabetIsNucleotide? sizeof(struct AwFmNucleotideBlock): sizeof( struct AwFmAminoBlock);
   uint64_t letterPrefixSum            = index->prefixSums[letter];
-  uint64_t sentinelCharacterPosition  = index->sentinelCharacterPosition;
 
-  //get the correct blocklist for the given search direction.
-  const union AwFmBwtBlockList blockList = (searchDirection == AwFmSearchDirectionBackward)?
-    index->backwardBwtBlockList:
-    index->forwardBwtBlockList;
+  union AwFmBwtBlockList blockList;
+  uint64_t sentinelCharacterPosition;
+  if(searchDirection == AwFmSearchDirectionBackward){
+    blockList                 = index->backwardBwtBlockList;
+    sentinelCharacterPosition = index->backwardSentinelCharacterPosition;
+  }
+  else{
+    blockList                 = index->forwardBwtBlockList;
+    sentinelCharacterPosition = index->forwardSentinelCharacterPosition;
+  }
 
   //query for the start pointer
   //-1 relates to the "Occ(a,s-1) and OccLt(a,s-1) in the literature"
@@ -143,7 +148,7 @@ void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const inde
   const bool alphabetIsNucleotide     = index->metadata.alphabetType == AwFmAlphabetNucleotide;
   const size_t blockByteWidth         = alphabetIsNucleotide? sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
   uint64_t letterPrefixSum            = index->prefixSums[letter];
-  uint64_t sentinelCharacterPosition  = index->sentinelCharacterPosition;
+  uint64_t sentinelCharacterPosition  = index->backwardSentinelCharacterPosition;
 
   const union AwFmBwtBlockList blockList = index->backwardBwtBlockList;
 
@@ -379,6 +384,7 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
   uint64_t length = range->endPtr - range->startPtr;
   return (range->startPtr < range->endPtr)? length + 1: 0;
 }
+
 
 /*
  * Function:  awFmSwapBiDirectionalRangePointerDirection

@@ -12,8 +12,6 @@
 #define AW_FM_INDEX_METADATA_BYTE_SIZE 64
 
 
-//TODO: support nucleotide search, change blockList ptr to union of Amino block list ptr, nucleotide block list ptr
-
 #define AwFmAlphabetAminoAcid                   1
 #define AwFmAlphabetAminoAcidVectorsPerWindow   5
 #define AwFmAlphabetAminoAcidCardinality        20
@@ -72,30 +70,19 @@ struct AwFmIndexMetadata{
   enum AwFmBwtType      bwtType;
 };
 
-// union AwFmIndexPaddedMetadata{
-//   struct AwFmIndexMetadata data;
-//   uint8_t padding[AW_FM_INDEX_METADATA_BYTE_SIZE];
-// };
 
 struct AwFmIndex{
-  union   AwFmBwtBlockList  forwardBwtBlockList;
-  union   AwFmBwtBlockList  backwardBwtBlockList;
-          uint64_t          *prefixSums;
-          uint64_t          bwtLength;
-          uint64_t          *kmerSeedTable;
   struct  AwFmIndexMetadata metadata;
           uint64_t          backwardSentinelCharacterPosition;
           uint64_t          forwardSentinelCharacterPosition;
+          uint64_t          bwtLength;
+  union   AwFmBwtBlockList  forwardBwtBlockList;
+  union   AwFmBwtBlockList  backwardBwtBlockList;
+          uint64_t          *prefixSums;
+          uint64_t          *kmerSeedTable;
           FILE              *fileHandle;
-  //todo: remove these from AwFmIndex struct, give them as args.
-  // const uint8_t                 *databaseSequence;  //usually NULL, used in construction and saving to file
-  // uint64_t                      *fullSuffixArray;   //usually NULL, used in construction and saving to file
-};
+  };
 
-// struct AwFmSearchRange{
-//   uint64_t startPtr;
-//   uint64_t endPtr;
-// };
 
 //TODO: update this block comment
 /* enum AwFmReturnCode
@@ -131,18 +118,17 @@ bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode){
   return returnCode >= 0;
 }
 
-struct AwFmIndex       *awFmAlignedAllocAwFmIndex(void);
-union AwFmBwtBlockList awFmAlignedAllocBlockList(const size_t numBlocks, const enum AwFmAlphabetType alphabet);
-uint64_t               *awFmAlignedAllocKmerTable(const uint8_t kmerLengthInSeedTable,
-  const enum AwFmAlphabetType alphabet);
+struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const metadata,
+  const size_t sequenceLength);
+void awFmDeallocIndex(struct AwFmIndex *index);
 
-void      awFmDeallocateFmIndex(struct AwFmIndex *restrict index);
-size_t    awFmNumBlocksFromSuffixArrayLength(const size_t suffixArrayLength);
-size_t    awFmNumBlocksFromSequenceLength(const size_t databaseSequenceLength);
-bool      awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
-uint64_t  awFmGetBwtLength(const struct AwFmIndex *restrict const index);
-uint64_t  awFmGetDbSequenceLength(const struct AwFmIndex *restrict const index);
-uint64_t  awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
-bool      awFmSearchRangeIsValid(const struct AwFmBackwardRange *restrict const searchRange);
+
+uint_fast8_t  awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
+size_t        awFmGetKmerTableLength(const struct AwFmIndexMetadata *restrict const metadata);
+size_t        awFmNumBlocksFromBwtLength(const size_t suffixArrayLength);
+size_t        awFmNumBlocksFromSequenceLength(const size_t databaseSequenceLength);
+bool          awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
+uint64_t      awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
+bool          awFmSearchRangeIsValid(const struct AwFmBackwardRange *restrict const searchRange);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

@@ -180,10 +180,33 @@ void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const inde
 }
 
 
+struct AwFmBackwardRange *awFmSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+  const char *restrict const kmer){
+
+  const uint8_t kmerSeedLength = index->metadata.kmerLengthInSeedTable;
+  size_t tableIndex = 0;
+
+  for(int_fast16_t i = kmerSeedLength - 1; i >= 0; i--){
+    if(index->metadata.alphabetType == AwFmAlphabetNucleotide)
+      tableIndex = (tableIndex * 4) + awFmNucleotideLetterIndexToAscii(kmer[i]);
+    else
+      tableIndex = (tableIndex * 20) + awFmAminoAcidLetterIndexToAscii(kmer[i]);
+  }
+
+  return &(index->kmerSeedTable[tableIndex]);
+}
+
+
 uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
   const struct AwFmBackwardRange *restrict const searchRange, enum AwFmReturnCode *restrict fileAccessResult){
 
   const uint64_t numPositionsInRange  = awFmSearchRangeLength(searchRange);
+
+  // if there were no elements in the search range, abandon the query.
+  if(__builtin_expect(numPositionsInRange == 0, 0)){
+    *fileAccessResult = AwFmGeneralFailure;
+    return NULL;
+  }
 
   uint64_t *const restrict positionArray  = malloc(numPositionsInRange * sizeof(uint64_t));
   uint64_t *const restrict offsetArray    = malloc(numPositionsInRange * sizeof(uint64_t));
@@ -225,13 +248,13 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
   *fileAccessResult = awFmReadPositionsFromSuffixArray(index, positionArray,
     numPositionsInRange);
 
-
   //add the offsets to the returned positions to get the actual positions of the hits
   for(size_t i = 0; i < numPositionsInRange; i++){
     positionArray[i] += offsetArray[i];
   }
   free(offsetArray);
 
+  *fileAccessResult = AwFmFileReadOkay;
   return positionArray;
 }
 

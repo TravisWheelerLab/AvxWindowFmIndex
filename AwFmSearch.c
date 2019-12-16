@@ -238,8 +238,6 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
 }
 
 
-
-
 struct AwFmBackwardRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint16_t kmerLength){
 
@@ -293,7 +291,7 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
  */
  size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range){
   uint64_t length = range->endPtr - range->startPtr;
-  return (range->startPtr < range->endPtr)? length + 1: 0;
+  return (range->startPtr <= range->endPtr)? length + 1: 0;
 }
 
 

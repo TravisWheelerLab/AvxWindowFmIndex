@@ -193,6 +193,11 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
     *fileAccessResult = AwFmAllocationFailure;
     return NULL;
   }
+  if(__builtin_expect(offsetArray == NULL, 0)){
+    free(positionArray);
+    *fileAccessResult = AwFmAllocationFailure;
+    return NULL;
+  }
 
   //call a prefetch for each block that contains the positions that we need to start querying
   const uint_fast16_t blockWidth = index->metadata.alphabetType == AwFmAlphabetTypeNucleotide?
@@ -213,12 +218,21 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
       databaseSequenceOffset++;
     }
 
-    positionArray[i]  = backtracePosition;
+    //position is divided by compression ratio to get the index in the suffix array
+    positionArray[i]  = backtracePosition / index->metadata.suffixArrayCompressionRatio;
     offsetArray[i]    = databaseSequenceOffset;
   }
 
-  *fileAccessResult = awFmDbSequencePositionsFromSuffixArrayFile(index, positionArray,
-    offsetArray, numPositionsInRange);
+  //get the positions from the suffix array.
+  *fileAccessResult = awFmReadPositionsFromSuffixArray(index, positionArray,
+    numPositionsInRange);
+
+
+  //add the offsets to the returned positions to get the actual positions of the hits
+  for(size_t i = 0; i < numPositionsInRange; i++){
+    positionArray[i] += offsetArray[i];
+  }
+  free(offsetArray);
 
   return positionArray;
 }

@@ -1,6 +1,7 @@
+#include "AwFmSearch.h"
 #include "AwFmIndex.h"
 #include "AwFmOccurrence.h"
-#include "AwFmSearch.h"
+#include "AwFmLetter.h"
 
 
 void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const index,
@@ -66,7 +67,6 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
   uint64_t occurrenceGte      = awFmVectorPopcount(occurrenceVectors.occurrenceGteVector) + baseOccurrenceGte;
   uint64_t startOccurrenceLt  = queryPosition - occurrenceGte;
 
-
   //get the new end pointer
   queryPosition = range->endPtr;
   blockIndex = queryPosition % POSITIONS_PER_FM_BLOCK;
@@ -111,7 +111,6 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
   range->endPtr         = newEndPointer;
   range->startPrimePtr  = newStartPrimePtr;
 }
-
 
 
 void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
@@ -207,7 +206,6 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
     awFmBlockPrefetch((uint8_t*)index->backwardBwtBlockList.asAmino, blockWidth, i);
   }
 
-
   //backtrace each position until we have a list of the positions in the database sequence.
   for(uint64_t i=0; i < numPositionsInRange; i++){
     uint64_t databaseSequenceOffset = 0;
@@ -254,8 +252,6 @@ struct AwFmBackwardRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex
   awFmBlockPrefetch((uint8_t*)index->backwardBwtBlockList.asAmino, blockWidth, searchRange.startPtr - 1);
   awFmBlockPrefetch((uint8_t*)index->backwardBwtBlockList.asAmino, blockWidth, searchRange.endPtr);
 
-
-
   while(__builtin_expect(awFmSearchRangeIsValid(&searchRange) && kmerQueryPosition, 1)){
     kmerQueryPosition--;
     const uint8_t letter = kmer[kmerQueryPosition];
@@ -266,7 +262,6 @@ struct AwFmBackwardRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex
 }
 
 
-
 bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const char *restrict const kmer,
   const uint16_t kmerLength){
 
@@ -275,36 +270,12 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
 }
 
 
-
-/*
- * Function:  awFmSearchRangeLength
- * --------------------
- * Gets the number of positions included in the given AwFmSearchRange
- *
- *  Inputs:
- *    range: Range of positions in the BWT that corresponds to some number of
- *      instances of a given kmer.
- *
- *  Outputs:
- *    Number of positions in the given range if the range is valid (startPtr < endPtr),
- *      or 0 otherwise, as that would imply that no instances of that kmer were found.
- */
  size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range){
   uint64_t length = range->endPtr - range->startPtr;
   return (range->startPtr <= range->endPtr)? length + 1: 0;
 }
 
 
-/*
- * Function:  awFmSwapBiDirectionalRangePointerDirection
- * --------------------
- * Swaps the direction of the bidirectional range struct in order to search in the opposite direction.
- *  This function works in place on the given range, swapping the startPtr and startPrimePtr, and
- *  updating the endPtr to reflect the correct end for the new startPtr.
- *
- *  Inputs:
- *    range: bidirectional range in the Bwt. This act as an out-argument, and will be updated by this function.
- */
 void awFmSwapBiDirectionalRangePointerDirection(struct AwFmBiDirectionalRange *restrict const range){
   uint64_t rangeSize          = range->endPtr - range->startPtr;
   uint64_t tempStartPrimePtr  = range->startPtr;

@@ -46,10 +46,47 @@ void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const inde
   struct AwFmBackwardRange *restrict const range, const uint8_t letter);
 
 
-/*Returns an array of positions in the database sequence that are represented by the
-    given searchRange. The length of the returned array is equal to the difference
-    between the searchRange pointers. It is the caller's responsibility to free the
-    array that is returned.*/
+/*
+ * Function:  awFmSeedKmerRangeFromTable
+ * --------------------
+ * Given a kmer, queries the kmerSeedTable  for the partially completed range in the backward suffix array.
+ * The length of the kmer's stored in the seed table can be found in the index metadata's kmerLengthInSeedTable attribute.
+ * The given kmer must be at least this long.
+ *
+ *  Inputs:
+ *    index: AwFmIndex struct to search
+ *    kmer: character string to search for in the kmerSeedTable.
+ *
+ *  Returns:
+ *    pointer to the backwardsRange struct in the kmerSeedTable.
+ */
+struct AwFmBackwardRange *awFmSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+  const char *restrict const kmer);
+
+
+/*
+ * Function:  awFmFindDatabaseHitPositions
+ * --------------------
+ * Returns an array of positions in the database sequence that are represented by the given searchRange.
+ * This function returns a dynamically allocated array, and deallocation is the caller's responsiblity.
+ *
+ *
+ *  Inputs:
+ *    index: AwFmIndex struct to search
+ *    searchRange: range of positions in the backward BWT. Each valid element in this range
+ *      will be represented in the returned array.
+ *    fileAccessResult: out parameter returning the success or failure of the function.
+ *      Possible returns are:
+ *        AwFmGeneralFailure on search range with no valid positions (start > end)
+ *        AwFmAllocationFailure on failure to allocate additional memory.
+ *        AwFmFileReadOkay on success
+ *
+ *  Returns:
+ *    Dynamically allocated array of sequence positions. The length of this array
+ *      is the number of valid positions in the search range ((startPtr - endPtr) + 1).
+ *      This function will return NULL if the search range is invalid (if startPtr > endPtr).
+ *      It is the caller's responsiblity to deallocate this array.
+ */
 uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
   const struct AwFmBackwardRange *restrict const searchRange,
   enum AwFmReturnCode *restrict fileAccessResult);
@@ -93,6 +130,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
  */
  uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
    const struct AwFmBackwardRange *restrict const searchRange, enum AwFmReturnCode *restrict fileAccessResult);
+
 
  /*
   * Function:  awFmDatabaseSingleKmerExactMatch
@@ -141,19 +179,19 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
   const uint16_t kmerLength);
 
 
-  /*
-   * Function:  awFmSearchRangeLength
-   * --------------------
-   * Gets the number of positions included in the given AwFmSearchRange
-   *
-   *  Inputs:
-   *    range: Range of positions in the BWT that corresponds to some number of
-   *      instances of a given kmer.
-   *
-   *  Outputs:
-   *    Number of positions in the given range if the range is valid (startPtr < endPtr),
-   *      or 0 otherwise, as that would imply that no instances of that kmer were found.
-   */
+/*
+ * Function:  awFmSearchRangeLength
+ * --------------------
+ * Gets the number of positions included in the given AwFmSearchRange
+ *
+ *  Inputs:
+ *    range: Range of positions in the BWT that corresponds to some number of
+ *      instances of a given kmer.
+ *
+ *  Outputs:
+ *    Number of positions in the given range if the range is valid (startPtr < endPtr),
+ *      or 0 otherwise, as that would imply that no instances of that kmer were found.
+ */
 size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range);
 
 

@@ -5,7 +5,6 @@
 #include <stdlib.h>
 
 
-
 struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const metadata,
   const size_t sequenceLength){
 
@@ -78,6 +77,7 @@ void awFmDeallocIndex(struct AwFmIndex *index){
 }
 
 
+
 uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet){
   return (alphabet == AwFmAlphabetNucleotide)? 4: 20;
 }
@@ -92,21 +92,9 @@ size_t awFmGetKmerTableLength(const struct AwFmIndexMetadata *restrict const met
   return length;
 }
 
-/*
- * Function:  awFmBwtPositionIsSampled
- * --------------------
- * Determines if the given BWT position is sampled under the given AwFmIndex's
- *  suffix array compression ratio.
- *
- *  Inputs:
- *    index:      Pointer to the BWT's AwFmIndex.
- *    position:   Position in the BWT.
- *
- *  Outputs:
- *    True if the position is sampled in the compressedSuffixArray, or false otherwise.
- */
+
  bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position){
-  return position % index->metadata.suffixArrayCompressionRatio == 0;
+  return (position % index->metadata.suffixArrayCompressionRatio )== 0;
 }
 
 
@@ -115,19 +103,6 @@ size_t awFmGetKmerTableLength(const struct AwFmIndexMetadata *restrict const met
 }
 
 
-/*
- * Function:  awFmSearchRangeIsValid
- * --------------------
- * Compares the start pointer and end pointer to determine if this range
- *  contains a valid range of the relevant kmer suffix.
- *
- *  Inputs:
- *    searchRange: AwFmSearchRange struct to compare.
- *
- *  Outputs:
- *    True if this range represents a range of positions for the given kmer suffix in the database,
- *      or false if the database does not contain the given kmer suffix.
- */
  bool awFmSearchRangeIsValid(const struct AwFmBackwardRange *restrict const searchRange){
   return searchRange->startPtr <= searchRange->endPtr;
 }
@@ -137,6 +112,6 @@ size_t awFmNumBlocksFromBwtLength(const size_t suffixArrayLength){
   return  1 + ((suffixArrayLength -1) / POSITIONS_PER_FM_BLOCK);
 }
 
-size_t awFmNumBlocksFromSequenceLength(const size_t databaseSequenceLength){
-  return awFmNumBlocksFromBwtLength(databaseSequenceLength + 1);
+bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode){
+  return returnCode >= 0;
 }

@@ -82,10 +82,10 @@ uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet){
   return (alphabet == AwFmAlphabetNucleotide)? 4: 20;
 }
 
-size_t awFmGetKmerTableLength(const struct AwFmIndexMetadata *restrict const metadata){
-  const size_t multiplier = awFmGetAlphabetCardinality(metadata->alphabetType);
+size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict const index){
+  const size_t multiplier = awFmGetAlphabetCardinality(index->metadata.alphabetType);
   size_t length = 1;
-  for(size_t i = 0; i < metadata->kmerLengthInSeedTable; i++){
+  for(size_t i = 0; i < index->metadata.kmerLengthInSeedTable; i++){
     length *= multiplier;
   }
 

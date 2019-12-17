@@ -141,12 +141,12 @@ uint_fast8_t  awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
  *    set in the given metadata, and k is the length of the kmers in the lookup table,
  *    also as set in the metadata.
  *  Inputs:
- *    metadata: Metadata struct corresponding to the AwFmIndex.
+ *    index: AwFmIndex struct that contains the kmerSeedTable.
  *
  *  Returns:
  *    Number of AwFmBackwardRange structs in the table.
  */
-size_t        awFmGetKmerTableLength(const struct AwFmIndexMetadata *restrict const metadata);
+size_t        awFmGetKmerTableLength(const struct AwFmIndex *restrict const index);
 
 
 /*

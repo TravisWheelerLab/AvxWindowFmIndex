@@ -17,7 +17,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
   memset(index, 0, sizeof(struct AwFmIndex));
 
   //allocate the prefixSums
-  size_t alphabetSize = metadata->alphabetType == AwFmAlphabetNucleotide? 4: 20;
+  size_t alphabetSize = awFmGetAlphabetCardinality(metadata->alphabetType);
   index->prefixSums = aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, alphabetSize * sizeof(uint64_t));
   if(index->prefixSums == NULL){
     awFmDeallocIndex(index);

@@ -1,5 +1,4 @@
 #include "AwFmSearch.h"
-#include "AwFmIndex.h"
 #include "AwFmOccurrence.h"
 #include "AwFmLetter.h"
 
@@ -49,7 +48,7 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
       queryPosition, letter, &occurrenceVectors);
 
     //compute the base occurrence of any letter greater than or equal to our query letter
-    for(uint_fast8_t i = 0; i < 20; i++){
+    for(uint_fast8_t i = 0; i < AW_FM_AMINO_CARDINALITY; i++){
       baseOccurrenceGte += blockList.asAmino[blockIndex].baseOccurrences[i];
     }
   }
@@ -79,7 +78,7 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
       queryPosition, letter, sentinelCharacterPosition, &occurrenceVectors);
 
     //compute the base occurrence of any letter greater than or equal to our query letter
-    for(uint_fast8_t i = 0; i < 4; i++){
+    for(uint_fast8_t i = 0; i < AW_FM_NUCLEOTIDE_CARDINALITY; i++){
       baseOccurrenceGte += blockList.asNucleotide[blockIndex].baseOccurrences[i];
     }
   }
@@ -89,7 +88,7 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
       queryPosition, letter, &occurrenceVectors);
 
     //compute the base occurrence of any letter greater than or equal to our query letter
-    for(uint_fast8_t i = 0; i < 20; i++){
+    for(uint_fast8_t i = 0; i < AW_FM_AMINO_CARDINALITY; i++){
       baseOccurrenceGte += blockList.asAmino[blockIndex].baseOccurrences[i];
     }
   }
@@ -205,7 +204,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
   }
 
   //call a prefetch for each block that contains the positions that we need to start querying
-  const uint_fast16_t blockWidth = index->metadata.alphabetType == AwFmAlphabetTypeNucleotide?
+  const uint_fast16_t blockWidth = index->metadata.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
 
   for(uint64_t i = searchRange->startPtr; i < searchRange->endPtr; i += POSITIONS_PER_FM_BLOCK){

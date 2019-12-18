@@ -79,7 +79,8 @@ void awFmDeallocIndex(struct AwFmIndex *index){
 
 
 uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet){
-  return (alphabet == AwFmAlphabetNucleotide)? 4: 20;
+  return (alphabet == AwFmAlphabetNucleotide)?
+    AW_FM_NUCLEOTIDE_CARDINALITY: AW_FM_AMINO_CARDINALITY;
 }
 
 size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict const index){

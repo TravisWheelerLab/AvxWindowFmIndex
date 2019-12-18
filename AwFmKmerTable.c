@@ -9,9 +9,9 @@
 
    for(int_fast16_t i = kmerSeedLength - 1; i >= 0; i--){
      if(index->metadata.alphabetType == AwFmAlphabetNucleotide)
-       tableIndex = (tableIndex * 4) + awFmNucleotideLetterIndexToAscii(kmer[i]);
+       tableIndex = (tableIndex * AW_FM_NUCLEOTIDE_CARDINALITY) + awFmNucleotideLetterIndexToAscii(kmer[i]);
      else
-       tableIndex = (tableIndex * 20) + awFmAminoAcidLetterIndexToAscii(kmer[i]);
+       tableIndex = (tableIndex * AW_FM_AMINO_CARDINALITY) + awFmAminoAcidLetterIndexToAscii(kmer[i]);
    }
 
    return &(index->kmerSeedTable[tableIndex]);

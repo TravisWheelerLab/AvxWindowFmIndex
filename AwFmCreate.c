@@ -143,7 +143,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
       //if this was the last position of the block, memcpy the block over and initialize the next block
       if(positionInBlock == (POSITIONS_PER_FM_BLOCK - 1)){
         memcpy(&blockList.asNucleotide[blockIndex], &workingBlock, sizeof(struct AwFmNucleotideBlock));
-        memcpy(workingBlock.baseOccurrences, baseOccurrences, 4 * sizeof(uint64_t));
+        memcpy(workingBlock.baseOccurrences, baseOccurrences, AW_FM_NUCLEOTIDE_CARDINALITY * sizeof(uint64_t));
         memset(workingBlock.letterBitVectors, 0, 2 * sizeof(__m256i));
       }
     }
@@ -154,7 +154,8 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
 
   }
   else{
-    uint64_t baseOccurrences[21] = {0};
+      // +1 on the array length is to allow illegal characters to collect in the last element.
+    uint64_t baseOccurrences[AW_FM_AMINO_CARDINALITY + 1] = {0};
     struct AwFmAminoBlock workingBlock = {0};
     for(size_t position = 0; position < suffixArrayLength; position++){
       const size_t blockIndex = position / POSITIONS_PER_FM_BLOCK;
@@ -182,7 +183,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
       //if this was the last position of the block, memcpy the block over and initialize the next block
       if(positionInBlock == (POSITIONS_PER_FM_BLOCK - 1)){
         memcpy(&blockList.asAmino[blockIndex], &workingBlock, sizeof(struct AwFmAminoBlock));
-        memcpy(workingBlock.baseOccurrences, baseOccurrences, 20 * sizeof(uint64_t));
+        memcpy(workingBlock.baseOccurrences, baseOccurrences, AW_FM_AMINO_CARDINALITY * sizeof(uint64_t));
         memset(workingBlock.letterBitVectors, 0, 5 * sizeof(__m256i));
       }
     }
@@ -207,14 +208,15 @@ void createPrefixSums(uint64_t *restrict const prefixSums, const uint8_t *restri
     }
 
     //perform a scan over the letter occurrences, creating the prefix sums.
-    for(uint8_t i = 0; i < 4; i++){
+    for(uint8_t i = 0; i < AW_FM_NUCLEOTIDE_CARDINALITY; i++){
       tempPrefixSums[i+1]+= tempPrefixSums[i];
     }
-    memcpy(prefixSums, tempPrefixSums, 4 * sizeof(uint64_t));
+    memcpy(prefixSums, tempPrefixSums, AW_FM_NUCLEOTIDE_CARDINALITY * sizeof(uint64_t));
 
   }
   else{
-    uint64_t tempPrefixSums[21] = {0};
+    // +1 on the array length is to allow illegal characters to collect in the last element.
+    uint64_t tempPrefixSums[AW_FM_AMINO_CARDINALITY + 1] = {0};
     //count how many times each letter occurrs.
     for(size_t position = 0; position < sequenceLength; position++){
       const uint8_t asciiLetter = sequence[position];
@@ -223,17 +225,17 @@ void createPrefixSums(uint64_t *restrict const prefixSums, const uint8_t *restri
     }
 
     //perform a scan over the letter occurrences, creating the prefix sums.
-    for(uint8_t i = 0; i < 20; i++){
+    for(uint8_t i = 0; i < AW_FM_AMINO_CARDINALITY; i++){
       tempPrefixSums[i+1]+= tempPrefixSums[i];
     }
-    memcpy(prefixSums, tempPrefixSums, 20 * sizeof(uint64_t));
+    memcpy(prefixSums, tempPrefixSums, AW_FM_AMINO_CARDINALITY * sizeof(uint64_t));
   }
 }
 
 
 void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmBackwardRange searchRange,
   uint8_t currentKmerLength, uint64_t currentKmerIndex){
-  const uint8_t alphabetSize = index->metadata.alphabetType == AwFmAlphabetNucleotide? 4:20;
+  const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->metadata.alphabetType);
 
   const uint8_t kmerLength  = index->metadata.kmerLengthInSeedTable;
 

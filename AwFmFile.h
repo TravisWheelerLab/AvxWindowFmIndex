@@ -10,6 +10,8 @@
  * Function:  awFmWriteIndexToFile
  * --------------------
  * With a given AwFmIndex and associated data, writes the index to the file.
+ *  If you, the user, want to create a new index file, use the awFmCreateIndex
+ *  function in AwFmCreate.h
  *
  *  Inputs:
  *    index:          AwFmIndex struct to be written.

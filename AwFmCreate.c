@@ -18,7 +18,6 @@ void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmBa
   uint8_t currentKmerLength, uint64_t currentKmerIndex);
 
 
-
 enum AwFmReturnCode awFmCreateIndex(const struct AwFmIndex *restrict *index,
   const struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
   const char *restrict const fileSrc, const bool allowFileOverwrite){

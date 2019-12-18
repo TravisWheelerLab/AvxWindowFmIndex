@@ -2,31 +2,104 @@
 #define AW_FM_INDEX_FILE_H
 
 #include "AwFmIndex.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 
-/*Create an Awfmi file from the supplied AwFmIndex.*/
-enum AwFmReturnCode awFmCreateIndexFile(const struct AwFmIndex *restrict const index,
-  const char *restrict const fileSrc, const bool allowOverwrite);
+/*
+ * Function:  awFmWriteIndexToFile
+ * --------------------
+ * With a given AwFmIndex and associated data, writes the index to the file.
+ *
+ *  Inputs:
+ *    index:          AwFmIndex struct to be written.
+ *    suffixArray:    Full (uncompressed) suffix array that the AwFmIndex is built from.
+ *    sequence:       Database sequence that the AwFmIndex is built from.
+ *    sequenceLength: Length of the sequence.
+ *    fileSrc:        File path to write the Index file to.
+ *    allowOverwrite: If set, will allow overwriting the file at the given fileSrc.
+ *      If allowOverwite is false, will return error code AwFmFileAlreadyExists.
+ *
+ *  Returns:
+ *    AwFmReturnCode represnting the result of the write. Possible returns are:
+ *      AwFmFileWriteOkay on success.
+ *      AwFmFileAlreadyExists if a file exists at the given fileSrc, but allowOverwite was false.
+ *      AwFmFileWriteFail if a file write failed.
+ */
+enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
+  const uint64_t *restrict const suffixArray, const uint8_t *restrict const sequence,
+  const uint64_t sequenceLength, const char *restrict const fileSrc, const bool allowOverwrite);
 
-/*Allocate memory to the AwFmIndex pointer, and load it from the given fileSrc.*/
-enum AwFmReturnCode awFmLoadIndexFromFile(const char *restrict const fileSrc,
-  struct AwFmIndex *restrict *restrict index);
 
-/*Loads the positions in the database sequence corresponding the the given array of BWT positions.
-*   NOTE: positionArray is an array of BWT positions, not compressed suffix array indices.*/
-enum AwFmReturnCode awFmDbSequencePositionsFromSuffixArrayFile(const struct AwFmIndex *restrict const index,
-  uint64_t *restrict positionArray, const uint64_t *restrict const offsetArray,
-  const uint64_t positionArrayLength);
+/*
+ * Function:  awFmReadIndexFromFile
+ * --------------------
+ * Reads the AwFmIndex file from the given fileSrc
+ *
+ *  Inputs:
+ *    index:          double pointer to an unallocated AwFmIndex to be allocated and populated
+ *      by this function.
+ *    fileSrc:        Path to the file containing the AwFmIndex.
+ *
+ *  Returns:
+ *    AwFmReturnCode represnting the result of the write. Possible returns are:
+ *      AwFmFileReadOkay on success.
+ *      AwFmFileAlreadyExists if no file could be opened at the given fileSrc.
+ *      AwFmFileFormatError if the header was not correct. This suggests that the file at this location
+ *        is not the correct format.
+ *      AwFmAllocationFailure on failure to allocated the necessary memory for the index.
+ */
+enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict index, const char *fileSrc);
 
-/*Loads a section of the database sequence from the Awmfi file.*/
-enum AwFmReturnCode awFmLoadSequenceSectionFromFile(const struct AwFmIndex *restrict const index,
-  const size_t sequencePosition, const size_t leftFlankingSequenceLength,
-  const size_t rightFlankingSequenceLength, char **sequencePtr, size_t *charactersRead);
+
+/*
+ * Function:  awFmReadPositionsFromSuffixArray
+ * --------------------
+ * Given an array of positions in the compressed suffix array, replaces each element in the positionArray
+ *  with the sequence position found at that location in the compressed suffix array.
+ *
+ *  Inputs:
+ *    index:          Pointer to the AwFmIndex struct that corresponds to the
+ *      index file that stores the compressed suffix array.
+ *    positionArray:        Array of indices in the compressed suffix array. The data
+ *      at each index in this array will be replaced with the value stored at that
+ *      position in the suffix array.
+ *
+ *  Returns:
+ *    AwFmReturnCode represnting the result of the read. Possible returns are:
+ *      AwFmFileReadOkay on success.
+ *      AwFmFileReadFail if the file could not be read sucessfully.
+ */
+enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *restrict const index,
+  uint64_t *restrict const positionArray, const size_t positionArrayLength);
 
 
-enum AwFmReturnCode awFmOpenReadFile(struct AwFmIndex *const restrict index, const char *restrict const fileSrc);
+/*
+ * Function:  awFmReadSequenceFromFile
+ * --------------------
+ * Given a sequence position, reads a section of sequence surrounding that position from the
+ *  corresponding index file.
+ *
+ *  Inputs:
+ *    index:          Pointer to the AwFmIndex struct that contains the file handle to read.
+ *      index file that stores the compressed suffix array.
+ *    sequencePosition:        Position in the sequence to read.
+ *    priorFlankLength: How many character before the given sequence position to include
+ *      in the sequence segment.
+ *    postFlankLength:  How many characters after the given sequence position to include
+ *      in the sequence segement.
+ *    sequenceBuffer: Pointer to the buffer to read the sequence segment into. This
+ *      buffer  must be large enough to hold (postFlankLength + priorFlankLength +1) characters.
+ *      the + 1 on this length is for the null terminator added to the end of the string.
+ *
+ *  Returns:
+ *    AwFmReturnCode represnting the result of the read. Possible returns are:
+ *      AwFmFileReadOkay on success.
+ *      AwFmFileReadFail if the file could not be read sucessfully.
+ */
+enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
+  const size_t sequencePosition, const size_t priorFlankLength, const size_t postFlankLength,
+  char *const sequenceBuffer);
 
-void awFmCloseFile(const struct AwFmIndex *restrict const index);
 
 #endif /* end of include guard: AW_FM_INDEX_FILE_H */

@@ -8,13 +8,13 @@
 #include <stdio.h>
 
 
-#define AwFmAlphabetAminoAcid                   1
-#define AwFmAlphabetAminoAcidVectorsPerWindow   5
-#define AwFmAlphabetAminoAcidCardinality        20
+#define POSITIONS_PER_FM_BLOCK          256
 
-#define AwFmAlphabetNucleotide                  2
-#define AwFMAlphabetNucleotideVectorsPerWindow  2
-#define AwFmAlphabetNucleotideCardinality       4
+#define AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW 2
+#define AW_FM_NUCLEOTIDE_CARDINALITY        4
+
+#define AW_FM_AMINO_VECTORS_PER_WINDOW      5
+#define AW_FM_AMINO_CARDINALITY             20
 
 
 struct AwFmBackwardRange{
@@ -34,20 +34,20 @@ enum AwFmSearchDirection{
 };
 
 enum AwFmAlphabetType{
-  AwFmAlphabetTypeAmino = 1, AwFmAlphabetTypeNucleotide = 2};
+  AwFmAlphabetAmino = 1, AwFmAlphabetNucleotide = 2};
 
 enum AwFmBwtType{
   AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2};
 
 /*Structs*/
 struct AwFmAminoBlock{
-  __m256i   letterBitVectors[AwFmAlphabetAminoAcidVectorsPerWindow];
-  uint64_t  baseOccurrences[AwFmAlphabetAminoAcidCardinality];
+  __m256i   letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
+  uint64_t  baseOccurrences[AW_FM_AMINO_CARDINALITY];
 };
 
 struct AwFmNucleotideBlock{
-  __m256i   letterBitVectors[AwFMAlphabetNucleotideVectorsPerWindow];
-  uint64_t  baseOccurrences[AwFmAlphabetNucleotideCardinality];
+  __m256i   letterBitVectors[AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW];
+  uint64_t  baseOccurrences[AW_FM_NUCLEOTIDE_CARDINALITY];
 };
 
 union AwFmBwtBlockList{
@@ -123,7 +123,7 @@ void          awFmDeallocIndex(struct AwFmIndex *index);
  * --------------------
  * Returns the number of letters in the given alphabet.
  *  If AwFmAlphabetNucleotide is given, returns 4.
- *  If AwFmAlphabetAminoAcid  is given, returns 20.
+ *  If AwFmAlphabetAmino  is given, returns 20.
  *  Inputs:
  *    alphabet: Alphabet to query.
  *

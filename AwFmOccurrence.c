@@ -7,6 +7,9 @@
 #include <stdbool.h>
 
 
+#define CACHE_LINE_SIZE_IN_BYTES        64
+#define BYTES_PER_AVX2_REGISTER         32
+
 /*Private Function Prototypes*/
 /*Computes the index in the blockList where the given BWT position is found.*/
 inline size_t getBlockIndexFromGlobalPosition(const uint64_t globalQueryPosition);
@@ -14,7 +17,6 @@ inline size_t getBlockIndexFromGlobalPosition(const uint64_t globalQueryPosition
 inline uint_fast8_t getBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition);
 /*creates a bitmask vector for masking out characters that are either after the query location, or containing the sentinel character.*/
 inline __m256i createQueryPositionBitmask(const uint8_t localQueryPosition, bool containsSentinelCharacter, uint8_t sentinelCharacterPosition);
-
 
 
 inline void awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBlock *restrict const blockPtr,
@@ -174,7 +176,7 @@ inline void awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *r
   vectorPair->occurrenceGteVector = _mm256_and_si256(bitmask, vectorPair->occurrenceGteVector);
 }
 
-
+//TODO: try to have these be static and file scope, see if it can keep these in reg.
 inline uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector){
   const __m256i lowBitsLookupTable  = _mm256_setr_epi8( 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0, 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0);
   const __m256i highBitsLookupTable = _mm256_setr_epi8(-4,-3,-3,-2,-3,-2,-2,-1,-3,-2,-2,-1,-2,-1,-1, 0,-4,-3,-3,-2,-3,-2,-2,-1,-3,-2,-2,-1,-2,-1,-1, 0);

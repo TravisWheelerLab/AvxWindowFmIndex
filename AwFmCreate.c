@@ -120,8 +120,8 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
     uint64_t baseOccurrences[5] = {0};
     struct AwFmNucleotideBlock workingBlock = {0};
     for(size_t position = 0; position < suffixArrayLength; position++){
-      const size_t blockIndex = position / POSITIONS_PER_FM_BLOCK;
-      const uint8_t positionInBlock = position % POSITIONS_PER_FM_BLOCK;
+      const size_t blockIndex = position / AW_FM_POSITIONS_PER_FM_BLOCK;
+      const uint8_t positionInBlock = position % AW_FM_POSITIONS_PER_FM_BLOCK;
       const uint8_t byteInVector    = positionInBlock / 8;
       const uint8_t bitInVectorByte = positionInBlock % 8;
 
@@ -141,7 +141,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
       }
 
       //if this was the last position of the block, memcpy the block over and initialize the next block
-      if(positionInBlock == (POSITIONS_PER_FM_BLOCK - 1)){
+      if(positionInBlock == (AW_FM_POSITIONS_PER_FM_BLOCK - 1)){
         memcpy(&blockList.asNucleotide[blockIndex], &workingBlock, sizeof(struct AwFmNucleotideBlock));
         memcpy(workingBlock.baseOccurrences, baseOccurrences, AW_FM_NUCLEOTIDE_CARDINALITY * sizeof(uint64_t));
         memset(workingBlock.letterBitVectors, 0, 2 * sizeof(__m256i));
@@ -149,7 +149,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
     }
 
     //transfer whatever is left over in the final block to the block list
-    size_t finalBlockIndex = suffixArrayLength / POSITIONS_PER_FM_BLOCK;
+    size_t finalBlockIndex = suffixArrayLength / AW_FM_POSITIONS_PER_FM_BLOCK;
     memcpy(&blockList.asNucleotide[finalBlockIndex], &workingBlock, sizeof(struct AwFmNucleotideBlock));
 
   }
@@ -158,8 +158,8 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
     uint64_t baseOccurrences[AW_FM_AMINO_CARDINALITY + 1] = {0};
     struct AwFmAminoBlock workingBlock = {0};
     for(size_t position = 0; position < suffixArrayLength; position++){
-      const size_t blockIndex = position / POSITIONS_PER_FM_BLOCK;
-      const uint8_t positionInBlock = position % POSITIONS_PER_FM_BLOCK;
+      const size_t blockIndex = position / AW_FM_POSITIONS_PER_FM_BLOCK;
+      const uint8_t positionInBlock = position % AW_FM_POSITIONS_PER_FM_BLOCK;
       const uint8_t byteInVector    = positionInBlock / 8;
       const uint8_t bitInVectorByte = positionInBlock % 8;
 
@@ -181,7 +181,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
       }
 
       //if this was the last position of the block, memcpy the block over and initialize the next block
-      if(positionInBlock == (POSITIONS_PER_FM_BLOCK - 1)){
+      if(positionInBlock == (AW_FM_POSITIONS_PER_FM_BLOCK - 1)){
         memcpy(&blockList.asAmino[blockIndex], &workingBlock, sizeof(struct AwFmAminoBlock));
         memcpy(workingBlock.baseOccurrences, baseOccurrences, AW_FM_AMINO_CARDINALITY * sizeof(uint64_t));
         memset(workingBlock.letterBitVectors, 0, 5 * sizeof(__m256i));
@@ -189,7 +189,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
     }
 
     //transfer whatever is left over in the final block to the block list
-    size_t finalBlockIndex = suffixArrayLength / POSITIONS_PER_FM_BLOCK;
+    size_t finalBlockIndex = suffixArrayLength / AW_FM_POSITIONS_PER_FM_BLOCK;
     memcpy(&blockList.asAmino[finalBlockIndex], &workingBlock, sizeof(struct AwFmAminoBlock));
   }
 

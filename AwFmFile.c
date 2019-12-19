@@ -149,7 +149,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   }
 
   //read the backward bwt block list
-  const size_t numBwtBlocks = (*index)->bwtLength / POSITIONS_PER_FM_BLOCK;
+  const size_t numBwtBlocks = (*index)->bwtLength / AW_FM_POSITIONS_PER_FM_BLOCK;
   const size_t blockSizeInBytes = (*index)->metadata.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock):
     sizeof(struct AwFmAminoBlock);

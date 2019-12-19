@@ -25,7 +25,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
   }
 
   //allocate the blockLists
-  size_t numBlocksInBwt = (sequenceLength + 1) % POSITIONS_PER_FM_BLOCK;
+  size_t numBlocksInBwt = (sequenceLength + 1) % AW_FM_POSITIONS_PER_FM_BLOCK;
   size_t sizeOfBwtBlock = metadata->alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
 
@@ -110,7 +110,7 @@ size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict const index){
 
 
 size_t awFmNumBlocksFromBwtLength(const size_t suffixArrayLength){
-  return  1 + ((suffixArrayLength -1) / POSITIONS_PER_FM_BLOCK);
+  return  1 + ((suffixArrayLength -1) / AW_FM_POSITIONS_PER_FM_BLOCK);
 }
 
 bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode){

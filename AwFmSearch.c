@@ -24,7 +24,7 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
   //query for the start pointer
   //-1 relates to the "Occ(a,s-1) and OccLt(a,s-1) in the literature"
   uint64_t queryPosition = range->startPtr - 1;
-  uint64_t blockIndex = queryPosition % POSITIONS_PER_FM_BLOCK;
+  uint64_t blockIndex = queryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
 
   uint64_t baseOccurrence;
   struct AwFmOccurrenceVectorPair occurrenceVectors;
@@ -57,7 +57,7 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
   uint64_t      newStartPointer = letterPrefixSum + vectorPopcount + baseOccurrence;
 
   //prefetch the next start ptr
-  uint64_t newStartBlock    = (newStartPointer - 1) % POSITIONS_PER_FM_BLOCK;
+  uint64_t newStartBlock    = (newStartPointer - 1) % AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newStartBlockPtr = ((uint8_t*)blockList.asNucleotide) + (newStartBlock * blockByteWidth);
   for(size_t cacheLine = 0; cacheLine < 5; cacheLine++){
     _mm_prefetch(newStartBlockPtr + cacheLine, _MM_HINT_T2);
@@ -68,7 +68,7 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
 
   //get the new end pointer
   queryPosition = range->endPtr;
-  blockIndex = queryPosition % POSITIONS_PER_FM_BLOCK;
+  blockIndex = queryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
 
   baseOccurrenceGte = 0;
 
@@ -96,7 +96,7 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
   uint64_t newEndPointer    = letterPrefixSum + vectorPopcount + baseOccurrence - 1;
 
   //prefetch the next end ptr
-  uint64_t newEndBlock    = newEndPointer % POSITIONS_PER_FM_BLOCK;
+  uint64_t newEndBlock    = newEndPointer % AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newEndBlockPtr = ((uint8_t*)blockList.asNucleotide) + (newEndBlock * blockByteWidth);
   for(size_t cacheLine = 0; cacheLine < 5; cacheLine++){
     _mm_prefetch(newEndBlockPtr + cacheLine, _MM_HINT_T2);
@@ -124,7 +124,7 @@ void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const inde
 
   //query for the start pointer
   uint64_t queryPosition  = range->startPtr - 1;
-  uint64_t blockIndex = queryPosition % POSITIONS_PER_FM_BLOCK;
+  uint64_t blockIndex = queryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
 
   uint64_t baseOccurrence;
   struct AwFmOccurrenceVectorPair occurrenceVectors;
@@ -143,7 +143,7 @@ void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const inde
   uint64_t      newStartPointer = letterPrefixSum + vectorPopcount + baseOccurrence;
 
   //prefetch the next start ptr
-  uint64_t newStartBlock    = (newStartPointer - 1) % POSITIONS_PER_FM_BLOCK;
+  uint64_t newStartBlock    = (newStartPointer - 1) % AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newStartBlockPtr = ((uint8_t*)blockList.asNucleotide) + (newStartBlock * blockByteWidth);
   for(size_t cacheLine = 0; cacheLine < 5; cacheLine++){
     _mm_prefetch(newStartBlockPtr + cacheLine, _MM_HINT_T2);
@@ -151,7 +151,7 @@ void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const inde
 
   //query for the new end pointer
   queryPosition   = range->endPtr;
-  blockIndex = queryPosition % POSITIONS_PER_FM_BLOCK;
+  blockIndex = queryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
 
   if(alphabetIsNucleotide){
     baseOccurrence = blockList.asNucleotide[blockIndex].baseOccurrences[letter];
@@ -168,7 +168,7 @@ void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const inde
   const uint64_t newEndPointer = letterPrefixSum + vectorPopcount + baseOccurrence - 1;
 
   //prefetch the next start ptr
-  uint64_t newEndBlock    = (newEndPointer - 1) % POSITIONS_PER_FM_BLOCK;
+  uint64_t newEndBlock    = (newEndPointer - 1) % AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newEndBlockPtr = ((uint8_t*)blockList.asNucleotide) + (newEndBlock * blockByteWidth);
   for(size_t cacheLine = 0; cacheLine < 5; cacheLine++){
     _mm_prefetch(newEndBlockPtr + cacheLine, _MM_HINT_T2);
@@ -207,7 +207,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
   const uint_fast16_t blockWidth = index->metadata.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
 
-  for(uint64_t i = searchRange->startPtr; i < searchRange->endPtr; i += POSITIONS_PER_FM_BLOCK){
+  for(uint64_t i = searchRange->startPtr; i < searchRange->endPtr; i += AW_FM_POSITIONS_PER_FM_BLOCK){
     awFmBlockPrefetch((uint8_t*)index->backwardBwtBlockList.asAmino, blockWidth, i);
   }
 

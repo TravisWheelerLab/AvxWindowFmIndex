@@ -274,7 +274,7 @@ inline size_t awFmBacksetpBwtPosition(const struct AwFmIndex *restrict const ind
 *     Index of the block where the given query position resides.
 */
 inline size_t getBlockIndexFromGlobalPosition(const size_t globalQueryPosition){
- return globalQueryPosition / POSITIONS_PER_FM_BLOCK;
+ return globalQueryPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
 }
 
 /*
@@ -287,7 +287,7 @@ inline size_t getBlockIndexFromGlobalPosition(const size_t globalQueryPosition){
  *     Bit position into the block's AVX2 vectors where the query position lands.
  */
 inline uint_fast8_t getBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition){
-  return globalQueryPosition % POSITIONS_PER_FM_BLOCK;
+  return globalQueryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
 }
 
 

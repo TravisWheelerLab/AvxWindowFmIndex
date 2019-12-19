@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 
+#define AW_FM_POSITIONS_PER_FM_BLOCK          256
 #define AW_FM_CACHE_LINE_SIZE_IN_BYTES  64
 
 #define AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW 2

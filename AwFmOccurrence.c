@@ -7,7 +7,6 @@
 #include <stdbool.h>
 
 
-#define CACHE_LINE_SIZE_IN_BYTES        64
 #define BYTES_PER_AVX2_REGISTER         32
 
 /*Private Function Prototypes*/
@@ -204,7 +203,7 @@ inline void awFmBlockPrefetch(const uint8_t *restrict const baseBlockListPtr, co
   //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
   const uint8_t *blockAddress  = (baseBlockListPtr + (blockIndex * blockByteWidth));
 
-  for(uint_fast16_t prefetchOffset = 0; prefetchOffset < blockByteWidth; prefetchOffset += CACHE_LINE_SIZE_IN_BYTES){
+  for(uint_fast16_t prefetchOffset = 0; prefetchOffset < blockByteWidth; prefetchOffset += AW_FM_CACHE_LINE_SIZE_IN_BYTES){
     _mm_prefetch(blockAddress + prefetchOffset, _MM_HINT_T2);
   }
 }

@@ -9,7 +9,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
   const size_t sequenceLength){
 
   //allocate the index
-  struct AwFmIndex *index = aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, sizeof(struct AwFmIndex));
+  struct AwFmIndex *index = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, sizeof(struct AwFmIndex));
   if(index == NULL){
     return NULL;
   }
@@ -18,7 +18,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
 
   //allocate the prefixSums
   size_t alphabetSize = awFmGetAlphabetCardinality(metadata->alphabetType);
-  index->prefixSums = aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, alphabetSize * sizeof(uint64_t));
+  index->prefixSums = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, alphabetSize * sizeof(uint64_t));
   if(index->prefixSums == NULL){
     awFmDeallocIndex(index);
     return NULL;
@@ -30,7 +30,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
 
   //alloc the backward bwt
-  index->backwardBwtBlockList.asNucleotide = aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, numBlocksInBwt * sizeOfBwtBlock);
+  index->backwardBwtBlockList.asNucleotide = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, numBlocksInBwt * sizeOfBwtBlock);
   if(index->backwardBwtBlockList.asNucleotide == NULL){
     awFmDeallocIndex(index);
     return NULL;
@@ -38,7 +38,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
 
   //alloc the forward bwt (if bidirectional)
   if(metadata->bwtType == AwFmBwtTypeBiDirectional){
-    index->forwardBwtBlockList.asNucleotide = aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, numBlocksInBwt * sizeOfBwtBlock);
+    index->forwardBwtBlockList.asNucleotide = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, numBlocksInBwt * sizeOfBwtBlock);
     if(index->forwardBwtBlockList.asNucleotide == NULL){
       awFmDeallocIndex(index);
       return NULL;
@@ -55,7 +55,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
   }
 
   //allocate the kmerSeedTable
-  index->kmerSeedTable = aligned_alloc(CACHE_LINE_SIZE_IN_BYTES, kmerSeedTableSize * sizeof(uint64_t));
+  index->kmerSeedTable = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, kmerSeedTableSize * sizeof(uint64_t));
   if(index->kmerSeedTable == NULL){
     awFmDeallocIndex(index);
     return NULL;

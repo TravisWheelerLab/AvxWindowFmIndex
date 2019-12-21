@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 
+
 /*
  * Function:  awFmIterativeStepBiDirectionalSearch
  * --------------------
@@ -45,33 +46,6 @@ void awFmIterativeStepBiDirectionalSearch(const struct AwFmIndex *restrict const
 void awFmIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
   struct AwFmBackwardRange *restrict const range, const uint8_t letter);
 
-
-/*
- * Function:  awFmFindDatabaseHitPositions
- * --------------------
- * Returns an array of positions in the database sequence that are represented by the given searchRange.
- * This function returns a dynamically allocated array, and deallocation is the caller's responsiblity.
- *
- *
- *  Inputs:
- *    index: AwFmIndex struct to search
- *    searchRange: range of positions in the backward BWT. Each valid element in this range
- *      will be represented in the returned array.
- *    fileAccessResult: out parameter returning the success or failure of the function.
- *      Possible returns are:
- *        AwFmGeneralFailure on search range with no valid positions (start > end)
- *        AwFmAllocationFailure on failure to allocate additional memory.
- *        AwFmFileReadOkay on success
- *
- *  Returns:
- *    Dynamically allocated array of sequence positions. The length of this array
- *      is the number of valid positions in the search range ((startPtr - endPtr) + 1).
- *      This function will return NULL if the search range is invalid (if startPtr > endPtr).
- *      It is the caller's responsiblity to deallocate this array.
- */
-uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
-  const struct AwFmBackwardRange *restrict const searchRange,
-  enum AwFmReturnCode *restrict fileAccessResult);
 
 
 /*

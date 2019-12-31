@@ -19,6 +19,8 @@ uint8_t awFmAsciiNucleotideToLetterIndex(const uint8_t asciiLetter){
 
   uint8_t maskedLetter = asciiLetter & charBitmask;
   switch(maskedLetter){
+    case 0x18:  //X or x
+      return rand() % 4;
     case 0x12:  //R or r
       //return A or G, represented by 0 or 2
       return (rand() & 1) << 1;

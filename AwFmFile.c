@@ -88,7 +88,8 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
       return AwFmFileWriteFail;
     }
   }
-
+  
+  fflush(index->fileHandle);
   return AwFmFileWriteOkay;
 }
 

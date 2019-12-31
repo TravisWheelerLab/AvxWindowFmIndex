@@ -84,6 +84,9 @@ uint8_t awFmAsciiAminoAcidToLetterIndex(const uint8_t asciiLetter){
   else if(__builtin_expect(maskedLetter == ('Z' & charBitmask), 0)){
     maskedLetter = (rand() & 1)? 'E'& charBitmask: 'Q'& charBitmask;
   }
+  else if(__builtin_expect(maskedLetter == ('X' & charBitmask),0)){
+    return rand() % 20;
+  }
 
   return letterEncodings[maskedLetter];
 }

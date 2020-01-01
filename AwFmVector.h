@@ -4,17 +4,24 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-struct AwFmVector{
-  size_t capacity;
-  size_t count;
-  size_t elementSize;
-  void *arrayPtr;
+struct AwFmBacktrace{
+  size_t position;
+  size_t offset;
 };
 
-bool awFmVectorCreate(const size_t initialCapacity, const size_t elementSize, struct AwFmVector *restrict const vector);
+struct AwFmBacktraceVector{
+  size_t capacity;
+  size_t count;
+  struct AwFmBacktrace *backtraceArray;
+};
 
-void awFmVectorDealloc(struct AwFmVector *const vector);
+bool awFmBacktraceVectorCreate(struct AwFmBacktraceVector *restrict const vector);
 
-bool awFmVectorAppend(struct AwFmVector *const vector, const void *const data);
+void awFmBacktraceVectorDealloc(struct AwFmBacktraceVector *const vector);
+
+bool awFmBacktraceVectorSetCount(struct AwFmBacktraceVector *const vector, const size_t newCount);
+
+struct AwFmBacktrace *AwFmBacktraceVectorBacktraceAtIndex(const struct AwFmBacktraceVector *restrict const vector,
+  const size_t index);
 
 #endif /* end of include guard: AW_FM_VECTOR_H */

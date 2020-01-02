@@ -1,7 +1,5 @@
 #include "AwFmOccurrence.h"
-#include "AwFmIndex.h"
 #include "AwFmLetter.h"
-#include "AwFmGlobals.h"
 
 #include <immintrin.h>
 #include <stdbool.h>
@@ -196,7 +194,7 @@ inline uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector){
 }
 
 
-inline void awFmBlockPrefetch(const uint8_t *restrict const baseBlockListPtr, const uint64_t blockByteWidth,
+inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const uint64_t blockByteWidth,
   const uint64_t nextQueryPosition){
 
   const uint64_t blockIndex    = getBlockIndexFromGlobalPosition(nextQueryPosition);

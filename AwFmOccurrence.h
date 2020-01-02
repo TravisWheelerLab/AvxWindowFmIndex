@@ -74,7 +74,7 @@ inline uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector);
  *      This is left as an argument to help unnecessary branching.
  *    nextQueryPosition: position in the blockList that contains the block that should be prefetched.
  */
-inline void awFmBlockPrefetch(const uint8_t *restrict const baseBlockListPtr, const uint64_t blockByteWidth,
+inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const uint64_t blockByteWidth,
   const uint64_t nextQueryPosition);
 
 
@@ -109,5 +109,6 @@ inline uint8_t awFmGetLetterAtBwtPosition(const union AwFmBwtBlockList blockList
  *    letter at the bwtPosition in the specified blockList.
  */
 size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
+
 
 #endif /* end of include guard: AW_FM_OCCURANCES_H */

@@ -1,3 +1,6 @@
+#ifndef AW_FM_KMER_TABLE_H
+#define AW_FM_KMER_TABLE_H
+
 #include <stdint.h>
 #include "AwFmIndex.h"
 
@@ -37,3 +40,5 @@ struct AwFmBackwardRange awFmSeedKmerRangeFromTable(const struct AwFmIndex *rest
  */
 struct AwFmBackwardRange awFmSeedKmerRangeFromTableExactLength(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer);
+
+#endif /* end of include guard: AW_FM_KMER_TABLE_H */

@@ -230,7 +230,7 @@ inline uint8_t awFmGetLetterAtBwtPosition(const union AwFmBwtBlockList blockList
 }
 
 
-inline size_t awFmBacksetpBwtPosition(const struct AwFmIndex *restrict const index,
+inline size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index,
   const uint64_t bwtPosition){
     const enum AwFmAlphabetType alphabet        = index->metadata.alphabetType;
     const uint64_t *prefixSums                  = index->prefixSums;

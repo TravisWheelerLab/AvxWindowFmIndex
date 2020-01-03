@@ -2,6 +2,8 @@
 #define AW_FM_INDEX_FILE_H
 
 #include "AwFmIndex.h"
+#include "AwFmVector.h" //todo: this is included for backtrace, move backtrace to index
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -103,6 +105,27 @@ enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *res
 enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
   const size_t sequencePosition, const size_t priorFlankLength, const size_t postFlankLength,
   char *const sequenceBuffer);
+
+
+/*
+ * Function:  awFmSuffixArrayReadPositionParallel
+ * --------------------
+ * Reads the database sequence position from the suffix array using a backtrace.
+ *  The backtrace contains the position in the full suffix array and the offset from backtracing.
+ *
+ *
+ *  Inputs:
+ *    index:   AwFmIndex struct containing the suffix array.
+ *    backtracePtr: struct containing the Position and offset to look up in the suffix array.
+ *
+ *  Returns:
+ *    AwFmReturnCode represnting the result of the read. Possible returns are:
+ *      AwFmFileReadOkay on success.
+ *      AwFmFileReadFail if the file could not be read sucessfully.
+ */
+enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *restrict const index,
+ struct AwFmBacktrace *restrict const backtracePtr);
+
 
 
 #endif /* end of include guard: AW_FM_INDEX_FILE_H */

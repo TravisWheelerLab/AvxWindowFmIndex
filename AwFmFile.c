@@ -1,8 +1,15 @@
+//_XOPEN_SOURCE needs to be defined before including unistd to make it include pread.
+//I have absolutely no idea why this is needed, but the linter seems to think so...
+#define _XOPEN_SOURCE 500
+
 #include "AwFmIndex.h"
 #include "AwFmFile.h"
+#include "AwFmVector.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <unistd.h>
 
 
 static const uint8_t IndexFileFormatIdHeaderLength  = 10;
@@ -88,7 +95,7 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
       return AwFmFileWriteFail;
     }
   }
-  
+
   fflush(index->fileHandle);
   return AwFmFileWriteOkay;
 }
@@ -240,6 +247,23 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
   return AwFmFileReadOkay;
 }
 
+
+enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *restrict const index,
+  struct AwFmBacktrace *restrict const backtracePtr){
+
+  uint64_t suffixArrayPosition = backtracePtr->position / index->metadata.suffixArrayCompressionRatio;
+  const size_t suffixArrayFileOffset = index->suffixArrayFileOffset + ( backtracePtr->position * sizeof(uint64_t));
+  ssize_t numBytesRead = pread(index->fileDescriptor, &suffixArrayPosition, sizeof(uint64_t), suffixArrayFileOffset);
+
+  if(numBytesRead == sizeof(uint64_t)){
+    backtracePtr->position += backtracePtr->offset;
+    return AwFmFileReadOkay;
+  }
+  else{
+    backtracePtr->position = -1UL;
+    return AwFmFileReadFail;
+  }
+}
 
 
 /*private function implementations*/

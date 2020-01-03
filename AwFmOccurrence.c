@@ -8,10 +8,6 @@
 #define BYTES_PER_AVX2_REGISTER         32
 
 /*Private Function Prototypes*/
-/*Computes the index in the blockList where the given BWT position is found.*/
-inline size_t getBlockIndexFromGlobalPosition(const uint64_t globalQueryPosition);
-/*computes the position where the given BWT position can be found in the relevant AwFmBlock.*/
-inline uint_fast8_t getBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition);
 /*creates a bitmask vector for masking out characters that are either after the query location, or containing the sentinel character.*/
 inline __m256i createQueryPositionBitmask(const uint8_t localQueryPosition, bool containsSentinelCharacter, uint8_t sentinelCharacterPosition);
 
@@ -257,35 +253,6 @@ inline size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const ind
 
     return backtraceBwtPosition;
   }
-
-
-
-/*Private functions*/
-/*
-* Function:  getBlockIndexFromGlobalPosition
-* --------------------
-*  Computes the block index, given the full BWT query position.
-*  Inputs:
-*    globalQueryPosition: Position in the BWT that the occurrence function is requesting
-*   Returns:
-*     Index of the block where the given query position resides.
-*/
-inline size_t getBlockIndexFromGlobalPosition(const size_t globalQueryPosition){
- return globalQueryPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
-}
-
-/*
- * Function:  getBlockQueryPositionFromGlobalPosition
- * --------------------
- *  Computes bit position inside the block that represents the given full BWT position.
- *  Inputs:
- *    globalQueryPosition: Position in the BWT that the occurrence function is requesting
- *   Returns:
- *     Bit position into the block's AVX2 vectors where the query position lands.
- */
-inline uint_fast8_t getBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition){
-  return globalQueryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
-}
 
 
 /*

@@ -1,6 +1,4 @@
 #include "AwFmIndex.h"
-#include "AwFmGlobals.h"
-#include "AwFmFile.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -115,4 +113,32 @@ size_t awFmNumBlocksFromBwtLength(const size_t suffixArrayLength){
 
 bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode){
   return returnCode >= 0;
+}
+
+
+/*Private functions*/
+/*
+* Function:  getBlockIndexFromGlobalPosition
+* --------------------
+*  Computes the block index, given the full BWT query position.
+*  Inputs:
+*    globalQueryPosition: Position in the BWT that the occurrence function is requesting
+*   Returns:
+*     Index of the block where the given query position resides.
+*/
+size_t awFmGetBlockIndexFromGlobalPosition(const size_t globalQueryPosition){
+ return globalQueryPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
+}
+
+/*
+ * Function:  getBlockQueryPositionFromGlobalPosition
+ * --------------------
+ *  Computes bit position inside the block that represents the given full BWT position.
+ *  Inputs:
+ *    globalQueryPosition: Position in the BWT that the occurrence function is requesting
+ *   Returns:
+ *     Bit position into the block's AVX2 vectors where the query position lands.
+ */
+uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition){
+  return globalQueryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
 }

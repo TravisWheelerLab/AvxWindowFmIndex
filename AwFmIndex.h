@@ -224,4 +224,28 @@ bool          awFmSearchRangeIsValid(const struct AwFmBackwardRange *restrict co
  */
 bool          awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode);
 
+
+/*
+* Function:  getBlockIndexFromGlobalPosition
+* --------------------
+*  Computes the block index, given the full BWT query position.
+*  Inputs:
+*    globalQueryPosition: Position in the BWT that the occurrence function is requesting
+*   Returns:
+*     Index of the block where the given query position resides.
+*/
+size_t awFmGetBlockIndexFromGlobalPosition(const size_t globalQueryPosition);
+
+
+/*
+ * Function:  getBlockQueryPositionFromGlobalPosition
+ * --------------------
+ *  Computes bit position inside the block that represents the given full BWT position.
+ *  Inputs:
+ *    globalQueryPosition: Position in the BWT that the occurrence function is requesting
+ *   Returns:
+ *     Bit position into the block's AVX2 vectors where the query position lands.
+ */
+uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition);
+
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

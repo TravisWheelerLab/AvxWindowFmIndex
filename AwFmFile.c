@@ -4,7 +4,6 @@
 
 #include "AwFmIndex.h"
 #include "AwFmFile.h"
-#include "AwFmVector.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>

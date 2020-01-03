@@ -2,7 +2,7 @@
 #define AW_FM_INDEX_FILE_H
 
 #include "AwFmIndex.h"
-#include "AwFmVector.h" //todo: this is included for backtrace, move backtrace to index
+#include "AwFmBacktraceVector.h"
 
 #include <stdbool.h>
 #include <stdint.h>

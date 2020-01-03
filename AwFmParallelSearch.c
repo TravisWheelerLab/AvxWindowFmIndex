@@ -1,7 +1,7 @@
 #include "AwFmParallelSearch.h"
 #include "AwFmSearch.h"
 #include "AwFmKmerTable.h"
-#include "AwFmVector.h"
+#include "AwFmBacktraceVector.h"
 #include "AwFmFile.h"
 
 #include <string.h>

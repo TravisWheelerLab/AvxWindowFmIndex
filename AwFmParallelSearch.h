@@ -7,40 +7,26 @@
 #include <stdbool.h>
 
 
-struct AwFmParallelSearchMetadata{
-bool  useOmpMultithreading;
-uint16_t  numThreads;
-uint16_t  numConcurrentQueries;
-};
-
 struct AwFmKmer{
   uint16_t length;
   char *string;
 };
 
 struct AwFmParallelSearchData{
-  struct  AwFmParallelSearchMetadata  metadata;
-  struct  AwFmKmer                    *kmerList;
-  struct  AwFmVector                  *sequencePositionLists;
-          size_t                      capacity;
-          size_t                      count;
-};
-
-struct AwFmBacktraceData{
-  size_t position;
-  size_t backtraceOffset;
+  struct  AwFmKmer            *kmerList;
+  struct  AwFmBacktraceVector *sequencePositionLists;
+          size_t              capacity;
+          size_t              count;
+          uint_fast16_t       numThreads;
 };
 
 
 struct AwFmParallelSearchData *awFmCreateParallelSearchData(const size_t capacity,
-  const struct AwFmParallelSearchMetadata *restrict const metadata);
+  const uint_fast8_t numThreads);
 
 void awFmDeallocParallelSearchData(struct AwFmParallelSearchData *restrict const searchData);
 
-void awFmSearchDataAddKmer(struct AwFmParallelSearchData *restrict const searchData,
-  char *restrict const kmer, const uint16_t kmerLength);
-
-enum AwFmReturnCode awFmParallelSearch(const struct AwFmIndex *restrict const index,
-  const struct AwFmParallelSearchData *restrict searchData);
+void awFmParallelSearch(const struct AwFmIndex *restrict const index,
+  struct AwFmParallelSearchData *restrict const searchData);
 
 #endif /* end of include guard: AW_FM_PARALLEL_SEARCH_H */

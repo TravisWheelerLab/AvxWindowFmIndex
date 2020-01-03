@@ -127,11 +127,32 @@ enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *
  struct AwFmBacktrace *restrict const backtracePtr);
 
 
+/*
+ * Function:  awFmGetSequenceFileOffset
+ * --------------------
+ * Computes the file offset for the start of the sequence in the AwFmIndex File.
+ *
+ *  Inputs:
+ *    index: Pointer to the index struct to create the file offset for.
+ *
+ *  Returns:
+ *    Offset into the file, in bytes, where the sequence starts.
+ */
+size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index);
 
- size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index);
 
-
- size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index);
+/*
+ * Function:  awFmGetSuffixArrayFileOffset
+ * --------------------
+ * Computes the file offset for the start of the compressed suffix array in the AwFmIndex File.
+ *
+ *  Inputs:
+ *    index: Pointer to the index struct to create the file offset for.
+ *
+ *  Returns:
+ *    Offset into the file, in bytes, where the compressed suffix array starts.
+ */
+size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index);
 
 
 #endif /* end of include guard: AW_FM_INDEX_FILE_H */

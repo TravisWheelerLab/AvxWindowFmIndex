@@ -303,13 +303,6 @@ inline size_t awFmBacktraceBwtPosition(const struct AwFmIndex *restrict const in
   }
 
 
-//TODO: move to AwFmIndex.c
- size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range){
-  uint64_t length = range->endPtr - range->startPtr;
-  return (range->startPtr <= range->endPtr)? length + 1: 0;
-}
-
-
 void awFmSwapBiDirectionalRangePointerDirection(struct AwFmBiDirectionalRange *restrict const range){
   uint64_t rangeSize          = range->endPtr - range->startPtr;
   uint64_t tempStartPrimePtr  = range->startPtr;

@@ -152,24 +152,6 @@ size_t awFmBacktraceBwtPosition(const struct AwFmIndex *restrict const index, co
 bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const char *restrict const kmer,
   const uint16_t kmerLength);
 
-
-//TODO: currently in search.h, move to awfmindex.h
-/*
- * Function:  awFmSearchRangeLength
- * --------------------
- * Gets the number of positions included in the given AwFmSearchRange
- *
- *  Inputs:
- *    range: Range of positions in the BWT that corresponds to some number of
- *      instances of a given kmer.
- *
- *  Outputs:
- *    Number of positions in the given range if the range is valid (startPtr < endPtr),
- *      or 0 otherwise, as that would imply that no instances of that kmer were found.
- */
-size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range);
-
-
 /*
  * Function:  awFmSwapBiDirectionalRangePointerDirection
  * --------------------

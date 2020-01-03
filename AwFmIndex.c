@@ -142,3 +142,9 @@ size_t awFmGetBlockIndexFromGlobalPosition(const size_t globalQueryPosition){
 uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition){
   return globalQueryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
 }
+
+
+ size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range){
+  uint64_t length = range->endPtr - range->startPtr;
+  return (range->startPtr <= range->endPtr)? length + 1: 0;
+}

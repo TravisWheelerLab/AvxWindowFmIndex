@@ -160,7 +160,7 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
       uint64_t offset   = 0;
 
       while(!awFmBwtPositionIsSampled(index, position)){
-        position = awFmBackstepBwtPosition(index, position); //todo: implement
+        position = awFmBacktraceBwtPosition(index, position);
         offset++;
       }
       backtraceArray[positionInRangeToBacktrace].position = position;

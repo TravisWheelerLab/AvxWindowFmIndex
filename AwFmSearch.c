@@ -217,7 +217,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
     uint64_t backtracePosition      = searchRange->startPtr + i;
 
     while(!awFmBwtPositionIsSampled(index, backtracePosition)){
-      backtracePosition = awFmBackstepBwtPosition(index, backtracePosition);
+      backtracePosition = awFmBacktraceBwtPosition(index, backtracePosition);
       databaseSequenceOffset++;
     }
 
@@ -275,7 +275,7 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
 }
 
 
-inline size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition){
+inline size_t awFmBacktraceBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition){
     const enum AwFmAlphabetType alphabet        = index->metadata.alphabetType;
     const uint64_t *prefixSums                  = index->prefixSums;
     const uint64_t sentinelCharacterPosition    = index->backwardSentinelCharacterPosition;

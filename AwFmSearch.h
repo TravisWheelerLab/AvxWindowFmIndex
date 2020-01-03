@@ -116,7 +116,7 @@ struct AwFmBackwardRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex
 
 
 /*
- * Function:  awFmBacksetpBwtPosition
+ * Function:  awFmBacktraceBwtPosition
  * --------------------
  * Given a specified Bwt position, backsteps to find the position one before in
  *  original sequence.
@@ -129,7 +129,7 @@ struct AwFmBackwardRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex
  *  Returns:
  *    letter at the bwtPosition in the specified blockList.
  */
-size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
+size_t awFmBacktraceBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
 
 
 /*

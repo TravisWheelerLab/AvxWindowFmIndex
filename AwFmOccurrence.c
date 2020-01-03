@@ -17,10 +17,10 @@ inline void awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBl
   struct AwFmOccurrenceVectorPair *vectorPair){
 
   //create the mask vector to mask away bits after the query position and the sentinel character (if present)
-  uint64_t blockIndex                   = getBlockIndexFromGlobalPosition(queryPosition);
-  uint64_t sentinelCharacterBlockIndex  = getBlockIndexFromGlobalPosition(sentinelCharacterPosition);
-  uint8_t localQueryPosition            = getBlockQueryPositionFromGlobalPosition(queryPosition);
-  uint8_t sentinelLocalPosition         = getBlockQueryPositionFromGlobalPosition(sentinelCharacterPosition);
+  uint64_t blockIndex                   = awFmGetBlockIndexFromGlobalPosition(queryPosition);
+  uint64_t sentinelCharacterBlockIndex  = awFmGetBlockIndexFromGlobalPosition(sentinelCharacterPosition);
+  uint8_t localQueryPosition            = awFmGetBlockQueryPositionFromGlobalPosition(queryPosition);
+  uint8_t sentinelLocalPosition         = awFmGetBlockQueryPositionFromGlobalPosition(sentinelCharacterPosition);
   bool blockContainsSentinel            = sentinelCharacterBlockIndex == blockIndex;
   __m256i bitmask = createQueryPositionBitmask(localQueryPosition, blockContainsSentinel, sentinelLocalPosition);
 
@@ -69,7 +69,7 @@ inline void awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *r
   const uint64_t queryPosition, const uint8_t letter, struct AwFmOccurrenceVectorPair *vectorPair){
 
   //create the mask vector to mask away bits after the query position
-  uint8_t localQueryPosition = getBlockQueryPositionFromGlobalPosition(queryPosition);
+  uint8_t localQueryPosition = awFmGetBlockQueryPositionFromGlobalPosition(queryPosition);
   __m256i bitmask = createQueryPositionBitmask(localQueryPosition, false, 0);
 
   //load the letter bit vectors
@@ -193,7 +193,7 @@ inline uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector){
 inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const uint64_t blockByteWidth,
   const uint64_t nextQueryPosition){
 
-  const uint64_t blockIndex    = getBlockIndexFromGlobalPosition(nextQueryPosition);
+  const uint64_t blockIndex    = awFmGetBlockIndexFromGlobalPosition(nextQueryPosition);
   //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
   const uint8_t *blockAddress  = (baseBlockListPtr + (blockIndex * blockByteWidth));
 
@@ -205,8 +205,8 @@ inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const
 
 inline uint8_t awFmGetLetterAtBwtPosition(const union AwFmBwtBlockList blockList,
   const enum AwFmAlphabetType alphabet, const uint64_t bwtPosition){
-  const size_t blockIndex      = getBlockIndexFromGlobalPosition(bwtPosition);
-  const size_t positionInBlock = getBlockQueryPositionFromGlobalPosition(bwtPosition);
+  const size_t blockIndex      = awFmGetBlockIndexFromGlobalPosition(bwtPosition);
+  const size_t positionInBlock = awFmGetBlockQueryPositionFromGlobalPosition(bwtPosition);
   const uint8_t byteInBlock    = positionInBlock / 8;
   const uint8_t bitInBlockByte = positionInBlock / 8;
   uint8_t letter = 0;

@@ -1,15 +1,14 @@
 #ifndef AW_FM_INDEX_STRUCTS_H
 #define AW_FM_INDEX_STRUCTS_H
 
-#include "AwFmGlobals.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <immintrin.h>
 #include <stdio.h>
 
 
-#define AW_FM_POSITIONS_PER_FM_BLOCK          256
-#define AW_FM_CACHE_LINE_SIZE_IN_BYTES  64
+#define AW_FM_POSITIONS_PER_FM_BLOCK        256
+#define AW_FM_CACHE_LINE_SIZE_IN_BYTES      64
 
 #define AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW 2
 #define AW_FM_NUCLEOTIDE_CARDINALITY        4
@@ -77,7 +76,11 @@ struct AwFmIndex{
           uint64_t          *prefixSums;
   struct  AwFmBackwardRange *kmerSeedTable;
           FILE              *fileHandle;
+          size_t            suffixArrayFileOffset;
+          size_t            sequenceFileOffset;
+          int               fileDescriptor;
   };
+
 
 //todo: remove unused return codes
 enum AwFmReturnCode{

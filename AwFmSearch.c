@@ -275,6 +275,35 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
 }
 
 
+inline size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition){
+    const enum AwFmAlphabetType alphabet        = index->metadata.alphabetType;
+    const uint64_t *prefixSums                  = index->prefixSums;
+    const uint64_t sentinelCharacterPosition    = index->backwardSentinelCharacterPosition;
+    const uint64_t  blockIndex                  = awFmGetBlockIndexFromGlobalPosition(bwtPosition);
+
+    uint64_t backtraceBwtPosition;
+    uint8_t frequencyIndexLetter;
+    const union AwFmBwtBlockList blockList = index->backwardBwtBlockList;
+    frequencyIndexLetter = awFmGetLetterAtBwtPosition(blockList, alphabet, bwtPosition);
+
+    struct AwFmOccurrenceVectorPair occurrenceVectors;
+    if(alphabet == AwFmAlphabetNucleotide){
+      awFmMakeNucleotideOccurrenceVectorPair(&blockList.asNucleotide[blockIndex], bwtPosition,
+        frequencyIndexLetter, sentinelCharacterPosition, &occurrenceVectors);
+    }
+    else{
+      awFmMakeAminoAcidOccurrenceVectorPair(&blockList.asAmino[blockIndex], bwtPosition,
+        frequencyIndexLetter, &occurrenceVectors);
+    }
+
+    const uint_fast8_t vectorPopcount = awFmVectorPopcount(occurrenceVectors.occurrenceVector);
+    backtraceBwtPosition = prefixSums[frequencyIndexLetter] + vectorPopcount;
+
+    return backtraceBwtPosition;
+  }
+
+
+//TODO: move to AwFmIndex.c
  size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range){
   uint64_t length = range->endPtr - range->startPtr;
   return (range->startPtr <= range->endPtr)? length + 1: 0;

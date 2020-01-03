@@ -226,35 +226,6 @@ inline uint8_t awFmGetLetterAtBwtPosition(const union AwFmBwtBlockList blockList
 }
 
 
-inline size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index,
-  const uint64_t bwtPosition){
-    const enum AwFmAlphabetType alphabet        = index->metadata.alphabetType;
-    const uint64_t *prefixSums                  = index->prefixSums;
-    const uint64_t sentinelCharacterPosition    = index->backwardSentinelCharacterPosition;
-    const uint64_t  blockIndex                  = getBlockIndexFromGlobalPosition(bwtPosition);
-
-    uint64_t backtraceBwtPosition;
-    uint8_t frequencyIndexLetter;
-    const union AwFmBwtBlockList blockList = index->backwardBwtBlockList;
-    frequencyIndexLetter = awFmGetLetterAtBwtPosition(blockList, alphabet, bwtPosition);
-
-    struct AwFmOccurrenceVectorPair occurrenceVectors;
-    if(alphabet == AwFmAlphabetNucleotide){
-      awFmMakeNucleotideOccurrenceVectorPair(&blockList.asNucleotide[blockIndex], bwtPosition,
-        frequencyIndexLetter, sentinelCharacterPosition, &occurrenceVectors);
-    }
-    else{
-      awFmMakeAminoAcidOccurrenceVectorPair(&blockList.asAmino[blockIndex], bwtPosition,
-        frequencyIndexLetter, &occurrenceVectors);
-    }
-
-    const uint_fast8_t vectorPopcount = awFmVectorPopcount(occurrenceVectors.occurrenceVector);
-    backtraceBwtPosition = prefixSums[frequencyIndexLetter] + vectorPopcount;
-
-    return backtraceBwtPosition;
-  }
-
-
 /*
  * Function:  createQueryPositionBitmask
  * --------------------

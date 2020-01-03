@@ -2,7 +2,7 @@
 #define AW_FM_OCCURANCE_H
 
 #include "AwFmIndex.h"
-#include "AwFmSearch.h"
+// #include "AwFmSearch.h"
 #include <stdint.h>
 
 
@@ -26,7 +26,7 @@ struct AwFmOccurrenceVectorPair{
  *    sentinelCharacterPosition: Global position of the sentinel character.
  *    vectorPair: out-argument that will be used to return the occurrence vectors.
  */
-inline void awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBlock *restrict const blockPtr,
+void awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBlock *restrict const blockPtr,
   const uint64_t queryPosition, const uint8_t letter, const uint64_t sentinelCharacterPosition,
   struct AwFmOccurrenceVectorPair *occurrenceVectors);
 
@@ -44,7 +44,7 @@ inline void awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBl
  *    letter: letter for which the occurrence request is for.
  *    vectorPair: out-argument that will be used to return the occurrence vectors.
  */
-inline void awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *restrict const blockPtr,
+void awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *restrict const blockPtr,
   const uint64_t queryPosition, const uint8_t letter, struct AwFmOccurrenceVectorPair *vectorPair);
 
 
@@ -60,7 +60,7 @@ inline void awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *r
  *  Returns:
  *    Count of the bits set in the occurrenceVector.
  */
-inline uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector);
+uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector);
 
 
 /*
@@ -74,7 +74,7 @@ inline uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector);
  *      This is left as an argument to help unnecessary branching.
  *    nextQueryPosition: position in the blockList that contains the block that should be prefetched.
  */
-inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const uint64_t blockByteWidth,
+void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const uint64_t blockByteWidth,
   const uint64_t nextQueryPosition);
 
 
@@ -91,23 +91,8 @@ inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const
  *  Returns:
  *    letter at the bwtPosition in the specified blockList.
  */
-inline uint8_t awFmGetLetterAtBwtPosition(const union AwFmBwtBlockList blockList, const enum AwFmAlphabetType alphabet, const uint64_t bwtPosition);
+uint8_t awFmGetLetterAtBwtPosition(const union AwFmBwtBlockList blockList, const enum AwFmAlphabetType alphabet, const uint64_t bwtPosition);
 
 
-/*
- * Function:  awFmBacksetpBwtPosition
- * --------------------
- * Given a specified Bwt position, backsteps to find the position one before in
- *  original sequence.
- *
- *  Inputs:
- *    index: Index to backstep
- *    alphabet: alphabet of the index, either Nucleotide or Amino
- *    bwtPosition: Position of the character to be returned.
- *
- *  Returns:
- *    letter at the bwtPosition in the specified blockList.
- */
-size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
 
 #endif /* end of include guard: AW_FM_OCCURANCE_H */

@@ -114,6 +114,24 @@ struct AwFmBackwardRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex
   const char *restrict const kmer, const uint16_t kmerLength);
 
 
+
+/*
+ * Function:  awFmBacksetpBwtPosition
+ * --------------------
+ * Given a specified Bwt position, backsteps to find the position one before in
+ *  original sequence.
+ *
+ *  Inputs:
+ *    index: Index to backstep
+ *    alphabet: alphabet of the index, either Nucleotide or Amino
+ *    bwtPosition: Position of the character to be returned.
+ *
+ *  Returns:
+ *    letter at the bwtPosition in the specified blockList.
+ */
+size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
+
+
 /*
  * Function:  awFmSingleKmerExists
  * --------------------
@@ -135,6 +153,7 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
   const uint16_t kmerLength);
 
 
+//TODO: currently in search.h, move to awfmindex.h
 /*
  * Function:  awFmSearchRangeLength
  * --------------------
@@ -162,5 +181,6 @@ size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const rang
  *    range: bidirectional range in the Bwt. This act as an out-argument, and will be updated by this function.
  */
 void awFmSwapBiDirectionalRangePointerDirection(struct AwFmBiDirectionalRange *restrict const range);
+
 
 #endif /* end of include guard: AW_FM_INDEX_SEARCH_H */

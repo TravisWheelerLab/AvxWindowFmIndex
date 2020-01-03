@@ -14,10 +14,6 @@
 static const uint8_t IndexFileFormatIdHeaderLength  = 10;
 static const char    IndexFileFormatIdHeader[10]    = "AwFmIndex\n";
 
-size_t getSequenceFileOffset(const struct AwFmIndex *restrict const index);
-
-size_t getSuffixArrayFileOffset(const struct AwFmIndex *restrict const index);
-
 
 enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
   const uint64_t *restrict const suffixArray, const uint8_t *restrict const sequence,
@@ -94,6 +90,8 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
       return AwFmFileWriteFail;
     }
   }
+
+  index->fileDescriptor        = fileno(index->fileHandle);
 
   fflush(index->fileHandle);
   return AwFmFileWriteOkay;
@@ -195,16 +193,19 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     return AwFmFileReadFail;
   }
 
+  (*index)->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(*index);
+  (*index)->sequenceFileOffset    = awFmGetSequenceFileOffset(*index);
+  (*index)->fileDescriptor        = fileno(fileHandle);
+
   return AwFmFileReadOkay;
 }
 
 
 enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *restrict const index,
   uint64_t *restrict const positionArray, const size_t positionArrayLength){
-  const size_t suffixArrayFileOffset = getSuffixArrayFileOffset(index);
 
   for(size_t i = 0; i < positionArrayLength; i++){
-    uint64_t seekPosition = suffixArrayFileOffset + ( positionArray[i] * sizeof(uint64_t));
+    uint64_t seekPosition = index->suffixArrayFileOffset + ( positionArray[i] * sizeof(uint64_t));
     int returnValue = fseek(index->fileHandle, seekPosition, SEEK_SET);
     if(returnValue != 0){
       return AwFmFileReadFail;
@@ -228,7 +229,7 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
   const size_t actualPriorFlankLength = (bufferWouldUnderflowSequence?
     sequencePosition: priorFlankLength);
 
-  const size_t seekPosition = getSequenceFileOffset(index) + sequencePosition - priorFlankLength;
+  const size_t seekPosition = index->sequenceFileOffset + sequencePosition - priorFlankLength;
   int seekResult = fseek(index->fileHandle, seekPosition, SEEK_SET);
   if(seekResult != 0){
     return AwFmFileReadFail;
@@ -265,8 +266,7 @@ enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *
 }
 
 
-/*private function implementations*/
-size_t getSequenceFileOffset(const struct AwFmIndex *restrict const index){
+size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index){
   const size_t prefixSumLength = awFmGetAlphabetCardinality(index->metadata.alphabetType);
   const size_t kmerSeedTableLength = awFmGetKmerTableLength(index);
   return IndexFileFormatIdHeaderLength + sizeof(struct AwFmIndexMetadata) +
@@ -275,6 +275,6 @@ size_t getSequenceFileOffset(const struct AwFmIndex *restrict const index){
 }
 
 
-size_t getSuffixArrayFileOffset(const struct AwFmIndex *restrict const index){
-  return getSequenceFileOffset(index) + ((index->bwtLength - 1) * sizeof(char));
+size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index){
+  return awFmGetSequenceFileOffset(index) + ((index->bwtLength - 1) * sizeof(char));
 }

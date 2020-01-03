@@ -7,7 +7,6 @@
 #include <string.h>
 #include <divsufsort64.h>
 
-
 void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDirection direction,
   const size_t suffixArrayLength, const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray);
 
@@ -94,6 +93,10 @@ enum AwFmReturnCode awFmCreateIndex(const struct AwFmIndex *restrict *index,
 
   //set the index as an out argument.
   *index = indexData;
+
+  indexData->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(*index);
+  indexData->sequenceFileOffset    = awFmGetSequenceFileOffset(*index);
+  //file descriptor will be set in awFmWriteIndexToFile
 
   //create the file and return
   return awFmWriteIndexToFile(indexData, backwardSuffixArray, sequence, sequenceLength,

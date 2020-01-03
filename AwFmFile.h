@@ -128,4 +128,10 @@ enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *
 
 
 
+ size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index);
+
+
+ size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index);
+
+
 #endif /* end of include guard: AW_FM_INDEX_FILE_H */

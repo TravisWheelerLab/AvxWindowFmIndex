@@ -1,5 +1,5 @@
-#ifndef AW_FM_OCCURANCES_H
-#define AW_FM_OCCURANCES_H
+#ifndef AW_FM_OCCURANCE_H
+#define AW_FM_OCCURANCE_H
 
 #include "AwFmIndex.h"
 #include "AwFmSearch.h"
@@ -110,5 +110,4 @@ inline uint8_t awFmGetLetterAtBwtPosition(const union AwFmBwtBlockList blockList
  */
 size_t awFmBackstepBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
 
-
-#endif /* end of include guard: AW_FM_OCCURANCES_H */
+#endif /* end of include guard: AW_FM_OCCURANCE_H */

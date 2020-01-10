@@ -28,22 +28,10 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
 
   //alloc the backward bwt
-  index->backwardBwtBlockList.asNucleotide = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, numBlocksInBwt * sizeOfBwtBlock);
-  if(index->backwardBwtBlockList.asNucleotide == NULL){
+  index->bwtBlockList.asNucleotide = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, numBlocksInBwt * sizeOfBwtBlock);
+  if(index->bwtBlockList.asNucleotide == NULL){
     awFmDeallocIndex(index);
     return NULL;
-  }
-
-  //alloc the forward bwt (if bidirectional)
-  if(metadata->bwtType == AwFmBwtTypeBiDirectional){
-    index->forwardBwtBlockList.asNucleotide = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, numBlocksInBwt * sizeOfBwtBlock);
-    if(index->forwardBwtBlockList.asNucleotide == NULL){
-      awFmDeallocIndex(index);
-      return NULL;
-    }
-  }
-  else{
-    index->forwardBwtBlockList.asNucleotide = NULL;
   }
 
   //compute the size of the kmer seed table (essentially a power function)
@@ -66,8 +54,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
 void awFmDeallocIndex(struct AwFmIndex *index){
   if(index != NULL){
     fclose(index->fileHandle);
-    free(index->backwardBwtBlockList.asNucleotide);
-    free(index->forwardBwtBlockList.asNucleotide);
+    free(index->bwtBlockList.asNucleotide);
     free(index->prefixSums);
     free(index->kmerSeedTable);
     free(index);
@@ -101,7 +88,7 @@ size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict const index){
 }
 
 
- bool awFmSearchRangeIsValid(const struct AwFmBackwardRange *restrict const searchRange){
+ bool awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange){
   return searchRange->startPtr <= searchRange->endPtr;
 }
 
@@ -125,7 +112,7 @@ uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQuer
 }
 
 
- size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range){
+ size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range){
   uint64_t length = range->endPtr - range->startPtr;
   return (range->startPtr <= range->endPtr)? length + 1: 0;
 }

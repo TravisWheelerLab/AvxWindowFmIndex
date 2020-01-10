@@ -17,21 +17,11 @@
 #define AW_FM_AMINO_CARDINALITY             20
 
 
-struct AwFmBackwardRange{
+struct AwFmSearchRange{
   uint64_t startPtr;
   uint64_t endPtr;
 };
 
-struct AwFmBiDirectionalRange{
-  uint64_t startPtr;
-  uint64_t endPtr;
-  uint64_t startPrimePtr;
-};
-
-enum AwFmSearchDirection{
-  AwFmSearchDirectionBackward,
-  AwFmSearchDirectionForward
-};
 
 enum AwFmAlphabetType{
   AwFmAlphabetAmino = 1, AwFmAlphabetNucleotide = 2};
@@ -63,18 +53,15 @@ struct AwFmIndexMetadata{
   uint16_t              suffixArrayCompressionRatio;
   uint8_t               kmerLengthInSeedTable;
   enum AwFmAlphabetType alphabetType;
-  enum AwFmBwtType      bwtType;
 };
 
 struct AwFmIndex{
   struct  AwFmIndexMetadata metadata;
-          uint64_t          backwardSentinelCharacterPosition;
-          uint64_t          forwardSentinelCharacterPosition;
+          uint64_t          sentinelCharacterPosition;
           uint64_t          bwtLength;
-  union   AwFmBwtBlockList  backwardBwtBlockList;
-  union   AwFmBwtBlockList  forwardBwtBlockList;
+  union   AwFmBwtBlockList  bwtBlockList;
           uint64_t          *prefixSums;
-  struct  AwFmBackwardRange *kmerSeedTable;
+  struct  AwFmSearchRange         *kmerSeedTable;
           FILE              *fileHandle;
           size_t            suffixArrayFileOffset;
           size_t            sequenceFileOffset;
@@ -140,7 +127,7 @@ uint_fast8_t  awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
 /*
  * Function:  awFmGetKmerTableLength
  * --------------------
- * Computes the number of AwFmBackwardRange structs in the kmerSeedTable.
+ * Computes the number of AwFmSearchRange structs in the kmerSeedTable.
  *  This value is equal to |A|^k, where |A| is the cardinalty of the alphabet as
  *    set in the given metadata, and k is the length of the kmers in the lookup table,
  *    also as set in the metadata.
@@ -148,7 +135,7 @@ uint_fast8_t  awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
  *    index: AwFmIndex struct that contains the kmerSeedTable.
  *
  *  Returns:
- *    Number of AwFmBackwardRange structs in the table.
+ *    Number of AwFmSearchRange structs in the table.
  */
 size_t        awFmGetKmerTableLength(const struct AwFmIndex *restrict const index);
 
@@ -200,7 +187,7 @@ uint64_t      awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restric
 /*
  * Function:  awFmSearchRangeIsValid
  * --------------------
- * Determines if the given AwFmBackwardRange represents represents a range of positions, or
+ * Determines if the given AwFmSearchRange represents represents a range of positions, or
  *  if no positions are represented by the search range.
  *  A search range is valid if and only if the start ptr is less than or equal to the end pointer.
  *
@@ -210,7 +197,7 @@ uint64_t      awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restric
  *  Returns:
  *    True if the search range represents a valid range of positions, or false if it represents no elements.
  */
-bool          awFmSearchRangeIsValid(const struct AwFmBackwardRange *restrict const searchRange);
+bool          awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
 
 
 /*
@@ -265,7 +252,7 @@ uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQuer
  *    Number of positions in the given range if the range is valid (startPtr < endPtr),
  *      or 0 otherwise, as that would imply that no instances of that kmer were found.
  */
-size_t awFmSearchRangeLength(const struct AwFmBackwardRange *restrict const range);
+size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range);
 
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

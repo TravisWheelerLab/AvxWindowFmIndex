@@ -2,34 +2,8 @@
 #define AW_FM_OCCURANCE_H
 
 #include "AwFmIndex.h"
-// #include "AwFmSearch.h"
 #include <stdint.h>
 
-
-struct AwFmOccurrenceVectorPair{
-  __m256i occurrenceVector;
-  __m256i occurrenceGteVector;
-};
-
-
-/*
- * Function:  awFmMakeNucleotideOccurrenceVectorPair
- * --------------------
- * Computes the vector of characters before the given position equal to the given letter and
- *  the number of characters before the position greater than or equal to the character, and returns
- *  them in the vectorPair out-argument.
- *
- *  Inputs:
- *    blockPtr: Pointer to the AwFmNucleotideBlock in which the query position resides.
- *    localQueryPosition: The local position of the query in the block
- *    letter: letter for which the occurrence request is for.
- *    sentinelCharacterPosition: Global position of the sentinel character.
- *
- *  Returns:
- *    Pair of the occurrence and occurrenceGte vectors
- */
-struct AwFmOccurrenceVectorPair awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBlock *restrict const blockPtr,
-  const uint8_t localQueryPosition, const uint8_t letter);
 
 /*
  * Function:  awFmMakeNucleotideOccurrenceVector
@@ -46,27 +20,6 @@ struct AwFmOccurrenceVectorPair awFmMakeNucleotideOccurrenceVectorPair(const str
  *   Vector with bits set at every position the given letter was found.
  */
 __m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *restrict const blockPtr,
-  const uint8_t localQueryPosition, const uint8_t letter);
-
-
-
-/*
- * Function:  awFmMakeAminoAcidOccurrenceVectorPair
- * --------------------
- * Computes the vector of characters before the given position equal to the given letter and
- *  the number of characters before the position greater than or equal to the character, and returns
- *  them in the vectorPair out-argument.
- *
- *  Inputs:
- *    blockPtr: Pointer to the AwFmNucleotideBlock in which the query position resides.
- *    localQueryPosition: The local position of the query in the block
- *    letter: letter for which the occurrence request is for.
- *    vectorPair: out-argument that will be used to return the occurrence vectors.
- *
- *  Returns:
- *    Pair of the occurrence and occurrenceGte vectors
- */
-struct AwFmOccurrenceVectorPair awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *restrict const blockPtr,
   const uint8_t localQueryPosition, const uint8_t letter);
 
 
@@ -132,19 +85,33 @@ void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const uint64
 
 
 /*
+ * Function:  awFmGetNucleotideLetterAtBwtPosition
+ * --------------------
+ * Given a specific position in the nucleotide BWT, returns the letter in the BWT at this position.
+ *
+ *  Inputs:
+ *    blockList: blockList to be queried.
+ *    bwtPosition: Position of the character to be returned.
+ *
+ *  Returns:
+ *    letter at the bwtPosition in the specified blockList.
+ */
+uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *blockPtr, const uint64_t localPosition);
+
+
+/*
  * Function:  awFmGetLetterAtBwtPosition
  * --------------------
  * Given a specific position in the BWT, returns the letter in the BWT at this position.
  *
  *  Inputs:
  *    blockList: blockList to be queried.
- *    alphabet: alphabet of the index, either Nucleotide or Amino
  *    bwtPosition: Position of the character to be returned.
  *
  *  Returns:
  *    letter at the bwtPosition in the specified blockList.
  */
-uint8_t awFmGetLetterAtBwtPosition(const union AwFmBwtBlockList blockList, const enum AwFmAlphabetType alphabet, const uint64_t bwtPosition);
+uint8_t awFmGetAminoLetterAtBwtPosition(const struct AwFmAminoBlock *blockPtr, const uint64_t localPosition);
 
 
 

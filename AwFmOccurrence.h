@@ -20,15 +20,34 @@ struct AwFmOccurrenceVectorPair{
  *  them in the vectorPair out-argument.
  *
  *  Inputs:
- *    blockPtr: address of the AwFmNucleotideBlock in which the query position resides.
- *    queryPosition: The global position of the query
+ *    blockPtr: Pointer to the AwFmNucleotideBlock in which the query position resides.
+ *    localQueryPosition: The local position of the query in the block
  *    letter: letter for which the occurrence request is for.
  *    sentinelCharacterPosition: Global position of the sentinel character.
- *    vectorPair: out-argument that will be used to return the occurrence vectors.
+ *
+ *  Returns:
+ *    Pair of the occurrence and occurrenceGte vectors
  */
-void awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBlock *restrict const blockPtr,
-  const uint64_t queryPosition, const uint8_t letter, const uint64_t sentinelCharacterPosition,
-  struct AwFmOccurrenceVectorPair *occurrenceVectors);
+struct AwFmOccurrenceVectorPair awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBlock *restrict const blockPtr,
+  const uint8_t localQueryPosition, const uint8_t letter);
+
+/*
+ * Function:  awFmMakeNucleotideOccurrenceVector
+ * --------------------
+ * Computes the vector of characters before the given position equal to the given letter.
+ *  Note that this function does not check for the sentinel character being in this vector.
+ *
+ *  Inputs:
+ *    blockPtr: Pointer to the AwFmNucleotideBlock in which the query position resides.
+ *    localQueryPosition: The local position of the query in the block
+ *    letter: letter for which the occurrence request is for.
+ *
+ *  Returns:
+ *   Vector with bits set at every position the given letter was found.
+ */
+__m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *restrict const blockPtr,
+  const uint8_t localQueryPosition, const uint8_t letter);
+
 
 
 /*
@@ -39,13 +58,33 @@ void awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBlock *re
  *  them in the vectorPair out-argument.
  *
  *  Inputs:
- *    blockPtr: address of the AwFmNucleotideBlock in which the query position resides.
- *    queryPosition: The global position of the query
+ *    blockPtr: Pointer to the AwFmNucleotideBlock in which the query position resides.
+ *    localQueryPosition: The local position of the query in the block
  *    letter: letter for which the occurrence request is for.
  *    vectorPair: out-argument that will be used to return the occurrence vectors.
+ *
+ *  Returns:
+ *    Pair of the occurrence and occurrenceGte vectors
  */
-void awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *restrict const blockPtr,
-  const uint64_t queryPosition, const uint8_t letter, struct AwFmOccurrenceVectorPair *vectorPair);
+struct AwFmOccurrenceVectorPair awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *restrict const blockPtr,
+  const uint8_t localQueryPosition, const uint8_t letter);
+
+
+/*
+ * Function:  awFmMakeAminoAcidOccurrenceVector
+ * --------------------
+ * Computes the vector of characters before the given position equal to the given letter.
+ *
+ *  Inputs:
+ *    blockPtr: Pointer to the AwFmNucleotideBlock in which the query position resides.
+ *    localQueryPosition: The local position of the query in the block
+ *    letter: letter for which the occurrence request is for.
+ *
+ *  Returns:
+ *   Vector with bits set at every position the given letter was found.
+ */
+__m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict const blockPtr,
+  const uint8_t localQueryPosition, const uint8_t letter);
 
 
 /*
@@ -60,8 +99,22 @@ void awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *restrict
  *  Returns:
  *    Count of the bits set in the occurrenceVector.
  */
-uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector);
+uint16_t awFmVectorPopcount(const __m256i occurrenceVector);
 
+/*
+ * Function:  awFmVectorPopcountBuiltin
+ * --------------------
+ * Computes the number of bits set in the given AVX2 vector.
+ *  This just uses the builtin _mm_popcnt_u64 instruction.
+ *   on arrays of this size, this is like 4 times faster than Mula
+ *
+ *  Inputs:
+ *    occurrenceVector: vector to perform the popcount on.
+ *
+ *  Returns:
+ *    Count of the bits set in the occurrenceVector.
+ */
+uint16_t awFmVectorPopcountBuiltin(const __m256i occurrenceVector);
 
 /*
  * Function:  awFmBlockPrefetch

@@ -8,50 +8,82 @@
 #define BYTES_PER_AVX2_REGISTER         32
 
 /*Private Function Prototypes*/
-/*creates a bitmask vector for masking out characters that are either after the query location, or containing the sentinel character.*/
-inline __m256i createQueryPositionBitmask(const uint8_t localQueryPosition, bool containsSentinelCharacter, uint8_t sentinelCharacterPosition);
+__m256i createQueryPositionBitmask(const uint8_t localQueryPosition);
 
 
-inline void awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBlock *restrict const blockPtr,
-  const uint64_t queryPosition, const uint8_t letter, const uint64_t sentinelCharacterPosition,
-  struct AwFmOccurrenceVectorPair *vectorPair){
+inline struct AwFmOccurrenceVectorPair awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBlock *restrict const blockPtr,
+  const uint8_t localQueryPosition, const uint8_t letter){
 
-  //create the mask vector to mask away bits after the query position and the sentinel character (if present)
-  uint64_t blockIndex                   = awFmGetBlockIndexFromGlobalPosition(queryPosition);
-  uint64_t sentinelCharacterBlockIndex  = awFmGetBlockIndexFromGlobalPosition(sentinelCharacterPosition);
-  uint8_t localQueryPosition            = awFmGetBlockQueryPositionFromGlobalPosition(queryPosition);
-  uint8_t sentinelLocalPosition         = awFmGetBlockQueryPositionFromGlobalPosition(sentinelCharacterPosition);
-  bool blockContainsSentinel            = sentinelCharacterBlockIndex == blockIndex;
-  __m256i bitmask = createQueryPositionBitmask(localQueryPosition, blockContainsSentinel, sentinelLocalPosition);
+  __m256i bitmask = createQueryPositionBitmask(localQueryPosition);
 
   //load the letter bit vectors
   const __m256i *restrict const blockVectorPtr = blockPtr->letterBitVectors;
-  const __m256i bit1Vector = _mm256_load_si256(blockVectorPtr + 1);
   const __m256i bit0Vector = _mm256_load_si256(blockVectorPtr);
+  const __m256i bit1Vector = _mm256_load_si256(blockVectorPtr + 1);
 
-  //create the occurrence vectors
+  struct AwFmOccurrenceVectorPair vectorPair;
+
   switch(letter){
     case 0: //Nucleotide A
-      vectorPair->occurrenceVector     = _mm256_xor_si256(_mm256_or_si256(bit1Vector, bit0Vector), _mm256_set1_epi8(0xFF));
-      vectorPair->occurrenceGteVector  = _mm256_set1_epi8(0xFF);
+      vectorPair.occurrenceVector     = _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, _mm256_set1_epi8(0xFF)));
+      vectorPair.occurrenceGteVector  = _mm256_set1_epi8(0xFF);
+      break;
     case 1://Nucleotide C
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit1Vector, bit0Vector);
-      vectorPair->occurrenceGteVector  = _mm256_or_si256(bit1Vector, bit0Vector);
+      vectorPair.occurrenceVector     = _mm256_andnot_si256(bit1Vector, bit0Vector);
+      vectorPair.occurrenceGteVector  = _mm256_or_si256(bit1Vector, bit0Vector);
+      break;
     case 2://Nucleotide G
-      vectorPair->occurrenceVector     = _mm256_andnot_si256(bit0Vector, bit1Vector);
-      vectorPair->occurrenceGteVector  = bit1Vector;
+      vectorPair.occurrenceVector     = _mm256_andnot_si256(bit0Vector, bit1Vector);
+      vectorPair.occurrenceGteVector  = bit1Vector;
+      break;
     case 3://Nucletoide T
-      vectorPair->occurrenceVector     = _mm256_and_si256(bit1Vector, bit0Vector);
-      vectorPair->occurrenceGteVector  = vectorPair->occurrenceVector;
+      vectorPair.occurrenceVector     = _mm256_and_si256(bit1Vector, bit0Vector);
+      vectorPair.occurrenceGteVector  = vectorPair.occurrenceVector;
+      break;
     default:
     __builtin_unreachable();
   }
 
-  vectorPair->occurrenceVector    = _mm256_and_si256(bitmask, vectorPair->occurrenceVector);
-  vectorPair->occurrenceGteVector = _mm256_and_si256(bitmask, vectorPair->occurrenceGteVector);
+  vectorPair.occurrenceVector     = _mm256_and_si256(vectorPair.occurrenceVector, bitmask);
+  vectorPair.occurrenceGteVector  = _mm256_and_si256(vectorPair.occurrenceGteVector, bitmask);
+  return vectorPair;
 }
 
 
+__m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *restrict const blockPtr,
+  const uint8_t localQueryPosition, const uint8_t letter){
+
+  __m256i bitmask = createQueryPositionBitmask(localQueryPosition);
+
+  //load the letter bit vectors
+  const __m256i *restrict const blockVectorPtr = blockPtr->letterBitVectors;
+  const __m256i bit0Vector = _mm256_load_si256(blockVectorPtr);
+  const __m256i bit1Vector = _mm256_load_si256(blockVectorPtr + 1);
+
+  __m256i returnVector;
+  switch(letter){
+    case 0: //Nucleotide A
+      returnVector  = _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, _mm256_set1_epi8(0xFF)));
+    case 1://Nucleotide C
+      returnVector  = _mm256_andnot_si256(bit1Vector, bit0Vector);
+    case 2://Nucleotide G
+      returnVector  = _mm256_andnot_si256(bit0Vector, bit1Vector);
+    case 3://Nucletoide T
+      returnVector  = _mm256_and_si256(bit1Vector, bit0Vector);
+    default:
+    __builtin_unreachable();
+  }
+
+  return _mm256_and_si256 (returnVector, bitmask);
+
+}
+
+
+//TODO: reorder the bidirectional amino representations to make more frequent aminos
+// smallest in index but largest in vector representation.
+//to make occLt, use the existing GTE approach, bitwise remove all positions where
+// the bit is set in occ (thus removing the E from the GTE, leaving GT. since the lower indexed have a higher)
+// vector notation, this gives you the occLt.
 /*
  * Function:  awFmMakeAminoAcidOccurrenceVectorPair
  * --------------------
@@ -65,12 +97,11 @@ inline void awFmMakeNucleotideOccurrenceVectorPair(const struct AwFmNucleotideBl
  *    letter: letter for which the occurrence request is for.
  *    vectorPair: out-argument that will be used to return the occurrence vectors.
  */
-inline void awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *restrict const blockPtr,
-  const uint64_t queryPosition, const uint8_t letter, struct AwFmOccurrenceVectorPair *vectorPair){
+inline struct AwFmOccurrenceVectorPair awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *restrict const blockPtr,
+  const uint8_t localQueryPosition, const uint8_t letter){
 
   //create the mask vector to mask away bits after the query position
-  uint8_t localQueryPosition = awFmGetBlockQueryPositionFromGlobalPosition(queryPosition);
-  __m256i bitmask = createQueryPositionBitmask(localQueryPosition, false, 0);
+  __m256i bitmask = createQueryPositionBitmask(localQueryPosition);
 
   //load the letter bit vectors
   const __m256i *restrict const blockVectorPtr = blockPtr->letterBitVectors;
@@ -80,113 +111,233 @@ inline void awFmMakeAminoAcidOccurrenceVectorPair(const struct AwFmAminoBlock *r
   const __m256i bit3Vector = _mm256_load_si256(blockVectorPtr + 3);
   const __m256i bit4Vector = _mm256_load_si256(blockVectorPtr + 4);
 
-  //create the occurrence vectors
+  struct AwFmOccurrenceVectorPair vectorPair;
+
   switch(__builtin_expect(letter, 0)){
     case 0:   /*A (alanine) encoding 0b01100*/
-      vectorPair->occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit2Vector));
-      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, bit2Vector));
+      vectorPair.occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit2Vector));
+      vectorPair.occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, bit2Vector));
       break;
     case 1:   /*C (cysteine) encoding 0b10111*/
-      vectorPair->occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
-      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
+      vectorPair.occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
+      vectorPair.occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
       break;
     case 2:   /*D (aspartic acid) encoding 0b00011*/
-      vectorPair->occurrenceVector    = _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
-      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
+      vectorPair.occurrenceVector    = _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      vectorPair.occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
       break;
     case 3:   /*E (Glutamic acid) encoding 0b00110*/
-      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
-      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
+      vectorPair.occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
+      vectorPair.occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
       break;
     case 4:   /*F (Phenylalanine) encoding 0b11110*/
-      vectorPair->occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit1Vector))));
-      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
+      vectorPair.occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit1Vector))));
+      vectorPair.occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
       break;
     case 5:   /*G (Glycine) encoding 0b11010*/
-      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
-      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
+      vectorPair.occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      vectorPair.occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
       break;
     case 6:   /*H (Histidine) encoding 0b11011*/
-      vectorPair->occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit2Vector, bit0Vector))));
-      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
+      vectorPair.occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit2Vector, bit0Vector))));
+      vectorPair.occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
       break;
     case 7:   /*I (Isoleucine) encoding 0b11001*/
-      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
-      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+      vectorPair.occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
+      vectorPair.occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
       break;
     case 8:   /*K (Lysine) encoding 0b10101*/
-      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
-      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+      vectorPair.occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
+      vectorPair.occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
       break;
     case 9:   /*L (aspartic acid) encoding 0b11100*/
-      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
-      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, bit2Vector));
+      vectorPair.occurrenceVector    = _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      vectorPair.occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, bit2Vector));
       break;
     case 10:  /*M (Methionine) encoding 0b11101*/
-      vectorPair->occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit0Vector))));
-      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+      vectorPair.occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit0Vector))));
+      vectorPair.occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
       break;
     case 11:  /*N (Asparagine) encoding 0b01000*/
-      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit4Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
-      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, bit3Vector);
+      vectorPair.occurrenceVector    = _mm256_andnot_si256(bit4Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
+      vectorPair.occurrenceGteVector = _mm256_or_si256(bit4Vector, bit3Vector);
       break;
     case 12:  /*P (Proline) encoding 0b01001*/
-      vectorPair->occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
-      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+      vectorPair.occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      vectorPair.occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
       break;
     case 13:  /*Q (glutamine) encoding 0b00100*/
-      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, _mm256_andnot_si256(bit4Vector, bit2Vector))));
-      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, bit2Vector));
+      vectorPair.occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, _mm256_andnot_si256(bit4Vector, bit2Vector))));
+      vectorPair.occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, bit2Vector));
       break;
     case 14:  /*R (Arginine) encoding 0b10011*/
-      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, bit4Vector));
-      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
+      vectorPair.occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, bit4Vector));
+      vectorPair.occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector))));
       break;
     case 15:  /*S (Serine) encoding 0b01010*/
-      vectorPair->occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
-      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
+      vectorPair.occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
+      vectorPair.occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
       break;
     case 16:  /*T (Threonine) encoding 0b00101*/
-      vectorPair->occurrenceVector    = _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
-      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+      vectorPair.occurrenceVector    = _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      vectorPair.occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
       break;
     case 17:  /*V (Valine) encoding 0b10110*/
-      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
-      vectorPair->occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
+      vectorPair.occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      vectorPair.occurrenceGteVector = _mm256_and_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_and_si256(bit2Vector, bit1Vector)));
       break;
     case 18:  /*W (Tryptophan) encoding 0b00001*/
-      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector))));
-      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
+      vectorPair.occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector))));
+      vectorPair.occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, _mm256_or_si256(bit1Vector, bit0Vector))));
       break;
     case 19:  /*Y (Tyrosine) encoding 0b00010*/
-      vectorPair->occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, _mm256_andnot_si256(bit4Vector, bit1Vector))));
-      vectorPair->occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
+      vectorPair.occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, _mm256_andnot_si256(bit4Vector, bit1Vector))));
+      vectorPair.occurrenceGteVector = _mm256_or_si256(bit4Vector, _mm256_or_si256(bit3Vector, _mm256_or_si256(bit2Vector, bit1Vector)));
       break;
     default: __builtin_unreachable();   //GCC respects this, doesn't check for letters that aren't valid
   }
 
-  vectorPair->occurrenceVector    = _mm256_and_si256(bitmask, vectorPair->occurrenceVector);
-  vectorPair->occurrenceGteVector = _mm256_and_si256(bitmask, vectorPair->occurrenceGteVector);
+  vectorPair.occurrenceVector     = _mm256_and_si256(vectorPair.occurrenceVector, bitmask);
+  vectorPair.occurrenceGteVector  = _mm256_and_si256(vectorPair.occurrenceGteVector, bitmask);
+  return vectorPair;
 }
 
-//TODO: try to have these be static and file scope, see if it can keep these in reg.
-inline uint_fast8_t awFmVectorPopcount(const __m256i occurrenceVector){
-  const __m256i lowBitsLookupTable  = _mm256_setr_epi8( 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0, 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0);
-  const __m256i highBitsLookupTable = _mm256_setr_epi8(-4,-3,-3,-2,-3,-2,-2,-1,-3,-2,-2,-1,-2,-1,-1, 0,-4,-3,-3,-2,-3,-2,-2,-1,-3,-2,-2,-1,-2,-1,-1, 0);
+/*
+ * Function:  awFmMakeAminoAcidOccurrenceVector
+ * --------------------
+ * Computes the vector of characters before the given position equal to the given letter.
+ *
+ *  Inputs:
+ *    blockPtr: Pointer to the AwFmNucleotideBlock in which the query position resides.
+ *    localQueryPosition: The local position of the query in the block
+ *    letter: letter for which the occurrence request is for.
+ *
+ *  Returns:
+ *   Vector with bits set at every position the given letter was found.
+ */
+__m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict const blockPtr,
+  const uint8_t localQueryPosition, const uint8_t letter){
 
-  const __m256i lowNybbleBitmasked          = _mm256_and_si256(occurrenceVector, _mm256_set1_epi8(0x0F));
-  const __m256i lowNybbleBitCount           = _mm256_shuffle_epi8(lowBitsLookupTable, lowNybbleBitmasked);
-  const __m256i highNybbleBits              = _mm256_srli_si256(occurrenceVector, 4);
-  const __m256i highNybbleBitmasked         = _mm256_and_si256(highNybbleBits, _mm256_set1_epi8(0x0F));
-  const __m256i highNybbleNegativeBitCount  = _mm256_shuffle_epi8(highBitsLookupTable, highNybbleBitmasked);
-  const __m256i sadCountVector              = _mm256_sad_epu8(lowNybbleBitCount, highNybbleNegativeBitCount);
-  //todo: try keeping nybble counts seperate, shifting both to be in the lower 128 bit regs, and performing separate hadds,
-  //and extracting out values at end from both nybble vectors.
+  __m256i bitmask = createQueryPositionBitmask(localQueryPosition);
 
-  //shift and add, placing the final two 16-bit sums in the least significant bits of each 128-bit lane.
-  const uint16_t finalSum = _mm256_extract_epi16(sadCountVector, 0) + _mm256_extract_epi16(sadCountVector, 4) +
-    _mm256_extract_epi16(sadCountVector, 8) + _mm256_extract_epi16(sadCountVector, 12);
-  return finalSum;
+  //load the letter bit vectors
+  const __m256i *restrict const blockVectorPtr = blockPtr->letterBitVectors;
+  const __m256i bit0Vector = _mm256_load_si256(blockVectorPtr);
+  const __m256i bit1Vector = _mm256_load_si256(blockVectorPtr + 1);
+  const __m256i bit2Vector = _mm256_load_si256(blockVectorPtr + 2);
+  const __m256i bit3Vector = _mm256_load_si256(blockVectorPtr + 3);
+  const __m256i bit4Vector = _mm256_load_si256(blockVectorPtr + 4);
+
+  __m256i occurrenceVector;
+
+  switch(__builtin_expect(letter, 0)){
+    case 0:   /*A (alanine) encoding 0b01100*/
+      occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit2Vector));
+      break;
+    case 1:   /*C (cysteine) encoding 0b10111*/
+      occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
+      break;
+    case 2:   /*D (aspartic acid) encoding 0b00011*/
+      occurrenceVector    = _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      break;
+    case 3:   /*E (Glutamic acid) encoding 0b00110*/
+      occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
+      break;
+    case 4:   /*F (Phenylalanine) encoding 0b11110*/
+      occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit1Vector))));
+        break;
+    case 5:   /*G (Glycine) encoding 0b11010*/
+      occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      break;
+    case 6:   /*H (Histidine) encoding 0b11011*/
+      occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit2Vector, bit0Vector))));
+      break;
+    case 7:   /*I (Isoleucine) encoding 0b11001*/
+      occurrenceVector    = _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
+      break;
+    case 8:   /*K (Lysine) encoding 0b10101*/
+      occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
+      break;
+    case 9:   /*L (aspartic acid) encoding 0b11100*/
+      occurrenceVector    = _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      break;
+    case 10:  /*M (Methionine) encoding 0b11101*/
+      occurrenceVector    = _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit0Vector))));
+      break;
+    case 11:  /*N (Asparagine) encoding 0b01000*/
+      occurrenceVector    = _mm256_andnot_si256(bit4Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
+      break;
+    case 12:  /*P (Proline) encoding 0b01001*/
+      occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      break;
+    case 13:  /*Q (glutamine) encoding 0b00100*/
+      occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, _mm256_andnot_si256(bit4Vector, bit2Vector))));
+      break;
+    case 14:  /*R (Arginine) encoding 0b10011*/
+      occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, bit4Vector));
+      break;
+    case 15:  /*S (Serine) encoding 0b01010*/
+      occurrenceVector    = _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
+      break;
+    case 16:  /*T (Threonine) encoding 0b00101*/
+      occurrenceVector    = _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      break;
+    case 17:  /*V (Valine) encoding 0b10110*/
+      occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      break;
+    case 18:  /*W (Tryptophan) encoding 0b00001*/
+      occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector))));
+      break;
+    case 19:  /*Y (Tyrosine) encoding 0b00010*/
+      occurrenceVector    = _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, _mm256_andnot_si256(bit4Vector, bit1Vector))));
+      break;
+    default: __builtin_unreachable();   //GCC respects this, doesn't check for letters that aren't valid
+  }
+
+  occurrenceVector = _mm256_and_si256(occurrenceVector, bitmask);
+  return occurrenceVector;
+}
+
+
+
+inline uint16_t awFmVectorPopcount(const __m256i occurrenceVector){
+  return awFmVectorPopcountBuiltin(occurrenceVector);
+  //deprecated
+// const __m256i lowBitsLookupTable = _mm256_set_epi8( 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0, 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0);
+// const __m256i highBitsLookupTable = _mm256_set_epi8(-5,-4,-4,-3,-4,-3,-3,-2,-4,-3,-3,-2,-3,-2,-2, -1,-5,-4,-4,-3,-4,-3,-3,-2,-4,-3,-3,-2,-3,-2,-2, -1);
+// const __m256i lowNybbleBitmasked = _mm256_and_si256(occurrenceVector, _mm256_set1_epi8(0x0F));
+// const __m256i lowNybbleBitCount = _mm256_shuffle_epi8(lowBitsLookupTable, lowNybbleBitmasked);
+// const __m256i highNybbleBits = _mm256_srli_epi16(occurrenceVector, 4);
+// const __m256i highNybbleBitmasked = _mm256_and_si256(highNybbleBits, _mm256_set1_epi8(0x0F));
+// const __m256i highNybbleNegativeBitCount = _mm256_shuffle_epi8(highBitsLookupTable, highNybbleBitmasked);
+// const __m256i sadCountVector = _mm256_sad_epu8(lowNybbleBitCount, highNybbleNegativeBitCount);
+//
+// const uint8_t finalSum = 224 -
+//   ((_mm256_extract_epi8(sadCountVector, 0)) + (_mm256_extract_epi8(sadCountVector, 8)) +
+//   (_mm256_extract_epi8(sadCountVector, 16)) + (_mm256_extract_epi8(sadCountVector, 24)));
+// //224 = 256 - 32, where the 32 is from subtracting one extra from each in the highBitsLookupTable
+// // keeping all the high bitmask one less than actual forces every add to overflow, making this consistent.
+//
+// return finalSum;
+}
+
+
+inline uint16_t awFmVectorPopcountBuiltin(const __m256i occurrenceVector){
+  return  _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 0)) +
+          _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 1)) +
+          _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 2)) +
+          _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 3));
+
+  //alternative:
+  // uint8_t unalignedBuffer[32 + 31];
+  // uint8_t *alignedBuffer = (uint8_t *)((intptr_t)( unalignedBuffer + 31 ) & ~31);
+  // _mm256_store_si256((__m256i*)alignedBuffer, vec);
+  //
+  // uint64_t *bufferAs64_t = (uint64_t*) alignedBuffer;
+  // return _mm_popcnt_u64(bufferAs64_t[0]) +
+  // _mm_popcnt_u64(bufferAs64_t[1]) +
+  // _mm_popcnt_u64(bufferAs64_t[2]) +
+  // _mm_popcnt_u64(bufferAs64_t[3]);
 }
 
 
@@ -235,34 +386,32 @@ inline uint8_t awFmGetLetterAtBwtPosition(const union AwFmBwtBlockList blockList
  *  Inputs:
  *    localQueryPosition: position in this AVX2 vector to query. All bits after
  *      this position are cleared in the returned vector.
- *    containsSentinelCharacter: determines if the sentinel character is represented in this vector.
- *    sentinelCharacterPosition: if the containsSentinelCharacter argument is true,
- *      the bit at this position will be cleared.
  *
  *   Returns:
  *     Bitmask Vector for the occurrence vector.
  */
-inline __m256i createQueryPositionBitmask(const uint8_t localQueryPosition,
-  bool containsSentinelCharacter, uint8_t sentinelCharacterPosition){
-  const uint8_t numBytesToPreserveAllOnes = localQueryPosition / 8;
-  const uint8_t lastQueryByteBitmask      = (1 << (localQueryPosition % 8)) - 1;
+inline __m256i createQueryPositionBitmask(const uint8_t localQueryPosition){
+  //make the mask for the quad word where the localQueryPositions shows up in.
+  uint64_t quadWordMask = (1UL << (uint64_t)(localQueryPosition % 64)) - 1;
+  const uint8_t quadWordIndexForQueryPosition = localQueryPosition / 64;
+  __m256i maskVector = _mm256_setzero_si256();
 
-  uint8_t bitmaskArray[BYTES_PER_AVX2_REGISTER] = {0};
-  for(uint_fast8_t i = 0; i < numBytesToPreserveAllOnes; i++){
-    bitmaskArray[i] = 0xFF;
-  }
-  bitmaskArray[numBytesToPreserveAllOnes] = lastQueryByteBitmask;
-  for( uint_fast8_t i = numBytesToPreserveAllOnes; i < BYTES_PER_AVX2_REGISTER; i++){
-    bitmaskArray[i] = 0;
+  //starting in the quad word where the query position shows up, set the quad word mask,
+  // and then change the quad word mask to all 1s so everything below gets set to 1s as well.
+  // this switch-case intentionally falls through, and is supposed to not have 'break' statements.
+  switch(quadWordIndexForQueryPosition){
+    case 3:
+    maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 3);
+    quadWordMask = -1UL;
+    case 2:
+    maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 2);
+    quadWordMask = -1UL;
+    case 1:
+    maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 1);
+    quadWordMask = -1UL;
+    case 0:
+    maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 0);
   }
 
-  //if the block contains the sentinel character, mask it away now.
-  if(__builtin_expect(containsSentinelCharacter, 0)){
-    uint8_t sentinelBytePosition = localQueryPosition / 8;
-    uint8_t sentinelBitPosition = localQueryPosition % 8;
-    bitmaskArray[sentinelBytePosition] &= ~(1 << sentinelBitPosition);
-  }
-
-  //load and apply the bitmask
-  return _mm256_lddqu_si256((__m256i*)bitmaskArray);
+  return maskVector;
 }

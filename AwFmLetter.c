@@ -4,8 +4,11 @@
 #include <time.h>
 
 
+//TODO: force the sentinel to be 3 (0x03) for nucletides to make the occGte easier!
+//otherwise, it will only show up in occGte when searching for A.
+
 uint8_t awFmLetterToLetterIndex(const uint8_t asciiLetter, const enum AwFmAlphabetType alphabet){
-  return (alphabet == AwFmAlphabetAminoAcid)?
+  return (alphabet == AwFmAlphabetAmino)?
     awFmAsciiAminoAcidToLetterIndex(asciiLetter):
     awFmAsciiNucleotideToLetterIndex(asciiLetter);
 }
@@ -15,55 +18,33 @@ uint8_t awFmAsciiNucleotideToLetterIndex(const uint8_t asciiLetter){
   static const uint8_t charBitmask          = 0x1F;
   static const uint8_t lookupTableD[3]      = {0,2,3};
   static const uint8_t lookupTableH[3]      = {0,1,3};
-  static const uint8_t nucleotideLookup[8]  = {0,0,0,1,3,0,0,2};
+  static const uint8_t codeLookupTable[32]  = {14, 0, 4, 1, 5,14, 14, 2, 6, 14, 14, 7, 14, 8, 14, 14, 14,
+                                                14, 9, 10, 3, 14, 11, 12, 14, 13, 14};
 
   uint8_t maskedLetter = asciiLetter & charBitmask;
-  switch(maskedLetter){
-    case 0x18:  //X or x
-      return rand() % 4;
-    case 0x12:  //R or r
-      //return A or G, represented by 0 or 2
-      return (rand() & 1) << 1;
-      break;
-    case 0x19: //Y or y
-      //return C or T, represented by 1 or 3
-      return ((rand() & 1) << 1) | 1;
-      break;
-    case 0x13: //S or s
-      //return C or G, represented by 1 or 2
-      return 1 << (rand() & 1);
-      break;
-    case 0x17: //W or w
-      //return A or T, represented by 0 or 3
-     return (rand() & 1)? 0: 3;
-     break;
-    case 0x0b: //K or k
-      //return G or T, represented by 0 or 3
-      return 2 | (rand() & 1);
-      break;
-    case 0x0D: //M or m
-      //return A or C, represented by 0 or 3
-      return rand() & 1;
-      break;
-    case 0x02: //B or b
-      //return C, G, or T
-      return (rand() % 3) + 1;
-      break;
-    case 0x16: //V or v
-      //return A, C, or G
-      return (rand() % 3);
-      break;
-    case 0x04: //D or d
-      //return A, C, or G
-      return lookupTableD[rand()%3];
-      break;
-    case 0x08: //H or h
-      return lookupTableH[rand()%3];
-      break;
+  switch(codeLookupTable[maskedLetter]){
+    case 0: return 0;                       break;//A
+    case 1: return 1;                       break;//C
+    case 2: return 2;                       break;//G
+    case 3: return 3;                       break;//T
+    case 4: return (rand() % 3) + 1;        break;//B
+    case 5: return lookupTableD[rand()%3];  break;//D
+    case 6: return lookupTableH[rand()%3];  break;//H
+    case 7: return 2 | (rand() & 1);        break;//K
+    case 8: return rand() & 1;              break;//M
+    case 9: return (rand() & 1) << 1;       break;//R
+    case 10:return 1 << (rand() & 1);       break;//S
+    case 11:return (rand() % 3);            break;//V
+    case 12:return (rand() & 1)? 0: 3;      break;//W
+    case 13:return ((rand() & 1) << 1) | 1; break;//Y
+    case 14:return rand()%4;//X or N
     default:
-      return nucleotideLookup[maskedLetter & 0x07];
+    __builtin_unreachable();
   }
 }
+
+
+
 
 
 uint8_t awFmAsciiAminoAcidToLetterIndex(const uint8_t asciiLetter){

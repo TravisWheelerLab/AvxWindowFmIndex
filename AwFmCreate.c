@@ -7,13 +7,13 @@
 #include <string.h>
 #include <divsufsort64.h>
 
-void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDirection direction,
-  const size_t suffixArrayLength, const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray);
+void createBwt(struct AwFmIndex *restrict const index, const size_t suffixArrayLength,
+  const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray);
 
 void createPrefixSums(uint64_t *restrict const prefixSums, const uint8_t *restrict const sequence,
   const uint64_t sequenceLength, const enum AwFmAlphabetType alphabet);
 
-void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmBackwardRange searchRange,
+void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmSearchRange searchRange,
   uint8_t currentKmerLength, uint64_t currentKmerIndex);
 
 
@@ -45,50 +45,9 @@ enum AwFmReturnCode awFmCreateIndex(const struct AwFmIndex *restrict *index,
   }
 
   //create the Bwt corresponding to the created suffixArray
-  createBwt(indexData, AwFmSearchDirectionBackward,
-    sequenceLength + 1, sequence, backwardSuffixArray);
+  createBwt(indexData, sequenceLength + 1, sequence, backwardSuffixArray);
 
-
-  uint64_t *forwardSuffixArray = NULL;
-  //if the index is bidirectional, create the forward suffix array and bwt
-  if(metadata->bwtType == AwFmBwtTypeBiDirectional){
-
-    //create the reversed sequence
-    uint8_t *restrict const reverseSequence = malloc(sequenceLength * sizeof(uint8_t));
-    if(reverseSequence == NULL){
-      free(backwardSuffixArray);
-      awFmDeallocIndex(indexData);
-      return AwFmAllocationFailure;
-    }
-
-    for(size_t i = 0; i < sequenceLength; i++){
-      reverseSequence[sequenceLength - i - 1] = sequence[i];
-    }
-
-    forwardSuffixArray = malloc((sequenceLength + 1) * sizeof(uint64_t));
-    if(forwardSuffixArray == NULL){
-      free(reverseSequence);
-      free(backwardSuffixArray);
-      awFmDeallocIndex(indexData);
-      return AwFmAllocationFailure;
-    }
-
-    //create the forward suffix array
-    uint64_t divSufSortReturnCode = divsufsort64(reverseSequence, (int64_t*)forwardSuffixArray, sequenceLength);
-    if(divSufSortReturnCode < 0){
-      free(reverseSequence);
-      free(backwardSuffixArray);
-      awFmDeallocIndex(indexData);
-      return AwFmSuffixArrayCreationFailure;
-    }
-
-    createBwt(indexData, AwFmSearchDirectionForward,
-      sequenceLength + 1, reverseSequence, forwardSuffixArray);
-    free(reverseSequence);
-    free(forwardSuffixArray);
-  }
-
-  struct AwFmBackwardRange searchRange;
+  struct AwFmSearchRange searchRange;
   populateKmerSeedTable(indexData, searchRange, 0, 0);
 
   //set the index as an out argument.
@@ -104,20 +63,8 @@ enum AwFmReturnCode awFmCreateIndex(const struct AwFmIndex *restrict *index,
 }
 
 
-void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDirection direction,
-  const size_t suffixArrayLength, const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray){
-
-  //get the correct block list
-  union AwFmBwtBlockList blockList;
-  uint64_t *sentinelCharacterPositionPtr;
-  if(direction == AwFmSearchDirectionBackward){
-    blockList = index->backwardBwtBlockList;
-    sentinelCharacterPositionPtr = &(index->backwardSentinelCharacterPosition);
-  }
-  else{
-    blockList = index->forwardBwtBlockList;
-    sentinelCharacterPositionPtr = &(index->forwardSentinelCharacterPosition);
-  }
+void createBwt(struct AwFmIndex *restrict const index, const size_t suffixArrayLength,
+  const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray){
 
   if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
     uint64_t baseOccurrences[5] = {0};
@@ -131,7 +78,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
       const uint8_t asciiLetterFromSequence = sequence[suffixArray[position]];
       //if we encounter the sentinel character, notate it, but don't try to put it inside the letterBitVectors
       if(__builtin_expect(asciiLetterFromSequence == '$', 0)){
-        *sentinelCharacterPositionPtr = position;
+        index->sentinelCharacterPosition = position;
         continue;
       }
       else{
@@ -145,7 +92,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
 
       //if this was the last position of the block, memcpy the block over and initialize the next block
       if(positionInBlock == (AW_FM_POSITIONS_PER_FM_BLOCK - 1)){
-        memcpy(&blockList.asNucleotide[blockIndex], &workingBlock, sizeof(struct AwFmNucleotideBlock));
+        memcpy(&index->bwtBlockList.asNucleotide[blockIndex], &workingBlock, sizeof(struct AwFmNucleotideBlock));
         memcpy(workingBlock.baseOccurrences, baseOccurrences, AW_FM_NUCLEOTIDE_CARDINALITY * sizeof(uint64_t));
         memset(workingBlock.letterBitVectors, 0, 2 * sizeof(__m256i));
       }
@@ -153,7 +100,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
 
     //transfer whatever is left over in the final block to the block list
     size_t finalBlockIndex = suffixArrayLength / AW_FM_POSITIONS_PER_FM_BLOCK;
-    memcpy(&blockList.asNucleotide[finalBlockIndex], &workingBlock, sizeof(struct AwFmNucleotideBlock));
+    memcpy(&index->bwtBlockList.asNucleotide[finalBlockIndex], &workingBlock, sizeof(struct AwFmNucleotideBlock));
 
   }
   else{
@@ -169,7 +116,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
       const uint8_t asciiLetterFromSequence = sequence[suffixArray[position]];
       //check for the null terminator
       if(__builtin_expect(asciiLetterFromSequence == '$', 0)){
-        *sentinelCharacterPositionPtr = position;
+        index->sentinelCharacterPosition = position;
       }
       else{
         const uint8_t encodedLetter           = awFmAsciiAminoAcidToLetterIndex(asciiLetterFromSequence);
@@ -185,7 +132,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
 
       //if this was the last position of the block, memcpy the block over and initialize the next block
       if(positionInBlock == (AW_FM_POSITIONS_PER_FM_BLOCK - 1)){
-        memcpy(&blockList.asAmino[blockIndex], &workingBlock, sizeof(struct AwFmAminoBlock));
+        memcpy(&index->bwtBlockList.asAmino[blockIndex], &workingBlock, sizeof(struct AwFmAminoBlock));
         memcpy(workingBlock.baseOccurrences, baseOccurrences, AW_FM_AMINO_CARDINALITY * sizeof(uint64_t));
         memset(workingBlock.letterBitVectors, 0, 5 * sizeof(__m256i));
       }
@@ -193,7 +140,7 @@ void createBwt(struct AwFmIndex *restrict const index, const enum AwFmSearchDire
 
     //transfer whatever is left over in the final block to the block list
     size_t finalBlockIndex = suffixArrayLength / AW_FM_POSITIONS_PER_FM_BLOCK;
-    memcpy(&blockList.asAmino[finalBlockIndex], &workingBlock, sizeof(struct AwFmAminoBlock));
+    memcpy(&index->bwtBlockList.asAmino[finalBlockIndex], &workingBlock, sizeof(struct AwFmAminoBlock));
   }
 
 }
@@ -236,7 +183,7 @@ void createPrefixSums(uint64_t *restrict const prefixSums, const uint8_t *restri
 }
 
 
-void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmBackwardRange searchRange,
+void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmSearchRange searchRange,
   uint8_t currentKmerLength, uint64_t currentKmerIndex){
   const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->metadata.alphabetType);
 
@@ -249,7 +196,7 @@ void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmBa
   }
   //base case
   else if(kmerLength == (currentKmerLength+1)){
-    memcpy(&index->kmerSeedTable[currentKmerIndex], &searchRange, sizeof(struct AwFmBackwardRange));
+    memcpy(&index->kmerSeedTable[currentKmerIndex], &searchRange, sizeof(struct AwFmSearchRange));
     return;
   }
   //recursive case
@@ -259,13 +206,14 @@ void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmBa
       uint8_t extendedLetterAsAscii;
       if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
           extendedLetterAsAscii = awFmNucleotideLetterIndexToAscii(extendedLetter);
+        //update the searchRange
+        awFmNucleotideIterativeStepBackwardSearch(index, &searchRange, extendedLetterAsAscii);
       }
       else{
         extendedLetterAsAscii = awFmAminoAcidLetterIndexToAscii(extendedLetter);
+        awFmAminoIterativeStepBackwardSearch(index, &searchRange, extendedLetterAsAscii);
       }
 
-      //update the searchRange
-      awFmIterativeStepBackwardSearch(index, &searchRange, extendedLetterAsAscii);
       uint64_t newKmerIndex = (currentKmerIndex * alphabetSize)+ extendedLetter;
       populateKmerSeedTable(index, searchRange, currentKmerLength + 1, newKmerIndex);
     }

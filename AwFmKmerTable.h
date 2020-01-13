@@ -1,8 +1,8 @@
 #ifndef AW_FM_KMER_TABLE_H
 #define AW_FM_KMER_TABLE_H
 
-#include <stdint.h>
 #include "AwFmIndex.h"
+#include <stdint.h>
 
 
 /*
@@ -20,7 +20,7 @@
  *  Returns:
  *    struct containing the startPtr and endPtr for the kmer.
  */
-struct AwFmBackwardRange awFmSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange awFmSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength);
 
 
@@ -38,7 +38,7 @@ struct AwFmBackwardRange awFmSeedKmerRangeFromTable(const struct AwFmIndex *rest
  *  Returns:
  *    struct containing the backwardsRange struct in the kmerSeedTable.
  */
-struct AwFmBackwardRange awFmSeedKmerRangeFromTableExactLength(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange awFmSeedKmerRangeFromTableExactLength(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer);
 
 #endif /* end of include guard: AW_FM_KMER_TABLE_H */

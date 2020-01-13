@@ -4,7 +4,7 @@
 #include <string.h>
 
 
-struct AwFmBackwardRange awFmSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange awFmSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength){
 
   if(kmerLength < index->metadata.kmerLengthInSeedTable){
@@ -17,7 +17,7 @@ struct AwFmBackwardRange awFmSeedKmerRangeFromTable(const struct AwFmIndex *rest
     memset(extendedKmerBuffer + kmerLength, lastChar, index->metadata.kmerLengthInSeedTable - kmerLength);
     const uint64_t upperRange = awFmSeedKmerRangeFromTableExactLength(index, extendedKmerBuffer).startPtr;
 
-    return (struct AwFmBackwardRange){lowerRange, upperRange};
+    return (struct AwFmSearchRange){lowerRange, upperRange};
   }
   else{
     return awFmSeedKmerRangeFromTableExactLength(index, kmer);
@@ -25,7 +25,7 @@ struct AwFmBackwardRange awFmSeedKmerRangeFromTable(const struct AwFmIndex *rest
 }
 
 
-struct AwFmBackwardRange awFmSeedKmerRangeFromTableExactLength(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange awFmSeedKmerRangeFromTableExactLength(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer){
 
   const uint8_t kmerSeedLength = index->metadata.kmerLengthInSeedTable;

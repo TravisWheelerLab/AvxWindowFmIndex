@@ -108,7 +108,7 @@ uint8_t awFmAminoAcidCompressedVectorToAscii(const uint8_t compressedVectorLette
   const uint8_t letterLookup[32] = {
     '$', 'W', 'Y', 'D', 'Q', 'T', 'E', '?',
     'N', 'P', 'S', '?', 'A', '?', '?', '?',
-    '?', '?', '?', 'R', '?', 'K', 'U', 'C',
+    '?', '?', '?', 'R', '?', 'K', 'V', 'C',
     '?', 'I', 'G', 'H', 'L', 'M', 'F', '?'};
   return letterLookup[compressedVectorLetter];
 }

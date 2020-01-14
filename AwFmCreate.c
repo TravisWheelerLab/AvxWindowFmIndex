@@ -148,37 +148,28 @@ void createBwt(struct AwFmIndex *restrict const index, const size_t suffixArrayL
 
 void createPrefixSums(uint64_t *restrict const prefixSums, const uint8_t *restrict const sequence,
   const uint64_t sequenceLength, const enum AwFmAlphabetType alphabet){
-  if(alphabet == AwFmAlphabetNucleotide){
-    uint64_t tempPrefixSums[5] = {0};
-    //count how many times each letter occurrs.
-    for(size_t position = 0; position < sequenceLength; position++){
-      const uint8_t asciiLetter = sequence[position];
-      const uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(asciiLetter);
-      tempPrefixSums[letterIndex]++;
-    }
 
-    //perform a scan over the letter occurrences, creating the prefix sums.
-    for(uint8_t i = 0; i < AW_FM_NUCLEOTIDE_CARDINALITY; i++){
-      tempPrefixSums[i+1]+= tempPrefixSums[i];
-    }
-    memcpy(prefixSums, tempPrefixSums, AW_FM_NUCLEOTIDE_CARDINALITY * sizeof(uint64_t));
+  const uint8_t alphabetSize = awFmGetAlphabetCardinality(alphabet);
+  memset(prefixSums, 0, alphabetSize*sizeof(uint64_t));
 
+  for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++){
+    uint8_t letterIndex = alphabet == AwFmAlphabetNucleotide?
+      awFmAsciiNucleotideToLetterIndex(sequence[sequencePosition]):
+      awFmAsciiAminoAcidToLetterIndex(sequence[sequencePosition]);
+
+    prefixSums[letterIndex]++;
   }
-  else{
-    // +1 on the array length is to allow illegal characters to collect in the last element.
-    uint64_t tempPrefixSums[AW_FM_AMINO_CARDINALITY + 1] = {0};
-    //count how many times each letter occurrs.
-    for(size_t position = 0; position < sequenceLength; position++){
-      const uint8_t asciiLetter = sequence[position];
-      const uint8_t letterIndex = awFmAsciiAminoAcidToLetterIndex(asciiLetter);
-      tempPrefixSums[letterIndex]++;
-    }
 
-    //perform a scan over the letter occurrences, creating the prefix sums.
-    for(uint8_t i = 0; i < AW_FM_AMINO_CARDINALITY; i++){
-      tempPrefixSums[i+1]+= tempPrefixSums[i];
-    }
-    memcpy(prefixSums, tempPrefixSums, AW_FM_AMINO_CARDINALITY * sizeof(uint64_t));
+  //shift all the sums over 1
+  for(uint8_t i = alphabetSize - 1; i > 0; i--){
+    prefixSums[i] = prefixSums[i-1];
+  }
+  //set the first prefix sum to 1 for the sentinel.
+  prefixSums[0] = 1;
+
+  //sum up the prefixes
+  for(uint8_t i = 1; i < alphabetSize; i++){
+    prefixSums[i] += prefixSums[i-1];
   }
 }
 

@@ -204,7 +204,7 @@ void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmSe
   else if(currentKmerLength == 0){
     //initial case
     // printf("init case!\n");
-    searchRange.startPtr  = 0;
+    searchRange.startPtr  = 1;
     searchRange.endPtr    = index->bwtLength - 1;
   }
 

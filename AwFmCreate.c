@@ -7,11 +7,9 @@
 #include <string.h>
 #include <divsufsort64.h>
 
-void createBwt(struct AwFmIndex *restrict const index, const size_t suffixArrayLength,
+void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t sequenceLength,
   const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray);
 
-void createPrefixSums(uint64_t *restrict const prefixSums, const uint8_t *restrict const sequence,
-  const uint64_t sequenceLength, const enum AwFmAlphabetType alphabet);
 
 void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmSearchRange searchRange,
   uint8_t currentKmerLength, uint64_t currentKmerIndex);
@@ -27,7 +25,6 @@ enum AwFmReturnCode awFmCreateIndex(const struct AwFmIndex *restrict *index,
     return AwFmAllocationFailure;
   }
 
-  createPrefixSums(indexData->prefixSums, sequence, sequenceLength, indexData->metadata.alphabetType);
   //set the bwtLength
   indexData->bwtLength = sequenceLength + 1;
 
@@ -44,8 +41,8 @@ enum AwFmReturnCode awFmCreateIndex(const struct AwFmIndex *restrict *index,
     return AwFmSuffixArrayCreationFailure;
   }
 
-  //create the Bwt corresponding to the created suffixArray
-  createBwt(indexData, sequenceLength + 1, sequence, backwardSuffixArray);
+  //set the bwt and prefix sums
+  setBwtAndPrefixSums(indexData, sequenceLength + 1, sequence, suffixArray);
 
   struct AwFmSearchRange searchRange;
   populateKmerSeedTable(indexData, searchRange, 0, 0);
@@ -63,115 +60,100 @@ enum AwFmReturnCode awFmCreateIndex(const struct AwFmIndex *restrict *index,
 }
 
 
-void createBwt(struct AwFmIndex *restrict const index, const size_t suffixArrayLength,
-  const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray){
 
+void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t sequenceLength,
+  const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray){
   if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-    uint64_t baseOccurrences[5] = {0};
-    struct AwFmNucleotideBlock workingBlock = {0};
-    for(size_t position = 0; position < suffixArrayLength; position++){
-      const size_t blockIndex = position / AW_FM_POSITIONS_PER_FM_BLOCK;
-      const uint8_t positionInBlock = position % AW_FM_POSITIONS_PER_FM_BLOCK;
+    uint64_t baseOccurrences[4] = {0};
+
+    for(uint64_t suffixArrayPosition = 0; suffixArrayPosition < sequenceLength; suffixArrayPosition++){
+      const size_t  blockIndex      = suffixArrayPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
+      const uint8_t positionInBlock = suffixArrayPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
       const uint8_t byteInVector    = positionInBlock / 8;
       const uint8_t bitInVectorByte = positionInBlock % 8;
+      struct AwFmNucleotideBlock *nucleotideBlockPtr = &index->bwtBlockList.asNucleotide[blockIndex];
+      uint8_t *restrict const letterBitVectorBytes = (uint8_t*)nucleotideBlockPtr->letterBitVectors;
 
-      const uint8_t asciiLetterFromSequence = sequence[suffixArray[position]];
-      //if we encounter the sentinel character, notate it, but don't try to put it inside the letterBitVectors
-      if(__builtin_expect(asciiLetterFromSequence == '$', 0)){
-        index->sentinelCharacterPosition = position;
-        continue;
+      if(positionInBlock == 0){
+        //when we start a new block, copy over the base occurrences, and initialize the bit vectors
+        memcpy(nucleotideBlockPtr->baseOccurrences, baseOccurrences, AW_FM_NUCLEOTIDE_CARDINALITY * sizeof(uint64_t));
+        memset(nucleotideBlockPtr->letterBitVectors, 0, sizeof(__m256i) * AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW);
+      }
+
+      uint64_t sequencePosition;
+      if(__builtin_expect(suffixArrayPosition == 0, 0)){
+        //the first position in the bwt stores the char before the sentinel, aka the last letter in the sequence.
+        sequencePosition = sequenceLength - 1;
       }
       else{
-        const uint8_t encodedLetter = awFmNucleotideLetterIndexToAscii(asciiLetterFromSequence);
-        baseOccurrences[encodedLetter]++;
-
-        uint8_t * letterBitVectorsAsBytePtr = (uint8_t*) workingBlock.letterBitVectors;
-        *(letterBitVectorsAsBytePtr + byteInVector) |= (encodedLetter & 1) << bitInVectorByte;
-        *(letterBitVectorsAsBytePtr + byteInVector + sizeof(__m256i)) |= ((encodedLetter >> 1) & 1) << bitInVectorByte;
-      }
-
-      //if this was the last position of the block, memcpy the block over and initialize the next block
-      if(positionInBlock == (AW_FM_POSITIONS_PER_FM_BLOCK - 1)){
-        memcpy(&index->bwtBlockList.asNucleotide[blockIndex], &workingBlock, sizeof(struct AwFmNucleotideBlock));
-        memcpy(workingBlock.baseOccurrences, baseOccurrences, AW_FM_NUCLEOTIDE_CARDINALITY * sizeof(uint64_t));
-        memset(workingBlock.letterBitVectors, 0, 2 * sizeof(__m256i));
+        sequencePosition = suffixArray[suffixArrayPosition] - 1;
+        if(__builtin_expect(sequencePosition == 0, 0)){
+          //sentinel character at this position, don't shift anything in
+          continue;
+        }
+        uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(sequence[suffixArrayPosition]);
+        letterBitVectorBytes[byteInVector]      = letterBitVectorBytes[byteInVector] | (((letterIndex >> 0) & 0x1) << bitInVectorByte);
+        letterBitVectorBytes[byteInVector + 32] = letterBitVectorBytes[byteInVector] | (((letterIndex >> 1) & 0x1) << bitInVectorByte);
       }
     }
 
-    //transfer whatever is left over in the final block to the block list
-    size_t finalBlockIndex = suffixArrayLength / AW_FM_POSITIONS_PER_FM_BLOCK;
-    memcpy(&index->bwtBlockList.asNucleotide[finalBlockIndex], &workingBlock, sizeof(struct AwFmNucleotideBlock));
-
+    //set the prefix sums
+    uint64_t tempBaseOccurrence;
+    uint64_t prevBaseOccurrence = 1;  //1 is for the sentinel character
+    for(uint8_t i = 0; i < AW_FM_NUCLEOTIDE_CARDINALITY; i++){
+      tempBaseOccurrence = baseOccurrences[i];
+      baseOccurrences[i] = prevBaseOccurrence;
+      prevBaseOccurrence += tempBaseOccurrence;
+    }
   }
   else{
-      // +1 on the array length is to allow illegal characters to collect in the last element.
-    uint64_t baseOccurrences[AW_FM_AMINO_CARDINALITY + 1] = {0};
-    struct AwFmAminoBlock workingBlock = {0};
-    for(size_t position = 0; position < suffixArrayLength; position++){
-      const size_t blockIndex = position / AW_FM_POSITIONS_PER_FM_BLOCK;
-      const uint8_t positionInBlock = position % AW_FM_POSITIONS_PER_FM_BLOCK;
+    uint64_t baseOccurrences[20] = {0};
+
+    for(uint64_t suffixArrayPosition = 0; suffixArrayPosition < sequenceLength; suffixArrayPosition++){
+      const size_t  blockIndex      = suffixArrayPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
+      const uint8_t positionInBlock = suffixArrayPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
       const uint8_t byteInVector    = positionInBlock / 8;
       const uint8_t bitInVectorByte = positionInBlock % 8;
+      struct AwFmAminoBlock *restrict const aminoBlockPointer = &index->bwtBlockList.asAmino[blockIndex];
+      uint8_t *restrict const letterBitVectorBytes = (uint8_t*)aminoBlockPointer->letterBitVectors;
 
-      const uint8_t asciiLetterFromSequence = sequence[suffixArray[position]];
-      //check for the null terminator
-      if(__builtin_expect(asciiLetterFromSequence == '$', 0)){
-        index->sentinelCharacterPosition = position;
+      if(positionInBlock == 0){
+        //when we start a new block, copy over the base occurrences, and initialize the bit vectors
+        memcpy(aminoBlockPointer->baseOccurrences, baseOccurrences, AW_FM_AMINO_CARDINALITY * sizeof(uint64_t));
+        memset(aminoBlockPointer->letterBitVectors, 0, sizeof(__m256i) * AW_FM_AMINO_VECTORS_PER_WINDOW);
+      }
+
+      uint64_t sequencePosition;
+      if(__builtin_expect(suffixArrayPosition == 0, 0)){
+        //the first position in the bwt stores the char before the sentinel, aka the last letter in the sequence.
+         sequencePosition = sequenceLength-1;
       }
       else{
-        const uint8_t encodedLetter           = awFmAsciiAminoAcidToLetterIndex(asciiLetterFromSequence);
-        const uint8_t vectorFormatLetter      = awFmAminoAcidAsciiLetterToCompressedVectorFormat(asciiLetterFromSequence);
-        baseOccurrences[encodedLetter]++;
-
-        uint8_t * letterBitVectorsAsBytePtr = (uint8_t*) workingBlock.letterBitVectors;
-        for(uint8_t bit = 0; bit < 5; bit++){
-          const uint8_t bitInVectorFormatLetter = (vectorFormatLetter >> bit) & 1;
-          *(letterBitVectorsAsBytePtr + byteInVector + (bit * sizeof(__m256i))) |= bitInVectorFormatLetter << bitInVectorByte;
+        uint64_t sequencePosition = suffixArray[suffixArrayPosition] - 1;
+        if(__builtin_expect(sequencePosition == 0, 0)){
+          //sentinel character at this position
+          continue;
         }
       }
-
-      //if this was the last position of the block, memcpy the block over and initialize the next block
-      if(positionInBlock == (AW_FM_POSITIONS_PER_FM_BLOCK - 1)){
-        memcpy(&index->bwtBlockList.asAmino[blockIndex], &workingBlock, sizeof(struct AwFmAminoBlock));
-        memcpy(workingBlock.baseOccurrences, baseOccurrences, AW_FM_AMINO_CARDINALITY * sizeof(uint64_t));
-        memset(workingBlock.letterBitVectors, 0, 5 * sizeof(__m256i));
-      }
+      uint8_t letterIndex = awFmAsciiAminoAcidToLetterIndex(sequence[sequencePosition]);
+      letterBitVectorBytes[byteInVector]        = letterBitVectorBytes[byteInVector] | (((letterIndex >> 0) & 0x1) << bitInVectorByte);
+      letterBitVectorBytes[byteInVector + 32]   = letterBitVectorBytes[byteInVector] | (((letterIndex >> 1) & 0x1) << bitInVectorByte);
+      letterBitVectorBytes[byteInVector + 64]   = letterBitVectorBytes[byteInVector] | (((letterIndex >> 2) & 0x1) << bitInVectorByte);
+      letterBitVectorBytes[byteInVector + 96]   = letterBitVectorBytes[byteInVector] | (((letterIndex >> 3) & 0x1) << bitInVectorByte);
+      letterBitVectorBytes[byteInVector + 128]  = letterBitVectorBytes[byteInVector] | (((letterIndex >> 4) & 0x1) << bitInVectorByte);
     }
 
-    //transfer whatever is left over in the final block to the block list
-    size_t finalBlockIndex = suffixArrayLength / AW_FM_POSITIONS_PER_FM_BLOCK;
-    memcpy(&index->bwtBlockList.asAmino[finalBlockIndex], &workingBlock, sizeof(struct AwFmAminoBlock));
-  }
-
-}
-
-
-void createPrefixSums(uint64_t *restrict const prefixSums, const uint8_t *restrict const sequence,
-  const uint64_t sequenceLength, const enum AwFmAlphabetType alphabet){
-
-  const uint8_t alphabetSize = awFmGetAlphabetCardinality(alphabet);
-  memset(prefixSums, 0, alphabetSize*sizeof(uint64_t));
-
-  for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++){
-    uint8_t letterIndex = alphabet == AwFmAlphabetNucleotide?
-      awFmAsciiNucleotideToLetterIndex(sequence[sequencePosition]):
-      awFmAsciiAminoAcidToLetterIndex(sequence[sequencePosition]);
-
-    prefixSums[letterIndex]++;
-  }
-
-  //shift all the sums over 1
-  for(uint8_t i = alphabetSize - 1; i > 0; i--){
-    prefixSums[i] = prefixSums[i-1];
-  }
-  //set the first prefix sum to 1 for the sentinel.
-  prefixSums[0] = 1;
-
-  //sum up the prefixes
-  for(uint8_t i = 1; i < alphabetSize; i++){
-    prefixSums[i] += prefixSums[i-1];
+    //set the prefix sums
+    uint64_t tempBaseOccurrence;
+    uint64_t prevBaseOccurrence = 1;  //1 is for the sentinel character
+    for(uint8_t i = 0; i < AW_FM_AMINO_CARDINALITY; i++){
+      tempBaseOccurrence = baseOccurrences[i];
+      baseOccurrences[i] = prevBaseOccurrence;
+      prevBaseOccurrence += tempBaseOccurrence;
+    }
   }
 }
+
 
 
 void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmSearchRange searchRange,

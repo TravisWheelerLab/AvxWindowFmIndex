@@ -12,7 +12,7 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
 
   //query for the start pointer
   uint64_t queryPosition  = range->startPtr - 1;
-  uint64_t blockIndex = queryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
+  uint64_t blockIndex = awFmGetBlockIndexFromGlobalPosition(queryPosition);
   const uint64_t letterPrefixSum = index->prefixSums[letter];
 
   uint64_t baseOccurrence = index->bwtBlockList.asNucleotide[blockIndex].baseOccurrences[letter];
@@ -36,8 +36,8 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
 
   //query for the new end pointer
   queryPosition   = range->endPtr;
-  blockIndex = queryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
 
+  blockIndex = awFmGetBlockIndexFromGlobalPosition(queryPosition);
   baseOccurrence = index->bwtBlockList.asNucleotide[blockIndex].baseOccurrences[letter];
   occurrenceVector = awFmMakeNucleotideOccurrenceVector(&(index->bwtBlockList.asNucleotide[blockIndex]),
     queryPosition, letter);
@@ -65,7 +65,7 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
 
   //query for the start pointer
   uint64_t queryPosition  = range->startPtr - 1;
-  uint64_t blockIndex     = queryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
+  uint64_t blockIndex     = awFmGetBlockIndexFromGlobalPosition(queryPosition);
   const uint64_t letterPrefixSum = index->prefixSums[letter];
 
   uint64_t baseOccurrence   = index->bwtBlockList.asAmino[blockIndex].baseOccurrences[letter];
@@ -84,7 +84,7 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
 
   //query for the new end pointer
   queryPosition = range->endPtr;
-  blockIndex    = queryPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
+  blockIndex    = awFmGetBlockIndexFromGlobalPosition(queryPosition);
 
   baseOccurrence    = index->bwtBlockList.asAmino[blockIndex].baseOccurrences[letter];
   occurrenceVector  = awFmMakeAminoAcidOccurrenceVector(&(index->bwtBlockList.asAmino[blockIndex]),

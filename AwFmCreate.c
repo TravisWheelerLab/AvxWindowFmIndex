@@ -87,8 +87,12 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   //file descriptor will be set in awFmWriteIndexToFile
 
   //create the file and return
-  return awFmWriteIndexToFile(indexData, suffixArray, sequence, sequenceLength,
+  enum AwFmReturnCode returnCode = awFmWriteIndexToFile(indexData, suffixArray, sequence, sequenceLength,
     fileSrc, allowFileOverwrite);
+
+  free(suffixArray);
+
+  return returnCode;
 }
 
 

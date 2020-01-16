@@ -15,9 +15,17 @@ void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmSe
   uint8_t currentKmerLength, uint64_t currentKmerIndex);
 
 
-enum AwFmReturnCode awFmCreateIndex(const struct AwFmIndex *restrict *index,
+enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   const struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
   const char *restrict const fileSrc, const bool allowFileOverwrite){
+
+  //first, do a sanity check on inputs
+  if(metadata == NULL){
+    return AwFmNullPtrError;
+  }
+  if(metadata->suffixArrayCompressionRatio <= 0){
+    return AwFmFileFormatError;
+  }
 
   //allocate the index and all internal arrays.
   struct AwFmIndex *restrict indexData = awFmIndexAlloc(metadata, sequenceLength);
@@ -25,27 +33,51 @@ enum AwFmReturnCode awFmCreateIndex(const struct AwFmIndex *restrict *index,
     return AwFmAllocationFailure;
   }
 
+  memcpy(&indexData->metadata, metadata, sizeof(struct AwFmIndexMetadata));
+
+
   //set the bwtLength
   indexData->bwtLength = sequenceLength + 1;
 
-  uint64_t *backwardSuffixArray = malloc((sequenceLength + 1) * sizeof(uint64_t));
-  if(backwardSuffixArray == NULL){
+  uint64_t *suffixArray = malloc((sequenceLength + 1) * sizeof(uint64_t));
+  if(suffixArray == NULL){
     awFmDeallocIndex(indexData);
     return AwFmAllocationFailure;
   }
-
-  uint64_t divSufSortReturnCode = divsufsort64(sequence, (int64_t*)backwardSuffixArray, sequenceLength);
+  uint64_t divSufSortReturnCode = divsufsort64(sequence, (int64_t*)suffixArray, sequenceLength);
   if(divSufSortReturnCode < 0){
-    free(backwardSuffixArray);
+    free(suffixArray);
     awFmDeallocIndex(indexData);
     return AwFmSuffixArrayCreationFailure;
   }
+
+  printf("sequence: ");
+  for(uint64_t i = 0; i < sequenceLength; i++){
+    if(sequence)
+    printf("%c, ", sequence[i]);
+  }
+
+  printf("\n");
+  printf("suffix array: ");
+  for(uint64_t i = 0; i < sequenceLength; i++){
+    printf("%zu, ", suffixArray[i]);
+  }
+  printf("\n");
+
+
+  printf("bwt: ");
+  for(uint64_t i = 0; i < sequenceLength; i++){
+    if(sequence)
+    printf("%c, ", sequence[suffixArray[i]-1]);
+  }
+  printf("\n");
 
   //set the bwt and prefix sums
   setBwtAndPrefixSums(indexData, sequenceLength + 1, sequence, suffixArray);
 
   struct AwFmSearchRange searchRange;
   populateKmerSeedTable(indexData, searchRange, 0, 0);
+
 
   //set the index as an out argument.
   *index = indexData;
@@ -55,7 +87,7 @@ enum AwFmReturnCode awFmCreateIndex(const struct AwFmIndex *restrict *index,
   //file descriptor will be set in awFmWriteIndexToFile
 
   //create the file and return
-  return awFmWriteIndexToFile(indexData, backwardSuffixArray, sequence, sequenceLength,
+  return awFmWriteIndexToFile(indexData, suffixArray, sequence, sequenceLength,
     fileSrc, allowFileOverwrite);
 }
 
@@ -161,34 +193,38 @@ void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmSe
   const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->metadata.alphabetType);
 
   const uint8_t kmerLength  = index->metadata.kmerLengthInSeedTable;
+    // printf("populating kmer seed table, card %u, kmer length %u, current kmerLength %u, cur ind %zu\n", alphabetSize, kmerLength, currentKmerLength, currentKmerIndex);
 
-  //init case
-  if(currentKmerLength == 0){
-    searchRange.startPtr = 0;
-    searchRange.endPtr = index->bwtLength;
-  }
   //base case
-  else if(kmerLength == (currentKmerLength+1)){
+  if(kmerLength == currentKmerLength){
+    // printf("memoizing kmer range %zu-%zu\n", searchRange.startPtr, searchRange.endPtr);
     memcpy(&index->kmerSeedTable[currentKmerIndex], &searchRange, sizeof(struct AwFmSearchRange));
     return;
   }
-  //recursive case
-  else{
-    for(uint8_t extendedLetter = 0; extendedLetter < alphabetSize; extendedLetter++){
-      //... do update search range
-      uint8_t extendedLetterAsAscii;
-      if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-          extendedLetterAsAscii = awFmNucleotideLetterIndexToAscii(extendedLetter);
-        //update the searchRange
-        awFmNucleotideIterativeStepBackwardSearch(index, &searchRange, extendedLetterAsAscii);
-      }
-      else{
-        extendedLetterAsAscii = awFmAminoAcidLetterIndexToAscii(extendedLetter);
-        awFmAminoIterativeStepBackwardSearch(index, &searchRange, extendedLetterAsAscii);
-      }
-
-      uint64_t newKmerIndex = (currentKmerIndex * alphabetSize)+ extendedLetter;
-      populateKmerSeedTable(index, searchRange, currentKmerLength + 1, newKmerIndex);
-    }
+  else if(currentKmerLength == 0){
+    //initial case
+    // printf("init case!\n");
+    searchRange.startPtr  = 0;
+    searchRange.endPtr    = index->bwtLength - 1;
   }
+
+  //recursive case
+  // printf("recursive case\n");
+  for(uint8_t extendedLetter = 0; extendedLetter < alphabetSize; extendedLetter++){
+    //... do update search range
+    if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+      //update the searchRange
+      // printf("updating range...\n");
+      awFmNucleotideIterativeStepBackwardSearch(index, &searchRange, extendedLetter);
+      // printf("added ascii letter %c, new range is %zu-%zu\n", extendedLetter, searchRange.startPtr, searchRange.endPtr);
+    }
+    else{
+      awFmAminoIterativeStepBackwardSearch(index, &searchRange, extendedLetter);
+    }
+
+    uint64_t newKmerIndex = (currentKmerIndex * alphabetSize)+ extendedLetter;
+    populateKmerSeedTable(index, searchRange, currentKmerLength + 1, newKmerIndex);
+  }
+
+  // printf("leaving function!\n");
 }

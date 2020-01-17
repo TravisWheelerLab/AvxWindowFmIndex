@@ -11,15 +11,15 @@
 
 
 void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const index,
-  struct AwFmParallelSearchData *restrict const searchData, struct AwFmBackwardRange *restrict const ranges,
+  struct AwFmParallelSearchData *restrict const searchData, struct AwFmSearchRange *restrict const ranges,
   const size_t threadBlockStartIndex);
 
 void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const index,
-  struct AwFmParallelSearchData *restrict const searchData, struct AwFmBackwardRange *restrict const ranges,
+  struct AwFmParallelSearchData *restrict const searchData, struct AwFmSearchRange *restrict const ranges,
   const size_t threadBlockStartIndex);
 
 void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const index,
-  struct AwFmParallelSearchData *restrict const searchData, struct AwFmBackwardRange *restrict const ranges,
+  struct AwFmParallelSearchData *restrict const searchData, struct AwFmSearchRange *restrict const ranges,
   const size_t threadBlockStartIndex);
 
 void parallelSearchSuffixArrayLookup(const struct AwFmIndex *restrict const index,
@@ -80,13 +80,13 @@ void awFmDeallocParallelSearchData(struct AwFmParallelSearchData *restrict const
 void awFmParallelSearch(const struct AwFmIndex *restrict const index,
   struct AwFmParallelSearchData *restrict const searchData){
   //make local copies of the control data to encourage them to be used in a thread-shared manner.
-  const size_t    searchDataCount       = searchData->count;
+  const size_t searchDataCount = searchData->count;
 
   #pragma omp parallel for num_threads(searchData->numThreads) schedule(dynamic)
   for(size_t threadBlockStartIndex = 0;
     threadBlockStartIndex < searchDataCount;
     threadBlockStartIndex += NUM_CONCURRENT_QUERIES){
-      struct AwFmBackwardRange ranges[NUM_CONCURRENT_QUERIES];
+      struct AwFmSearchRange ranges[NUM_CONCURRENT_QUERIES];
 
       parallelSearchFindKmerSeedsForBlock(index, searchData, ranges, threadBlockStartIndex);
 
@@ -102,22 +102,24 @@ void awFmParallelSearch(const struct AwFmIndex *restrict const index,
 
 /*private function prototypes*/
 void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const index,
-  struct AwFmParallelSearchData *restrict const searchData, struct AwFmBackwardRange *restrict const ranges,
+  struct AwFmParallelSearchData *restrict const searchData, struct AwFmSearchRange *restrict const ranges,
   const size_t threadBlockStartIndex){
 
   for(size_t i = 0; i < NUM_CONCURRENT_QUERIES; i++){
     const size_t  kmerIndex   = i + threadBlockStartIndex;
     const uint8_t kmerLength  = searchData->kmerList[kmerIndex].length;
     const char    *kmerString = searchData->kmerList[kmerIndex].string;
-    const struct AwFmBackwardRange rangePtr = awFmSeedKmerRangeFromTable(index,
-      kmerString, kmerLength);
-    memcpy(&ranges[i], &rangePtr, sizeof(struct AwFmBackwardRange));
+    
+    const struct AwFmSearchRange range = index->metadata.alphabetType == AwFmAlphabetNucleotide?
+    awFmNucleotideSeedKmerRangeFromTable(index, kmerString, kmerLength):
+    awFmAminoSeedKmerRangeFromTable(index, kmerString, kmerLength);
+    memcpy(&ranges[i], &range, sizeof(struct AwFmSearchRange));
   }
 }
 
 
 void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const index,
-  struct AwFmParallelSearchData *restrict const searchData, struct AwFmBackwardRange *restrict const ranges,
+  struct AwFmParallelSearchData *restrict const searchData, struct AwFmSearchRange *restrict const ranges,
   const size_t threadBlockStartIndex){
 
   bool hasActiveQueries = true;
@@ -136,7 +138,12 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
         const uint8_t currentQueryLetterIndex = kmerPtr->length - currentKmerLetterIndex;
         const char    currentQueryLetter      = kmerPtr->string[currentQueryLetterIndex];
 
-        awFmIterativeStepBackwardSearch(index, &ranges[i], currentQueryLetter);
+        if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+          awFmNucleotideIterativeStepBackwardSearch(index, &ranges[i], currentQueryLetter);
+        }
+        else{
+          awFmAminoIterativeStepBackwardSearch(index, &ranges[i], currentQueryLetter);
+        }
       }
     }
   }
@@ -145,7 +152,7 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
 
 
 void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const index,
-  struct AwFmParallelSearchData *restrict const searchData, struct AwFmBackwardRange *restrict const ranges,
+  struct AwFmParallelSearchData *restrict const searchData, struct AwFmSearchRange *restrict const ranges,
   const size_t threadBlockStartIndex){
 
   for(uint8_t i = 0; i < NUM_CONCURRENT_QUERIES; i++){
@@ -159,9 +166,17 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
       uint64_t position = ranges[i].startPtr + positionInRangeToBacktrace;
       uint64_t offset   = 0;
 
-      while(!awFmBwtPositionIsSampled(index, position)){
-        position = awFmBacktraceBwtPosition(index, position);
-        offset++;
+      if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+        while(!awFmBwtPositionIsSampled(index, position)){
+          position = awFmNucleotideBacktraceBwtPosition(index, position);
+          offset++;
+        }
+      }
+      else{
+        while(!awFmBwtPositionIsSampled(index, position)){
+          position = awFmAminoBacktraceBwtPosition(index, position);
+          offset++;
+        }
       }
       backtraceArray[positionInRangeToBacktrace].position = position;
       backtraceArray[positionInRangeToBacktrace].offset   = offset;

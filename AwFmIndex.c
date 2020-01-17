@@ -23,7 +23,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
   }
 
   //allocate the blockLists
-  size_t numBlocksInBwt = (bwtLength) % AW_FM_POSITIONS_PER_FM_BLOCK;
+  size_t numBlocksInBwt = awFmNumBlocksFromBwtLength(bwtLength);
   size_t sizeOfBwtBlock = metadata->alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
 

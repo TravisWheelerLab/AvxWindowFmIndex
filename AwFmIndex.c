@@ -4,7 +4,7 @@
 
 
 struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const metadata,
-  const size_t sequenceLength){
+  const size_t bwtLength){
 
   //allocate the index
   struct AwFmIndex *index = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, sizeof(struct AwFmIndex));
@@ -23,7 +23,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
   }
 
   //allocate the blockLists
-  size_t numBlocksInBwt = (sequenceLength + 1) % AW_FM_POSITIONS_PER_FM_BLOCK;
+  size_t numBlocksInBwt = (bwtLength) % AW_FM_POSITIONS_PER_FM_BLOCK;
   size_t sizeOfBwtBlock = metadata->alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
 
@@ -41,6 +41,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
   }
 
   //allocate the kmerSeedTable
+  printf("allocating kmer table of length %zu\n", kmerSeedTableSize);
   index->kmerSeedTable = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, kmerSeedTableSize * sizeof(struct AwFmSearchRange));
   if(index->kmerSeedTable == NULL){
     awFmDeallocIndex(index);

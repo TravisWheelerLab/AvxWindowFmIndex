@@ -28,7 +28,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   }
 
   //allocate the index and all internal arrays.
-  struct AwFmIndex *restrict indexData = awFmIndexAlloc(metadata, sequenceLength);
+  struct AwFmIndex *restrict indexData = awFmIndexAlloc(metadata, sequenceLength + 1);
   if(indexData == NULL){
     return AwFmAllocationFailure;
   }

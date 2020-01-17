@@ -87,14 +87,14 @@ enum AwFmReturnCode{
  *  Inputs:
  *    metadata:         metadata struct that describes the format and parameters of the index.
  *      The metadata struct will be memcpy'd directly into the index.
- *    sequenceLength:   Length of the sequence the index is built from.
+ *    bwtLength:   Length of the BWT, in positions, that the index will hold
  *
  *  Returns:
  *    Allocated AwFmIndex struct, or NULL on an allocation failure.
  *      If any dynamic allocation fails, all data used in the AwFmIndex will be deallocated, too.
  */
 struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const metadata,
-  const size_t sequenceLength);
+  const size_t bwtLength);
 
 
 /*

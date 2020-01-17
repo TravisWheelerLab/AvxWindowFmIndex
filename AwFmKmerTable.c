@@ -4,39 +4,65 @@
 #include <string.h>
 
 
-struct AwFmSearchRange awFmSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange awFmNucleotideSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength){
+  //find the index of the last prefix letter, either 0 or the index of the last letter in the kmer seed.
+  const int_fast16_t finalSuffixLetterPosition = kmerLength >= index->metadata.kmerLengthInSeedTable?
+    kmerLength - index->metadata.kmerLengthInSeedTable: 0;
 
-  if(kmerLength < index->metadata.kmerLengthInSeedTable){
-    char extendedKmerBuffer[index->metadata.kmerLengthInSeedTable];
-    memcpy(extendedKmerBuffer, kmer, kmerLength);
-    memset(extendedKmerBuffer + kmerLength, 'a', index->metadata.kmerLengthInSeedTable - kmerLength);
-    const uint64_t lowerRange = awFmSeedKmerRangeFromTableExactLength(index, extendedKmerBuffer).startPtr;
+  size_t tableIndex = 0;
 
-    const char lastChar = index->metadata.alphabetType == AwFmAlphabetNucleotide? 't': 'y';
-    memset(extendedKmerBuffer + kmerLength, lastChar, index->metadata.kmerLengthInSeedTable - kmerLength);
-    const uint64_t upperRange = awFmSeedKmerRangeFromTableExactLength(index, extendedKmerBuffer).startPtr;
+  for(int_fast16_t i = kmerLength - 1; i >= finalSuffixLetterPosition; i--){
+    tableIndex = (tableIndex * AW_FM_NUCLEOTIDE_CARDINALITY) + awFmAsciiNucleotideToLetterIndex(kmer[i]);
+  }
 
-    return (struct AwFmSearchRange){lowerRange, upperRange};
+  if(kmerLength <= index->metadata.kmerLengthInSeedTable){
+    return index->kmerSeedTable[tableIndex];
   }
   else{
-    return awFmSeedKmerRangeFromTableExactLength(index, kmer);
+    const uint64_t lowerRange = (index->kmerSeedTable[tableIndex]).startPtr;
+    const uint_fast16_t lettersLeftInSeed = index->metadata.kmerLengthInSeedTable - kmerLength;
+
+    //find the index of the kmer seed in the end of the range of valid kmers for the given one.
+    //this is akin to adding 't's to the beginning.
+    //we could do this with tableIndex = tableIndex * 4 + 3 in a for loop, but this should be equivalent
+    //and not require a for loop.
+    tableIndex = (tableIndex << (2* lettersLeftInSeed)) - 1;
+
+    const uint64_t upperRange = (index->kmerSeedTable[tableIndex]).endPtr;
+    return (struct AwFmSearchRange){lowerRange, upperRange};
   }
+
 }
 
 
-struct AwFmSearchRange awFmSeedKmerRangeFromTableExactLength(const struct AwFmIndex *restrict const index,
-  const char *restrict const kmer){
+struct AwFmSearchRange awFmAminoSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+  const char *restrict const kmer, const uint8_t kmerLength){
 
-  const uint8_t kmerSeedLength = index->metadata.kmerLengthInSeedTable;
+  //find the index of the last prefix letter, either 0 or the index of the last letter in the kmer seed.
+  const int_fast16_t finalSuffixLetterPosition = kmerLength >= index->metadata.kmerLengthInSeedTable?
+    kmerLength - index->metadata.kmerLengthInSeedTable: 0;
+
   size_t tableIndex = 0;
-
-  for(int_fast16_t i = kmerSeedLength - 1; i >= 0; i--){
-    if(index->metadata.alphabetType == AwFmAlphabetNucleotide)
-      tableIndex = (tableIndex * AW_FM_NUCLEOTIDE_CARDINALITY) + awFmNucleotideLetterIndexToAscii(kmer[i]);
-    else
-      tableIndex = (tableIndex * AW_FM_AMINO_CARDINALITY) + awFmAminoAcidLetterIndexToAscii(kmer[i]);
+  for(int_fast16_t i = kmerLength - 1; i >= finalSuffixLetterPosition; i--){
+    tableIndex = (tableIndex * AW_FM_AMINO_CARDINALITY) + awFmAsciiAminoAcidToLetterIndex(kmer[i]);
   }
 
-  return (index->kmerSeedTable[tableIndex]);
+  if(kmerLength <= index->metadata.kmerLengthInSeedTable){
+    return index->kmerSeedTable[tableIndex];
+  }
+  else{
+    const uint64_t lowerRange = (index->kmerSeedTable[tableIndex]).startPtr;
+    const uint_fast16_t lettersLeftInSeed = index->metadata.kmerLengthInSeedTable - kmerLength;
+
+    //loop through the last letters, conceptually adding 'y' aminos to the beginning
+    //until we've reached the length of seeds stored in the kmer table.
+    for(uint8_t i = 0; i < lettersLeftInSeed; i++){
+      tableIndex = tableIndex * AW_FM_AMINO_CARDINALITY;
+    }
+    tableIndex--;
+
+    const uint64_t upperRange = (index->kmerSeedTable[tableIndex]).endPtr;
+    return (struct AwFmSearchRange){lowerRange, upperRange};
+  }
 }

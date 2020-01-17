@@ -6,39 +6,39 @@
 
 
 /*
- * Function:  awFmSeedKmerRangeFromTable
+ * Function:  awFmNucleotideSeedKmerRangeFromTable
  * --------------------
- * Given a kmer, queries the kmerSeedTable  for the partially completed range in the backward suffix array.
+ * Given an ascii nucleotide kmer, queries the kmerSeedTable for the partially completed range in the backward suffix array.
  * This function checks the kmerLength, and if the kmer is smaller than those memoized in the seed table,
  * it extends the kmer to find the range the kmer comprises.
  *
  *  Inputs:
  *    index: AwFmIndex struct to search
- *    kmer: character string to search for in the kmerSeedTable.
+ *    kmer: ascii nucleotide character string to search for in the kmerSeedTable.
  *    kmerLength: length of the given kmer
  *
  *  Returns:
- *    struct containing the startPtr and endPtr for the kmer.
+ *    AwFmSearchRange containing the startPtr and endPtr for the kmer seed.
  */
-struct AwFmSearchRange awFmSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange awFmNucleotideSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength);
 
-
 /*
- * Function:  awFmSeedKmerRangeFromTableExactLength
+ * Function:  awFmAminoSeedKmerRangeFromTable
  * --------------------
- * Given a kmer, queries the kmerSeedTable for the partially completed range in the backward suffix array.
- * The length of the kmer's stored in the seed table can be found in the index metadata's kmerLengthInSeedTable attribute.
- * The given kmer must be at least this long.
+ * Given an ascii amino acid kmer, queries the kmerSeedTable for the partially completed range in the backward suffix array.
+ * This function checks the kmerLength, and if the kmer is smaller than those memoized in the seed table,
+ * it extends the kmer to find the range the kmer comprises.
  *
  *  Inputs:
  *    index: AwFmIndex struct to search
- *    kmer: character string to search for in the kmerSeedTable.
+ *    kmer: ascii amino acid character string to search for in the kmerSeedTable.
+ *    kmerLength: length of the given kmer
  *
  *  Returns:
- *    struct containing the backwardsRange struct in the kmerSeedTable.
+ *    AwFmSearchRange containing the startPtr and endPtr for the kmer seed.
  */
-struct AwFmSearchRange awFmSeedKmerRangeFromTableExactLength(const struct AwFmIndex *restrict const index,
-  const char *restrict const kmer);
+struct AwFmSearchRange awFmAminoSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+  const char *restrict const kmer, const uint8_t kmerLength);
 
 #endif /* end of include guard: AW_FM_KMER_TABLE_H */

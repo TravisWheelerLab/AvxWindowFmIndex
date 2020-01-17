@@ -49,24 +49,24 @@ union AwFmBwtBlockList{
 * This contains data that helps to build the index, or to determine how the index
 * will function.*/
 struct AwFmIndexMetadata{
-  uint32_t              versionNumber;
-  uint16_t              suffixArrayCompressionRatio;
+  uint16_t              versionNumber;
+  uint8_t               suffixArrayCompressionRatio;
   uint8_t               kmerLengthInSeedTable;
   enum AwFmAlphabetType alphabetType;
 };
 
 struct AwFmIndex{
-  struct  AwFmIndexMetadata metadata;
-          uint64_t          sentinelCharacterPosition;
           uint64_t          bwtLength;
+          uint64_t          sentinelCharacterPosition;
   union   AwFmBwtBlockList  bwtBlockList;
           uint64_t          *prefixSums;
-  struct  AwFmSearchRange         *kmerSeedTable;
+  struct  AwFmSearchRange   *kmerSeedTable;
           FILE              *fileHandle;
+  struct  AwFmIndexMetadata metadata;
+          int               fileDescriptor;
           size_t            suffixArrayFileOffset;
           size_t            sequenceFileOffset;
-          int               fileDescriptor;
-  };
+};
 
 
 //todo: remove unused return codes

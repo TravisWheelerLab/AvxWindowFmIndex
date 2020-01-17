@@ -62,11 +62,14 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
  * --------------------
  * Given an array of positions in the compressed suffix array, replaces each element in the positionArray
  *  with the sequence position found at that location in the compressed suffix array.
+ *  Note that the positions in the position array are positions into the 'unsampled' suffix array,
+ *  and will be divided by the compression ratio to find the index into the compressed
+ *  suffix array stored in the file.
  *
  *  Inputs:
  *    index:          Pointer to the AwFmIndex struct that corresponds to the
  *      index file that stores the compressed suffix array.
- *    positionArray:        Array of indices in the compressed suffix array. The data
+ *    positionArray:  Array of indices in the compressed suffix array. The data
  *      at each index in this array will be replaced with the value stored at that
  *      position in the suffix array.
  *

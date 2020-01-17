@@ -7,9 +7,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-
 #include <unistd.h>
-
 
 static const uint8_t IndexFileFormatIdHeaderLength  = 10;
 static const char    IndexFileFormatIdHeader[10]    = "AwFmIndex\n";
@@ -18,7 +16,6 @@ static const char    IndexFileFormatIdHeader[10]    = "AwFmIndex\n";
 enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
   const uint64_t *restrict const suffixArray, const uint8_t *restrict const sequence,
   const uint64_t sequenceLength, const char *restrict const fileSrc, const bool allowOverwrite){
-
   if(__builtin_expect(fileSrc == NULL, 0)){
     return AwFmNoFileSrcGiven;
   }
@@ -35,6 +32,7 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     return AwFmNullPtrError;
   }
 
+  //open the file
   char fileOpenMode[4] = {'w','b', (allowOverwrite? 0:'x'), 0};
   index->fileHandle = fopen(fileSrc, fileOpenMode);
 
@@ -42,56 +40,98 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     return AwFmFileAlreadyExists;
   }
 
+
+  //write the header
+  size_t elementsWritten = fwrite(IndexFileFormatIdHeader, sizeof(char), IndexFileFormatIdHeaderLength, index->fileHandle);
+  if(elementsWritten != IndexFileFormatIdHeaderLength){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+
+  //write the metadata, starting with the version number
+  elementsWritten = fwrite(&index->metadata.versionNumber, sizeof(uint16_t), 1, index->fileHandle);
+  if(elementsWritten != 1){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+  elementsWritten = fwrite(&index->metadata.suffixArrayCompressionRatio, sizeof(uint8_t), 1, index->fileHandle);
+  if(elementsWritten != 1){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+  elementsWritten = fwrite(&index->metadata.kmerLengthInSeedTable, sizeof(uint8_t), 1, index->fileHandle);
+  if(elementsWritten != 1){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+  uint8_t alphabetType = index->metadata.alphabetType;
+  elementsWritten = fwrite(&alphabetType, sizeof(uint8_t), 1, index->fileHandle);
+  if(elementsWritten != 1){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+
+  //write the bwt length
+  elementsWritten = fwrite(&index->bwtLength, sizeof(uint64_t), 1, index->fileHandle);
+  if(elementsWritten != 1){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+
+  //write the sentinel character position
+  elementsWritten = fwrite(&index->sentinelCharacterPosition, sizeof(uint64_t), 1, index->fileHandle);
+  if(elementsWritten != 1){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+
+  //write the BWT. if the bwt blocks aren't padded, just do an array write with fwrite.
+  //if they are padded, we need to go through and write them individually.
+  const size_t numBlockInBwt = awFmNumBlocksFromBwtLength(index->bwtLength);
   const size_t bytesPerBwtBlock = index->metadata.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
-  const size_t bytesPerBwt = awFmNumBlocksFromBwtLength(index->bwtLength) * bytesPerBwtBlock;
-  const uint64_t prefixSumsByteSize = awFmGetAlphabetCardinality(index->metadata.alphabetType) * sizeof(uint64_t);
-  const uint64_t kmerTableByteSize  = awFmGetKmerTableLength(index) * sizeof(struct AwFmBackwardRange);
 
-  //write the metadata, bwt length, sentinel locations, and backward bwt.
-  struct FileWriteData{const void *dataPtr; const size_t numBytes;};
-  struct FileWriteData fileWriteDataArray[10]  = {
-    {IndexFileFormatIdHeader,                   IndexFileFormatIdHeaderLength},
-    {&index->metadata,                          sizeof(struct AwFmIndexMetadata)},
-    {&index->bwtLength,                         sizeof(uint64_t)},
-    {&index->backwardSentinelCharacterPosition, sizeof(uint64_t)},
-    {&index->forwardSentinelCharacterPosition,  sizeof(uint64_t)},
-    {index->backwardBwtBlockList.asNucleotide,  bytesPerBwt},
-    {index->forwardBwtBlockList.asNucleotide,   bytesPerBwt},
-    {index->prefixSums,                         prefixSumsByteSize},
-    {index->kmerSeedTable,                      kmerTableByteSize},
-    {sequence,                                  sequenceLength}
-  };
-
-  for(uint8_t i = 0; i < 6; i++){
-    size_t elementsWritten = fwrite(fileWriteDataArray[i].dataPtr, fileWriteDataArray[i].numBytes, 1, index->fileHandle);
-    if(elementsWritten != 1){
-      fclose(index->fileHandle);
-      return AwFmFileWriteFail;
-    }
+  elementsWritten = fwrite(&index->bwtBlockList.asNucleotide, bytesPerBwtBlock, numBlockInBwt, index->fileHandle);
+  if(elementsWritten != numBlockInBwt){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
   }
 
-  //only write the forwardBwt (element index 6) if the bwt is bidirectional
-  const uint8_t secondPassFileWriteStart = index->metadata.bwtType == AwFmBwtTypeBiDirectional? 6: 7;
-
-  for(uint8_t i = secondPassFileWriteStart; i < 10; i++){
-    size_t elementsWritten = fwrite(fileWriteDataArray[i].dataPtr, fileWriteDataArray[i].numBytes, 1, index->fileHandle);
-    if(elementsWritten != 1){
-      fclose(index->fileHandle);
-      return AwFmFileWriteFail;
-    }
+  //write the prefix sums table
+  const size_t prefixSumsLength = awFmGetAlphabetCardinality(index->metadata.alphabetType);
+  elementsWritten = fwrite(&index->prefixSums, sizeof(uint64_t), prefixSumsLength, index->fileHandle);
+  if(elementsWritten != prefixSumsLength){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
   }
 
-  //write the compressed suffix array.
+  //write the kmer seed table
+  const size_t numElementsInKmerSeedTable = awFmGetKmerTableLength(index);
+  elementsWritten = fwrite(index->kmerSeedTable, sizeof(struct AwFmSearchRange), numElementsInKmerSeedTable, index->fileHandle);
+  if(elementsWritten != numElementsInKmerSeedTable){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+
+  //write the sequence
+  elementsWritten = fwrite(sequence, sizeof(char), sequenceLength, index->fileHandle);
+  if(elementsWritten != sequenceLength){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+
+  //write the compressed suffix array
   for(size_t i = 0; i < index->bwtLength; i+= index->metadata.suffixArrayCompressionRatio){
-    size_t elementsWritten = fwrite(suffixArray + i, sizeof(uint64_t), 1, index->fileHandle);
+    //write the 'implicit' position of the sentinel character at the end in the first element of the SA
+    size_t valueToWrite = suffixArray[i];
+    size_t elementsWritten = fwrite(&valueToWrite, sizeof(uint64_t), 1, index->fileHandle);
     if(elementsWritten != 1){
       fclose(index->fileHandle);
       return AwFmFileWriteFail;
     }
   }
 
-  index->fileDescriptor        = fileno(index->fileHandle);
+  index->fileDescriptor = fileno(index->fileHandle);
 
   fflush(index->fileHandle);
   return AwFmFileWriteOkay;
@@ -99,12 +139,19 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
 
 
 enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict index, const char *fileSrc){
+  if(__builtin_expect(fileSrc == NULL, 0)){
+    return AwFmNoFileSrcGiven;
+  }
+
   FILE *fileHandle = fopen(fileSrc, "r");
   if(!fileHandle){
     return AwFmFileOpenFail;
   }
 
-  //read the header
+  //create a local-scope pointer for the index, when we're done we'll set the index out-arg to this pointer.
+  struct AwFmIndex *restrict indexData;
+
+  //read the header, and check to make sure it matches
   char headerBuffer[IndexFileFormatIdHeaderLength + 1];
   size_t elementsRead = fread(headerBuffer, sizeof(char), IndexFileFormatIdHeaderLength, fileHandle);
   if(elementsRead != IndexFileFormatIdHeaderLength){
@@ -116,9 +163,24 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     return AwFmFileFormatError;
   }
 
-  //read the metadata
+  //read in the metadata
   struct AwFmIndexMetadata metadata;
-  elementsRead = fread(&metadata, sizeof(struct AwFmIndexMetadata), 1, fileHandle);
+  elementsRead = fread(&metadata.versionNumber, sizeof(uint16_t), 1, fileHandle);
+  if(elementsRead != 1){
+    fclose(fileHandle);
+    return AwFmFileReadFail;
+  }
+  elementsRead = fread(&metadata.suffixArrayCompressionRatio, sizeof(uint8_t), 1, fileHandle);
+  if(elementsRead != 1){
+    fclose(fileHandle);
+    return AwFmFileReadFail;
+  }
+  elementsRead = fread(&metadata.kmerLengthInSeedTable, sizeof(uint8_t), 1, fileHandle);
+  if(elementsRead != 1){
+    fclose(fileHandle);
+    return AwFmFileReadFail;
+  }
+  elementsRead = fread(&metadata.alphabetType, sizeof(uint8_t), 1, fileHandle);
   if(elementsRead != 1){
     fclose(fileHandle);
     return AwFmFileReadFail;
@@ -133,70 +195,55 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   }
 
   //allocate the index
-  (*index) = awFmIndexAlloc(&metadata, bwtLength -1);
-  if(*index == NULL){
+  indexData = awFmIndexAlloc(&metadata, bwtLength);
+  if(indexData == NULL){
     fclose(fileHandle);
     return AwFmAllocationFailure;
   }
 
-  elementsRead = fread(&(*index)->backwardSentinelCharacterPosition, sizeof(uint64_t), 1, fileHandle);
+  //read the sentinel character position
+  elementsRead = fread(&indexData->sentinelCharacterPosition, sizeof(uint64_t), 1, fileHandle);
   if(elementsRead != 1){
     fclose(fileHandle);
-    awFmDeallocIndex(*index);
+    awFmDeallocIndex(indexData);
     return AwFmFileReadFail;
   }
 
-  elementsRead = fread(&(*index)->forwardSentinelCharacterPosition, sizeof(uint64_t), 1, fileHandle);
-  if(elementsRead != 1){
-    fclose(fileHandle);
-    awFmDeallocIndex(*index);
-    return AwFmFileReadFail;
-  }
-
-  //read the backward bwt block list
-  const size_t numBwtBlocks = (*index)->bwtLength / AW_FM_POSITIONS_PER_FM_BLOCK;
-  const size_t blockSizeInBytes = (*index)->metadata.alphabetType == AwFmAlphabetNucleotide?
+  //read the bwt block list
+  const size_t numBwtBlocks = indexData->bwtLength / AW_FM_POSITIONS_PER_FM_BLOCK;
+  const size_t blockSizeInBytes = indexData->metadata.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock):
     sizeof(struct AwFmAminoBlock);
-
-  elementsRead = fread((*index)->backwardBwtBlockList.asNucleotide, blockSizeInBytes, numBwtBlocks, fileHandle);
+  elementsRead = fread(indexData->bwtBlockList.asNucleotide, blockSizeInBytes, numBwtBlocks, fileHandle);
   if(elementsRead != numBwtBlocks){
     fclose(fileHandle);
-    awFmDeallocIndex(*index);
+    awFmDeallocIndex(indexData);
     return AwFmFileReadFail;
   }
 
-  //read the forward bwt block list
-  if((*index)->metadata.bwtType == AwFmBwtTypeBiDirectional){
-    elementsRead = fread((*index)->forwardBwtBlockList.asNucleotide, blockSizeInBytes, numBwtBlocks, fileHandle);
-    if(elementsRead != numBwtBlocks){
-      fclose(fileHandle);
-      awFmDeallocIndex(*index);
-      return AwFmFileReadFail;
-    }
-  }
-
-  const size_t prefixSumsLength     = awFmGetAlphabetCardinality((*index)->metadata.alphabetType);
-  const size_t kmerSeedTableLength  = awFmGetKmerTableLength(*index);
-
-  elementsRead = fread((*index)->prefixSums, sizeof(uint64_t), prefixSumsLength, fileHandle);
+  //read the prefix sums array
+  const size_t prefixSumsLength     = awFmGetAlphabetCardinality(indexData->metadata.alphabetType);
+  elementsRead = fread(indexData->prefixSums, sizeof(uint64_t), prefixSumsLength, fileHandle);
   if(elementsRead != prefixSumsLength){
     fclose(fileHandle);
-    awFmDeallocIndex(*index);
+    awFmDeallocIndex(indexData);
     return AwFmFileReadFail;
   }
 
-  elementsRead = fread((*index)->kmerSeedTable, sizeof(struct AwFmBackwardRange), kmerSeedTableLength, fileHandle);
+  //read the kmer seed table
+  const size_t kmerSeedTableLength  = awFmGetKmerTableLength(indexData);
+  elementsRead = fread(indexData->kmerSeedTable, sizeof(struct AwFmSearchRange), kmerSeedTableLength, fileHandle);
   if(elementsRead != kmerSeedTableLength){
     fclose(fileHandle);
-    awFmDeallocIndex(*index);
+    awFmDeallocIndex(indexData);
     return AwFmFileReadFail;
   }
 
-  (*index)->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(*index);
-  (*index)->sequenceFileOffset    = awFmGetSequenceFileOffset(*index);
-  (*index)->fileDescriptor        = fileno(fileHandle);
+  indexData->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(indexData);
+  indexData->sequenceFileOffset    = awFmGetSequenceFileOffset(indexData);
+  indexData->fileDescriptor        = fileno(fileHandle);
 
+  *index = indexData;
   return AwFmFileReadOkay;
 }
 
@@ -205,14 +252,11 @@ enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *res
   uint64_t *restrict const positionArray, const size_t positionArrayLength){
 
   for(size_t i = 0; i < positionArrayLength; i++){
-    uint64_t seekPosition = index->suffixArrayFileOffset + ( positionArray[i] * sizeof(uint64_t));
-    int returnValue = fseek(index->fileHandle, seekPosition, SEEK_SET);
-    if(returnValue != 0){
-      return AwFmFileReadFail;
-    }
+    size_t indexInSuffixArray = positionArray[i] / index->metadata.suffixArrayCompressionRatio;
+    uint64_t seekPosition = index->suffixArrayFileOffset + (indexInSuffixArray * sizeof(uint64_t));
 
-    size_t elementsRead = fread(&(positionArray[i]), sizeof(uint64_t), 1, index->fileHandle);
-    if(elementsRead != 1){
+    size_t bytesRead = pread(index->fileDescriptor, &(positionArray[i]), sizeof(uint64_t), seekPosition);
+    if(bytesRead != sizeof(uint64_t)){
       return AwFmFileReadFail;
     }
   }
@@ -230,20 +274,15 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
     sequencePosition: priorFlankLength);
 
   const size_t seekPosition = index->sequenceFileOffset + sequencePosition - priorFlankLength;
-  int seekResult = fseek(index->fileHandle, seekPosition, SEEK_SET);
-  if(seekResult != 0){
-    return AwFmFileReadFail;
-  }
-
   const size_t sequenceSegmentLength = actualPriorFlankLength + postFlankLength;
-  size_t elementsRead = fread(sequenceBuffer, sizeof(char), sequenceSegmentLength, index->fileHandle);
-  if(elementsRead != sequenceSegmentLength){
+  size_t bytesRead = pread(index->fileDescriptor, sequenceBuffer, sequenceSegmentLength * sizeof(char), seekPosition);
+
+  if(bytesRead != sequenceSegmentLength * sizeof(char)){
     return AwFmFileReadFail;
   }
 
-  //add the null terminator
+  //null terminate the string
   sequenceBuffer[sequenceSegmentLength] = 0;
-
   return AwFmFileReadOkay;
 }
 
@@ -269,9 +308,15 @@ enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *
 size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index){
   const size_t prefixSumLength = awFmGetAlphabetCardinality(index->metadata.alphabetType);
   const size_t kmerSeedTableLength = awFmGetKmerTableLength(index);
-  return IndexFileFormatIdHeaderLength + sizeof(struct AwFmIndexMetadata) +
-    (3 * sizeof(uint64_t)) + (prefixSumLength * sizeof(uint64_t)) +
-    (kmerSeedTableLength * sizeof(struct AwFmBackwardRange));
+  const size_t bytesPerBwtBlock = index->metadata.alphabetType == AwFmAlphabetNucleotide?
+    sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
+  const size_t bwtLengthInBytes = awFmNumBlocksFromBwtLength(index->bwtLength) * bytesPerBwtBlock;
+  const size_t metadataLength = 4 * sizeof(uint32_t);
+  const size_t bwtLengthDataLength = 1 * sizeof(uint64_t);
+  const size_t sentinelPositionDataLength = 1 * sizeof(uint64_t);
+  return IndexFileFormatIdHeaderLength + metadataLength +
+    bwtLengthDataLength + sentinelPositionDataLength + (bwtLengthInBytes) +
+    (prefixSumLength * sizeof(uint64_t)) + (kmerSeedTableLength * sizeof(struct AwFmSearchRange));
 }
 
 

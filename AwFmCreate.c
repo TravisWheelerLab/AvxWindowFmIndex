@@ -109,6 +109,8 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         // printf("bwt letter: %c.\n", sequence[sequencePositionInSuffixArray - 1]);
         uint64_t positionInBwt = sequencePositionInSuffixArray - 1;
         uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(sequence[positionInBwt]);
+        baseOccurrences[letterIndex]++;
+
         letterBitVectorBytes[byteInVector]      = letterBitVectorBytes[byteInVector] | (((letterIndex >> 0) & 0x1) << bitInVectorByte);
         letterBitVectorBytes[byteInVector + 32] = letterBitVectorBytes[byteInVector] | (((letterIndex >> 1) & 0x1) << bitInVectorByte);
       }
@@ -147,11 +149,13 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         // printf("bwt letter: %c.\n", sequence[sequencePositionInSuffixArray - 1]);
         uint64_t positionInBwt = sequencePositionInSuffixArray - 1;
         uint8_t letterIndex = awFmAsciiAminoAcidToLetterIndex(sequence[positionInBwt]);
-        letterBitVectorBytes[byteInVector]        = letterBitVectorBytes[byteInVector] | (((letterIndex >> 0) & 0x1) << bitInVectorByte);
-        letterBitVectorBytes[byteInVector + 32]   = letterBitVectorBytes[byteInVector] | (((letterIndex >> 1) & 0x1) << bitInVectorByte);
-        letterBitVectorBytes[byteInVector + 64]   = letterBitVectorBytes[byteInVector] | (((letterIndex >> 2) & 0x1) << bitInVectorByte);
-        letterBitVectorBytes[byteInVector + 96]   = letterBitVectorBytes[byteInVector] | (((letterIndex >> 3) & 0x1) << bitInVectorByte);
-        letterBitVectorBytes[byteInVector + 128]  = letterBitVectorBytes[byteInVector] | (((letterIndex >> 4) & 0x1) << bitInVectorByte);
+        uint8_t letterAsVectorFormat = awFmAminoAcidAsciiLetterToCompressedVectorFormat(sequence[positionInBwt]);
+        baseOccurrences[letterIndex]++;
+        letterBitVectorBytes[byteInVector]        = letterBitVectorBytes[byteInVector] | (((letterAsVectorFormat >> 0) & 0x1) << bitInVectorByte);
+        letterBitVectorBytes[byteInVector + 32]   = letterBitVectorBytes[byteInVector] | (((letterAsVectorFormat >> 1) & 0x1) << bitInVectorByte);
+        letterBitVectorBytes[byteInVector + 64]   = letterBitVectorBytes[byteInVector] | (((letterAsVectorFormat >> 2) & 0x1) << bitInVectorByte);
+        letterBitVectorBytes[byteInVector + 96]   = letterBitVectorBytes[byteInVector] | (((letterAsVectorFormat >> 3) & 0x1) << bitInVectorByte);
+        letterBitVectorBytes[byteInVector + 128]  = letterBitVectorBytes[byteInVector] | (((letterAsVectorFormat >> 4) & 0x1) << bitInVectorByte);
       }
     }
 

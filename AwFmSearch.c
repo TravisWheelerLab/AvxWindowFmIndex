@@ -28,7 +28,7 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
   uint64_t newStartPointer = letterPrefixSum + vectorPopcount + baseOccurrence;
 
   //prefetch the next start ptr
-  uint64_t newStartBlock    = (newStartPointer - 1) % AW_FM_POSITIONS_PER_FM_BLOCK;
+  uint64_t newStartBlock    = (newStartPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newStartBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newStartBlock * sizeof(struct AwFmNucleotideBlock));
   _mm_prefetch(newStartBlockPtr, _MM_HINT_T2);
   _mm_prefetch(newStartBlockPtr + 64, _MM_HINT_T2);
@@ -48,7 +48,7 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
   const uint64_t newEndPointer = letterPrefixSum + vectorPopcount + baseOccurrence - 1;
 
   //prefetch the next start ptr
-  uint64_t newEndBlock    = (newEndPointer - 1) % AW_FM_POSITIONS_PER_FM_BLOCK;
+  uint64_t newEndBlock    = (newEndPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newEndBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newEndBlock * sizeof(struct AwFmNucleotideBlock));
   _mm_prefetch(newEndBlockPtr, _MM_HINT_T2);
   _mm_prefetch(newEndBlockPtr + 64, _MM_HINT_T2);
@@ -74,7 +74,7 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
   uint64_t      newStartPointer = letterPrefixSum + vectorPopcount + baseOccurrence;
 
   //prefetch the next start ptr
-  uint64_t newStartBlock    = (newStartPointer - 1) % AW_FM_POSITIONS_PER_FM_BLOCK;
+  uint64_t newStartBlock    = (newStartPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newStartBlockPtr = ((uint8_t*)index->bwtBlockList.asAmino) + (newStartBlock * sizeof(struct AwFmAminoBlock));
   for(size_t cacheLine = 0; cacheLine < 5; cacheLine++){
     _mm_prefetch(newStartBlockPtr + (cacheLine * 64), _MM_HINT_T2);
@@ -92,7 +92,7 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
   const uint64_t newEndPointer = letterPrefixSum + vectorPopcount + baseOccurrence - 1;
 
   //prefetch the next start ptr
-  uint64_t newEndBlock    = (newEndPointer - 1) % AW_FM_POSITIONS_PER_FM_BLOCK;
+  uint64_t newEndBlock    = (newEndPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newEndBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newEndBlock * sizeof(struct AwFmAminoBlock));
   for(size_t cacheLine = 0; cacheLine < 3; cacheLine++){
     _mm_prefetch(newEndBlockPtr + (cacheLine * 64), _MM_HINT_T2);

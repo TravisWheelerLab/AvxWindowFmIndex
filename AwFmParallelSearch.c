@@ -109,11 +109,18 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const 
     const size_t  kmerIndex   = i + threadBlockStartIndex;
     const uint8_t kmerLength  = searchData->kmerList[kmerIndex].length;
     const char    *kmerString = searchData->kmerList[kmerIndex].string;
-    
-    const struct AwFmSearchRange range = index->metadata.alphabetType == AwFmAlphabetNucleotide?
-    awFmNucleotideSeedKmerRangeFromTable(index, kmerString, kmerLength):
-    awFmAminoSeedKmerRangeFromTable(index, kmerString, kmerLength);
-    memcpy(&ranges[i], &range, sizeof(struct AwFmSearchRange));
+
+    struct AwFmSearchRange *rangePtr;
+    if(__builtin_expect(kmerLength >= index->metadata.kmerLengthInSeedTable, 1)){
+      rangePtr = index->metadata.alphabetType == AwFmAlphabetNucleotide?
+        awFmNucleotideSeedKmerRangeFromTable(index, kmerString, kmerLength):
+        awFmAminoSeedKmerRangeFromTable(index, kmerString, kmerLength);
+        //memcpy the range in place
+        memcpy(&ranges[i], rangePtr, sizeof(struct AwFmSearchRange));
+    }
+    else{
+      ranges[i] = awFmDatabaseSingleKmerExactMatch(index, kmerString, kmerLength);
+    }
   }
 }
 

@@ -11,7 +11,7 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
   struct AwFmSearchRange *restrict const range, const uint8_t letter){
 
   //query for the start pointer
-  uint64_t queryPosition  = range->startPtr - 1;
+  uint64_t queryPosition  = range->startPtr;
   uint64_t blockIndex = awFmGetBlockIndexFromGlobalPosition(queryPosition);
   const uint64_t letterPrefixSum = index->prefixSums[letter];
 
@@ -26,35 +26,48 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
   }
 
   uint64_t newStartPointer = letterPrefixSum + vectorPopcount + baseOccurrence;
+  range->startPtr = newStartPointer;
 
   //prefetch the next start ptr
-  uint64_t newStartBlock    = (newStartPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
+  uint64_t newStartBlock    = newStartPointer / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newStartBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newStartBlock * sizeof(struct AwFmNucleotideBlock));
   _mm_prefetch(newStartBlockPtr, _MM_HINT_T2);
   _mm_prefetch(newStartBlockPtr + 64, _MM_HINT_T2);
 
-  //query for the new end pointer
-  queryPosition   = range->endPtr;
 
-  blockIndex = awFmGetBlockIndexFromGlobalPosition(queryPosition);
-  baseOccurrence = index->bwtBlockList.asNucleotide[blockIndex].baseOccurrences[letter];
-  occurrenceVector = awFmMakeNucleotideOccurrenceVector(&(index->bwtBlockList.asNucleotide[blockIndex]),
-    queryPosition, letter);
-  vectorPopcount  = awFmVectorPopcount(occurrenceVector);
-
-  if(awFmNucleotidePopcountIncludesSentinelCharacter(letter, index->sentinelCharacterPosition, queryPosition)){
-    vectorPopcount--;
+  //handle the edge case where the endPtr is the end of the BWT.
+  //this happens when first bootstrapping the range from start,
+  if(__builtin_expect(range->endPtr == (index->bwtLength - 1), 0)){
+    //if the letter isn't the biggest one, use the prefix sums to find the new end.
+    //if it was the biggest AND the endPtr is pointing to the last element,
+    //then obviously the endPtr will still be pointing to the last element.
+    if(__builtin_expect(letter != (AW_FM_NUCLEOTIDE_CARDINALITY - 1), 1)){
+      range->endPtr = index->prefixSums[letter + 1] - 1;
+    }
   }
-  const uint64_t newEndPointer = letterPrefixSum + vectorPopcount + baseOccurrence - 1;
+  else{
+    //query for the new end pointer
+    queryPosition   = range->endPtr + 1;
 
-  //prefetch the next start ptr
-  uint64_t newEndBlock    = (newEndPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
-  uint8_t *newEndBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newEndBlock * sizeof(struct AwFmNucleotideBlock));
-  _mm_prefetch(newEndBlockPtr, _MM_HINT_T2);
-  _mm_prefetch(newEndBlockPtr + 64, _MM_HINT_T2);
+    blockIndex = awFmGetBlockIndexFromGlobalPosition(queryPosition);
+    baseOccurrence = index->bwtBlockList.asNucleotide[blockIndex].baseOccurrences[letter];
+    occurrenceVector = awFmMakeNucleotideOccurrenceVector(&(index->bwtBlockList.asNucleotide[blockIndex]),
+    queryPosition, letter);
+    vectorPopcount  = awFmVectorPopcount(occurrenceVector);
 
-  range->startPtr = newStartPointer;
-  range->endPtr   = newEndPointer;
+    if(awFmNucleotidePopcountIncludesSentinelCharacter(letter, index->sentinelCharacterPosition, queryPosition)){
+      vectorPopcount--;
+    }
+    const uint64_t newEndPointer = letterPrefixSum + vectorPopcount + baseOccurrence - 1;
+
+    //prefetch the next start ptr
+    uint64_t newEndBlock    = (newEndPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
+    uint8_t *newEndBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newEndBlock * sizeof(struct AwFmNucleotideBlock));
+    _mm_prefetch(newEndBlockPtr, _MM_HINT_T2);
+    _mm_prefetch(newEndBlockPtr + 64, _MM_HINT_T2);
+
+    range->endPtr = newEndPointer;
+  }
 }
 
 
@@ -79,27 +92,39 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
   for(size_t cacheLine = 0; cacheLine < 5; cacheLine++){
     _mm_prefetch(newStartBlockPtr + (cacheLine * 64), _MM_HINT_T2);
   }
+  range->startPtr = newStartPointer;
 
-  //query for the new end pointer
-  queryPosition = range->endPtr;
-  blockIndex    = awFmGetBlockIndexFromGlobalPosition(queryPosition);
+  if(__builtin_expect(range->endPtr == (index->bwtLength - 1), 0)){
+    //if the letter isn't the biggest one, use the prefix sums to find the new end.
+    //if it was the biggest AND the endPtr is pointing to the last element,
+    //then obviously the endPtr will still be pointing to the last element.
+    if(__builtin_expect(letter != (AW_FM_AMINO_CARDINALITY - 1), 1)){
+      range->endPtr = index->prefixSums[letter + 1];
+    }
+  }
+  else{
+    //query for the new end pointer
+    queryPosition = range->endPtr;
+    blockIndex    = awFmGetBlockIndexFromGlobalPosition(queryPosition);
 
-  baseOccurrence    = index->bwtBlockList.asAmino[blockIndex].baseOccurrences[letter];
-  occurrenceVector  = awFmMakeAminoAcidOccurrenceVector(&(index->bwtBlockList.asAmino[blockIndex]),
+    baseOccurrence    = index->bwtBlockList.asAmino[blockIndex].baseOccurrences[letter];
+    occurrenceVector  = awFmMakeAminoAcidOccurrenceVector(&(index->bwtBlockList.asAmino[blockIndex]),
     queryPosition, letter);
-  vectorPopcount    = awFmVectorPopcount(occurrenceVector);
+    vectorPopcount    = awFmVectorPopcount(occurrenceVector);
 
-  const uint64_t newEndPointer = letterPrefixSum + vectorPopcount + baseOccurrence - 1;
+    const uint64_t newEndPointer = letterPrefixSum + vectorPopcount + baseOccurrence - 1;
 
-  //prefetch the next start ptr
-  uint64_t newEndBlock    = (newEndPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
-  uint8_t *newEndBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newEndBlock * sizeof(struct AwFmAminoBlock));
-  for(size_t cacheLine = 0; cacheLine < 3; cacheLine++){
-    _mm_prefetch(newEndBlockPtr + (cacheLine * 64), _MM_HINT_T2);
+    //prefetch the next start ptr
+    uint64_t newEndBlock    = (newEndPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
+    uint8_t *newEndBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newEndBlock * sizeof(struct AwFmAminoBlock));
+    for(size_t cacheLine = 0; cacheLine < 3; cacheLine++){
+      _mm_prefetch(newEndBlockPtr + (cacheLine * 64), _MM_HINT_T2);
+    }
+
+    range->endPtr   = newEndPointer;
+
   }
 
-  range->startPtr = newStartPointer;
-  range->endPtr   = newEndPointer;
 }
 
 
@@ -268,5 +293,5 @@ inline bool awFmNucleotidePopcountIncludesSentinelCharacter(const uint8_t queryL
 
   return  (queryLetter == 0) &&
           (sentinelBlockIndex == queryBlockIndex) &&
-          (localSentinelPosition <= localQueryPosition);
+          (localSentinelPosition < localQueryPosition);
 }

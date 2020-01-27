@@ -11,7 +11,9 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t se
   const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray);
 
 
-void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmSearchRange searchRange,
+void populateKmerSeedTable(struct AwFmIndex *restrict const index);
+
+void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, struct AwFmSearchRange *restrict searchRange,
   uint8_t currentKmerLength, uint64_t currentKmerIndex);
 
 
@@ -61,8 +63,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   //set the bwt and prefix sums
   setBwtAndPrefixSums(indexData, indexData->bwtLength, sequence, suffixArray);
 
-  struct AwFmSearchRange searchRange;
-  populateKmerSeedTable(indexData, searchRange, 0, 0);
+  populateKmerSeedTable(indexData);
 
 
   //set the index as an out argument.
@@ -105,8 +106,6 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 
       uint64_t sequencePositionInSuffixArray = suffixArray[suffixArrayPosition];
       if(__builtin_expect(sequencePositionInSuffixArray != 0, 1)){
-        // printf("\tsequence position %zu, ", sequencePositionInSuffixArray);
-        // printf("bwt letter: %c.\n", sequence[sequencePositionInSuffixArray - 1]);
         uint64_t positionInBwt = sequencePositionInSuffixArray - 1;
         uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(sequence[positionInBwt]);
         baseOccurrences[letterIndex]++;
@@ -148,8 +147,6 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 
       uint64_t sequencePositionInSuffixArray = suffixArray[suffixArrayPosition];
       if(__builtin_expect(sequencePositionInSuffixArray != 0, 1)){
-        // printf("\tsequence position %zu, ", sequencePositionInSuffixArray);
-        // printf("bwt letter: %c.\n", sequence[sequencePositionInSuffixArray - 1]);
         uint64_t positionInBwt = sequencePositionInSuffixArray - 1;
         uint8_t letterIndex = awFmAsciiAminoAcidToLetterIndex(sequence[positionInBwt]);
         uint8_t letterAsVectorFormat = awFmAminoAcidAsciiLetterToCompressedVectorFormat(sequence[positionInBwt]);
@@ -174,45 +171,47 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
   }
 }
 
+void populateKmerSeedTable(struct AwFmIndex *restrict const index){
+  struct AwFmSearchRange range;
+  const uint8_t alphabetCardinality = awFmGetAlphabetCardinality(index->metadata.alphabetType);
+  for(uint8_t i = 0; i < alphabetCardinality - 1; i++){
+    range.startPtr  = index->prefixSums[i];
+    range.endPtr    = index->prefixSums[i+1] - 1;
+    populateKmerSeedTableRecursive(index, &range, 1, i);
+  }
+
+  //handle the last one, since the prefix sums array would be out of bounds for that calculation
+  range.startPtr = index->prefixSums[alphabetCardinality - 1];
+  range.endPtr = index->bwtLength - 1;
+  populateKmerSeedTableRecursive(index, &range, 1, alphabetCardinality - 1);
+}
 
 
-void populateKmerSeedTable(struct AwFmIndex *restrict const index, struct AwFmSearchRange searchRange,
+void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, struct AwFmSearchRange *restrict searchRange,
   uint8_t currentKmerLength, uint64_t currentKmerIndex){
   const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->metadata.alphabetType);
 
   const uint8_t kmerLength  = index->metadata.kmerLengthInSeedTable;
-    // printf("populating kmer seed table, card %u, kmer length %u, current kmerLength %u, cur ind %zu\n", alphabetSize, kmerLength, currentKmerLength, currentKmerIndex);
 
   //base case
   if(kmerLength == currentKmerLength){
-    // printf("memoizing kmer range %zu-%zu into index %zu\n", searchRange.startPtr, searchRange.endPtr, currentKmerIndex);
-    memcpy(&index->kmerSeedTable[currentKmerIndex], &searchRange, sizeof(struct AwFmSearchRange));
+    memcpy(&index->kmerSeedTable[currentKmerIndex], searchRange, sizeof(struct AwFmSearchRange));
     return;
-  }
-  else if(currentKmerLength == 0){
-    //initial case
-    // printf("init case!\n");
-    searchRange.startPtr  = 1;
-    searchRange.endPtr    = index->bwtLength - 1;
   }
 
   //recursive case
-  // printf("recursive case\n");
   for(uint8_t extendedLetter = 0; extendedLetter < alphabetSize; extendedLetter++){
-    //... do update search range
+    struct AwFmSearchRange searchRangeCopy;
+    memcpy(&searchRangeCopy, searchRange, sizeof(struct AwFmSearchRange));
+
     if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-      //update the searchRange
-      // printf("updating range...\n");
-      awFmNucleotideIterativeStepBackwardSearch(index, &searchRange, extendedLetter);
-      // printf("added ascii letter %c, new range is %zu-%zu\n", extendedLetter, searchRange.startPtr, searchRange.endPtr);
+      awFmNucleotideIterativeStepBackwardSearch(index, &searchRangeCopy, extendedLetter);
     }
     else{
-      awFmAminoIterativeStepBackwardSearch(index, &searchRange, extendedLetter);
+      awFmAminoIterativeStepBackwardSearch(index, &searchRangeCopy, extendedLetter);
     }
 
     uint64_t newKmerIndex = (currentKmerIndex * alphabetSize)+ extendedLetter;
-    populateKmerSeedTable(index, searchRange, currentKmerLength + 1, newKmerIndex);
+    populateKmerSeedTableRecursive(index, &searchRangeCopy, currentKmerLength + 1, newKmerIndex);
   }
-
-  // printf("leaving function!\n");
 }

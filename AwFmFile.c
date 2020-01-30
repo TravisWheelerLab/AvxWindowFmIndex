@@ -85,8 +85,6 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     return AwFmFileWriteFail;
   }
 
-  //write the BWT. if the bwt blocks aren't padded, just do an array write with fwrite.
-  //if they are padded, we need to go through and write them individually.
   const size_t numBlockInBwt = awFmNumBlocksFromBwtLength(index->bwtLength);
   const size_t bytesPerBwtBlock = index->metadata.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
@@ -96,10 +94,9 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     fclose(index->fileHandle);
     return AwFmFileWriteFail;
   }
-
   //write the prefix sums table
   const size_t prefixSumsLength = awFmGetAlphabetCardinality(index->metadata.alphabetType);
-  elementsWritten = fwrite(&index->prefixSums, sizeof(uint64_t), prefixSumsLength, index->fileHandle);
+  elementsWritten = fwrite(index->prefixSums, sizeof(uint64_t), prefixSumsLength, index->fileHandle);
   if(elementsWritten != prefixSumsLength){
     fclose(index->fileHandle);
     return AwFmFileWriteFail;
@@ -180,11 +177,14 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     fclose(fileHandle);
     return AwFmFileReadFail;
   }
-  elementsRead = fread(&metadata.alphabetType, sizeof(uint8_t), 1, fileHandle);
+  uint8_t alphabetType;
+  elementsRead = fread(&alphabetType, sizeof(uint8_t), 1, fileHandle);
   if(elementsRead != 1){
     fclose(fileHandle);
     return AwFmFileReadFail;
   }
+  metadata.alphabetType = alphabetType;
+
 
   //read the bwt length
   uint64_t bwtLength;
@@ -210,17 +210,15 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   }
 
   //read the bwt block list
-  const size_t numBwtBlocks = indexData->bwtLength / AW_FM_POSITIONS_PER_FM_BLOCK;
-  const size_t blockSizeInBytes = indexData->metadata.alphabetType == AwFmAlphabetNucleotide?
-    sizeof(struct AwFmNucleotideBlock):
-    sizeof(struct AwFmAminoBlock);
-  elementsRead = fread(indexData->bwtBlockList.asNucleotide, blockSizeInBytes, numBwtBlocks, fileHandle);
-  if(elementsRead != numBwtBlocks){
+  const size_t numBlockInBwt = awFmNumBlocksFromBwtLength(indexData->bwtLength);
+  const size_t bytesPerBwtBlock = indexData->metadata.alphabetType == AwFmAlphabetNucleotide?
+    sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
+  elementsRead = fread(indexData->bwtBlockList.asNucleotide, bytesPerBwtBlock, numBlockInBwt, fileHandle);
+  if(elementsRead != numBlockInBwt){
     fclose(fileHandle);
     awFmDeallocIndex(indexData);
     return AwFmFileReadFail;
   }
-
   //read the prefix sums array
   const size_t prefixSumsLength     = awFmGetAlphabetCardinality(indexData->metadata.alphabetType);
   elementsRead = fread(indexData->prefixSums, sizeof(uint64_t), prefixSumsLength, fileHandle);
@@ -239,9 +237,10 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     return AwFmFileReadFail;
   }
 
-  indexData->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(indexData);
-  indexData->sequenceFileOffset    = awFmGetSequenceFileOffset(indexData);
-  indexData->fileDescriptor        = fileno(fileHandle);
+  indexData->suffixArrayFileOffset  = awFmGetSuffixArrayFileOffset(indexData);
+  indexData->sequenceFileOffset     = awFmGetSequenceFileOffset(indexData);
+  indexData->fileHandle             = fileHandle;
+  indexData->fileDescriptor         = fileno(fileHandle);
 
   *index = indexData;
   return AwFmFileReadOkay;

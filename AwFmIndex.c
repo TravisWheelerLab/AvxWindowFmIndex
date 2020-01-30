@@ -13,6 +13,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
   }
   //initialize all bytes in the index to 0.
   memset(index, 0, sizeof(struct AwFmIndex));
+  memcpy(&index->metadata, metadata, sizeof(struct AwFmIndexMetadata));
 
   //allocate the prefixSums
   size_t alphabetSize = awFmGetAlphabetCardinality(metadata->alphabetType);
@@ -34,12 +35,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
     return NULL;
   }
 
-  //compute the size of the kmer seed table (essentially a power function)
-  size_t kmerSeedTableSize = 1;
-  for(size_t i = 0; i < metadata->kmerLengthInSeedTable; i++){
-    kmerSeedTableSize *= alphabetSize;
-  }
-
+  const size_t kmerSeedTableSize = awFmGetKmerTableLength(index);
   //allocate the kmerSeedTable
   printf("allocating kmer table of length %zu\n", kmerSeedTableSize);
   index->kmerSeedTable = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, kmerSeedTableSize * sizeof(struct AwFmSearchRange));
@@ -67,6 +63,7 @@ uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet){
   return (alphabet == AwFmAlphabetNucleotide)?
     AW_FM_NUCLEOTIDE_CARDINALITY: AW_FM_AMINO_CARDINALITY;
 }
+
 
 size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict const index){
   const size_t multiplier = awFmGetAlphabetCardinality(index->metadata.alphabetType);

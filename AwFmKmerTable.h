@@ -26,7 +26,7 @@
  *  Returns:
  *    pointer to an AwFmSearchRange containing the startPtr and endPtr for the kmer seed.
  */
-struct AwFmSearchRange *awFmNucleotideSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange awFmNucleotideSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength);
 
 /*
@@ -48,7 +48,7 @@ struct AwFmSearchRange *awFmNucleotideSeedKmerRangeFromTable(const struct AwFmIn
  *  Returns:
  *    pointer to an AwFmSearchRange containing the startPtr and endPtr for the kmer seed.
  */
-struct AwFmSearchRange *awFmAminoSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange awFmAminoSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength);
 
 #endif /* end of include guard: AW_FM_KMER_TABLE_H */

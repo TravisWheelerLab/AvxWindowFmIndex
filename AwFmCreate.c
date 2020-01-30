@@ -13,8 +13,8 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t se
 
 void populateKmerSeedTable(struct AwFmIndex *restrict const index);
 
-void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, struct AwFmSearchRange *restrict searchRange,
-  uint8_t currentKmerLength, uint64_t currentKmerIndex);
+void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, struct AwFmSearchRange range,
+  uint8_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier);
 
 
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
@@ -172,46 +172,49 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 }
 
 void populateKmerSeedTable(struct AwFmIndex *restrict const index){
-  struct AwFmSearchRange range;
   const uint8_t alphabetCardinality = awFmGetAlphabetCardinality(index->metadata.alphabetType);
-  for(uint8_t i = 0; i < alphabetCardinality - 1; i++){
-    range.startPtr  = index->prefixSums[i];
-    range.endPtr    = index->prefixSums[i+1] - 1;
-    populateKmerSeedTableRecursive(index, &range, 1, i);
+
+  #pragma omp parallel for
+  for(uint8_t i = 0; i < alphabetCardinality; i++){
+    struct AwFmSearchRange range = {.startPtr= index->prefixSums[i],
+      .endPtr= (i == (alphabetCardinality-1)? index->bwtLength: index->prefixSums[i+1])-1
+    };
+    populateKmerSeedTableRecursive(index, range, 1, i, alphabetCardinality);
   }
 
-  //handle the last one, since the prefix sums array would be out of bounds for that calculation
-  range.startPtr = index->prefixSums[alphabetCardinality - 1];
-  range.endPtr = index->bwtLength - 1;
-  populateKmerSeedTableRecursive(index, &range, 1, alphabetCardinality - 1);
+  //for debug
+  // for(size_t i = 0; i < awFmGetKmerTableLength(index); i++){
+  //   printf("kmer table index %zu: %zu\n", i, index->kmerSeedTable[i]);
+  // }
+  printf("\n");
 }
 
 
-void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, struct AwFmSearchRange *restrict searchRange,
-  uint8_t currentKmerLength, uint64_t currentKmerIndex){
+void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, struct AwFmSearchRange range,
+  uint8_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier){
   const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->metadata.alphabetType);
 
   const uint8_t kmerLength  = index->metadata.kmerLengthInSeedTable;
 
   //base case
   if(kmerLength == currentKmerLength){
-    memcpy(&index->kmerSeedTable[currentKmerIndex], searchRange, sizeof(struct AwFmSearchRange));
+    index->kmerSeedTable[currentKmerIndex] = range;
     return;
   }
 
   //recursive case
   for(uint8_t extendedLetter = 0; extendedLetter < alphabetSize; extendedLetter++){
-    struct AwFmSearchRange searchRangeCopy;
-    memcpy(&searchRangeCopy, searchRange, sizeof(struct AwFmSearchRange));
+    struct AwFmSearchRange newRange = range;
+    // if(__builtin_expect(awFmSearchRangeIsValid(&range), 1)){
+      if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+        awFmNucleotideIterativeStepBackwardSearch(index, &newRange, extendedLetter);
+      }
+      else{
+        awFmAminoIterativeStepBackwardSearch(index, &newRange, extendedLetter);
+      }
+    // }
 
-    if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-      awFmNucleotideIterativeStepBackwardSearch(index, &searchRangeCopy, extendedLetter);
-    }
-    else{
-      awFmAminoIterativeStepBackwardSearch(index, &searchRangeCopy, extendedLetter);
-    }
-
-    uint64_t newKmerIndex = (currentKmerIndex * alphabetSize)+ extendedLetter;
-    populateKmerSeedTableRecursive(index, &searchRangeCopy, currentKmerLength + 1, newKmerIndex);
+    uint64_t newKmerIndex = currentKmerIndex + (extendedLetter * letterIndexMultiplier);
+    populateKmerSeedTableRecursive(index, newRange, currentKmerLength + 1, newKmerIndex, letterIndexMultiplier * alphabetSize);
   }
 }

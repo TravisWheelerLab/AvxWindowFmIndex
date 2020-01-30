@@ -127,6 +127,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
       prevBaseOccurrence += tempBaseOccurrence;
     }
     memcpy(index->prefixSums, baseOccurrences, AW_FM_NUCLEOTIDE_CARDINALITY * sizeof(uint64_t));
+    index->prefixSums[AW_FM_NUCLEOTIDE_CARDINALITY] = index->bwtLength;
   }
   else{
     uint64_t baseOccurrences[20] = {0};
@@ -162,31 +163,30 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
     //set the prefix sums
     uint64_t tempBaseOccurrence;
     uint64_t prevBaseOccurrence = 1;  //1 is for the sentinel character
-    for(uint8_t i = 0; i < AW_FM_AMINO_CARDINALITY; i++){
+    for(uint8_t i = 0; i < awFmGetPrefixSumsLength(index->metadata.alphabetType); i++){
       tempBaseOccurrence = baseOccurrences[i];
       baseOccurrences[i] = prevBaseOccurrence;
       prevBaseOccurrence += tempBaseOccurrence;
     }
     memcpy(index->prefixSums, baseOccurrences, AW_FM_AMINO_CARDINALITY * sizeof(uint64_t));
+    index->prefixSums[AW_FM_AMINO_CARDINALITY] = index->bwtLength;
   }
 }
 
 void populateKmerSeedTable(struct AwFmIndex *restrict const index){
   const uint8_t alphabetCardinality = awFmGetAlphabetCardinality(index->metadata.alphabetType);
 
-  #pragma omp parallel for
   for(uint8_t i = 0; i < alphabetCardinality; i++){
     struct AwFmSearchRange range = {.startPtr= index->prefixSums[i],
       .endPtr= (i == (alphabetCardinality-1)? index->bwtLength: index->prefixSums[i+1])-1
     };
     populateKmerSeedTableRecursive(index, range, 1, i, alphabetCardinality);
   }
-
   //for debug
   // for(size_t i = 0; i < awFmGetKmerTableLength(index); i++){
   //   printf("kmer table index %zu: %zu\n", i, index->kmerSeedTable[i]);
   // }
-  printf("\n");
+  // printf("\n");
 }
 
 
@@ -205,14 +205,14 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
   //recursive case
   for(uint8_t extendedLetter = 0; extendedLetter < alphabetSize; extendedLetter++){
     struct AwFmSearchRange newRange = range;
-    // if(__builtin_expect(awFmSearchRangeIsValid(&range), 1)){
+    if(__builtin_expect(awFmSearchRangeIsValid(&range), 1)){
       if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
         awFmNucleotideIterativeStepBackwardSearch(index, &newRange, extendedLetter);
       }
       else{
         awFmAminoIterativeStepBackwardSearch(index, &newRange, extendedLetter);
       }
-    // }
+    }
 
     uint64_t newKmerIndex = currentKmerIndex + (extendedLetter * letterIndexMultiplier);
     populateKmerSeedTableRecursive(index, newRange, currentKmerLength + 1, newKmerIndex, letterIndexMultiplier * alphabetSize);

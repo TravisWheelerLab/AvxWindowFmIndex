@@ -155,6 +155,9 @@ size_t        awFmGetKmerTableLength(const struct AwFmIndex *restrict const inde
 size_t        awFmNumBlocksFromBwtLength(const size_t suffixArrayLength);
 
 
+
+uint8_t awFmGetPrefixSumsLength(const enum AwFmAlphabetType alphabet);
+
 /*
  * Function:  awFmBwtPositionIsSampled
  * --------------------

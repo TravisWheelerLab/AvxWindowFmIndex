@@ -14,10 +14,11 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
   //initialize all bytes in the index to 0.
   memset(index, 0, sizeof(struct AwFmIndex));
   memcpy(&index->metadata, metadata, sizeof(struct AwFmIndexMetadata));
+  index->bwtLength = bwtLength;
 
   //allocate the prefixSums
-  size_t alphabetSize = awFmGetAlphabetCardinality(metadata->alphabetType);
-  index->prefixSums = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, alphabetSize * sizeof(uint64_t));
+  size_t prefixSumsLength = awFmGetPrefixSumsLength(metadata->alphabetType);
+  index->prefixSums = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, prefixSumsLength * sizeof(uint64_t));
   if(index->prefixSums == NULL){
     awFmDeallocIndex(index);
     return NULL;
@@ -93,6 +94,10 @@ size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict const index){
 
 size_t awFmNumBlocksFromBwtLength(const size_t suffixArrayLength){
   return  1 + ((suffixArrayLength -1) / AW_FM_POSITIONS_PER_FM_BLOCK);
+}
+
+uint8_t awFmGetPrefixSumsLength(const enum AwFmAlphabetType alphabet){
+  return  awFmGetAlphabetCardinality(alphabet) +1;
 }
 
 bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode){

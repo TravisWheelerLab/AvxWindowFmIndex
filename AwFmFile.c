@@ -95,7 +95,7 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     return AwFmFileWriteFail;
   }
   //write the prefix sums table
-  const size_t prefixSumsLength = awFmGetAlphabetCardinality(index->metadata.alphabetType);
+  const size_t prefixSumsLength = awFmGetPrefixSumsLength(index->metadata.alphabetType);
   elementsWritten = fwrite(index->prefixSums, sizeof(uint64_t), prefixSumsLength, index->fileHandle);
   if(elementsWritten != prefixSumsLength){
     fclose(index->fileHandle);
@@ -220,7 +220,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     return AwFmFileReadFail;
   }
   //read the prefix sums array
-  const size_t prefixSumsLength     = awFmGetAlphabetCardinality(indexData->metadata.alphabetType);
+  const size_t prefixSumsLength = awFmGetPrefixSumsLength(indexData->metadata.alphabetType);
   elementsRead = fread(indexData->prefixSums, sizeof(uint64_t), prefixSumsLength, fileHandle);
   if(elementsRead != prefixSumsLength){
     fclose(fileHandle);

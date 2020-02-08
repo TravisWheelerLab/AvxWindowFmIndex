@@ -55,12 +55,17 @@ struct AwFmIndexMetadata{
   enum AwFmAlphabetType alphabetType;
 };
 
+struct AwFmKmerSeedTable{
+  struct  AwFmSearchRange *table;
+          uint64_t        *sequenceEndingKmerEncodings;
+};
+
 struct AwFmIndex{
           uint64_t          bwtLength;
           uint64_t          sentinelCharacterPosition;
   union   AwFmBwtBlockList  bwtBlockList;
           uint64_t          *prefixSums;
-  struct  AwFmSearchRange   *kmerSeedTable;
+  struct  AwFmKmerSeedTable kmerSeedTable;
           FILE              *fileHandle;
   struct  AwFmIndexMetadata metadata;
           int               fileDescriptor;
@@ -71,12 +76,12 @@ struct AwFmIndex{
 
 //todo: remove unused return codes
 enum AwFmReturnCode{
-  AwFmSuccess             = 1,    AwFmFileReadOkay                = 2,    AwFmFileWriteOkay             = 3,
-  AwFmGeneralFailure      = -1,   AwFmUnsupportedVersionError     = -2,   AwFmAllocationFailure         = -3,
-  AwFmNullPtrError        = -4,   AwFmSuffixArrayCreationFailure  = -5,   AwFmIllegalPositionError      = -6,
-  AwFmNoFileSrcGiven      = -7,   AwFmNoDatabaseSequenceGiven     = -8,   AwFmFileFormatError           = -9,
-  AwFmFileOpenFail        = -10,  AwFmFileReadFail                = -11,  AwFmFileWriteFail             = -12,
-  AwFmErrorDbSequenceNull = -13,  AwFmErrorSuffixArrayNull        = -14,  AwFmFileAlreadyExists         = -15};
+  AwFmSuccess             = 1,    AwFmFileReadOkay                = 2,    AwFmFileWriteOkay         = 3,
+  AwFmGeneralFailure      = -1,   AwFmUnsupportedVersionError     = -2,   AwFmAllocationFailure     = -3,
+  AwFmNullPtrError        = -4,   AwFmSuffixArrayCreationFailure  = -5,   AwFmIllegalPositionError  = -6,
+  AwFmNoFileSrcGiven      = -7,   AwFmNoDatabaseSequenceGiven     = -8,   AwFmFileFormatError       = -9,
+  AwFmFileOpenFail        = -10,  AwFmFileReadFail                = -11,  AwFmFileWriteFail         = -12,
+  AwFmErrorDbSequenceNull = -13,  AwFmErrorSuffixArrayNull        = -14,  AwFmFileAlreadyExists     = -15};
 
 
 /*

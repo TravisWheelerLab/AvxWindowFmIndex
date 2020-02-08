@@ -17,6 +17,10 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
   uint8_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier);
 
 
+void createSequenceEndKmerEncodings(struct AwFmIndex *restrict const index,
+  const uint8_t *restrict const sequence, const uint64_t sequenceLength);
+
+
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   const struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
   const char *restrict const fileSrc, const bool allowFileOverwrite){
@@ -64,6 +68,8 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   setBwtAndPrefixSums(indexData, indexData->bwtLength, sequence, suffixArray);
 
   populateKmerSeedTable(indexData);
+
+  createSequenceEndKmerEncodings(indexData, sequence, sequenceLength);
 
 
   //set the index as an out argument.
@@ -177,16 +183,12 @@ void populateKmerSeedTable(struct AwFmIndex *restrict const index){
   const uint8_t alphabetCardinality = awFmGetAlphabetCardinality(index->metadata.alphabetType);
 
   for(uint8_t i = 0; i < alphabetCardinality; i++){
-    struct AwFmSearchRange range = {.startPtr= index->prefixSums[i],
+    struct AwFmSearchRange range = {
+      .startPtr= index->prefixSums[i],
       .endPtr= (i == (alphabetCardinality-1)? index->bwtLength: index->prefixSums[i+1])-1
     };
     populateKmerSeedTableRecursive(index, range, 1, i, alphabetCardinality);
   }
-  //for debug
-  // for(size_t i = 0; i < awFmGetKmerTableLength(index); i++){
-  //   printf("kmer table index %zu: %zu\n", i, index->kmerSeedTable[i]);
-  // }
-  // printf("\n");
 }
 
 
@@ -198,7 +200,7 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
 
   //base case
   if(kmerLength == currentKmerLength){
-    index->kmerSeedTable[currentKmerIndex] = range;
+    index->kmerSeedTable.table[currentKmerIndex] = range;
     return;
   }
 
@@ -216,5 +218,32 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
 
     uint64_t newKmerIndex = currentKmerIndex + (extendedLetter * letterIndexMultiplier);
     populateKmerSeedTableRecursive(index, newRange, currentKmerLength + 1, newKmerIndex, letterIndexMultiplier * alphabetSize);
+  }
+}
+
+
+void createSequenceEndKmerEncodings(struct AwFmIndex *restrict const index,
+  const uint8_t *restrict const sequence, const uint64_t sequenceLength){
+
+  const uint64_t alphabetCardinality = awFmGetAlphabetCardinality(index->metadata.alphabetType);
+  const uint8_t sequenceEndingLength = index->metadata.kmerLengthInSeedTable - 1;
+
+  for(uint8_t kmerPosition = 0; kmerPosition < sequenceEndingLength; kmerPosition++){
+    uint64_t kmerIndexEncoding = 0;
+    for(uint8_t letterInKmer = kmerPosition; letterInKmer < sequenceEndingLength; letterInKmer++){
+      uint64_t sequencePosition = (sequenceLength - sequenceEndingLength) + letterInKmer;
+      kmerIndexEncoding  = (kmerIndexEncoding * alphabetCardinality) +
+      (index->metadata.alphabetType == AwFmAlphabetNucleotide?
+        awFmAsciiAminoAcidToLetterIndex(sequence[sequencePosition]):
+        awFmAsciiNucleotideToLetterIndex(sequence[sequencePosition]));
+    }
+
+    //add the implicit 'a' character to the end to extend the kmer to the required length
+    //in order to get the correct index into the kmerTable
+    for(uint8_t appendedLetterIndex = 0; appendedLetterIndex < kmerPosition; appendedLetterIndex++){
+      kmerIndexEncoding *= alphabetCardinality;
+    }
+
+    index->kmerSeedTable.sequenceEndingKmerEncodings[kmerPosition] = kmerIndexEncoding;
   }
 }

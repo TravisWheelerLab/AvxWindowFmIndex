@@ -8,7 +8,7 @@
 
 
 /*
- * Function:  awFmNucleotideSeedKmerRangeFromTable
+ * Function:  awFmNucleotideKmerSeedRangeFromTable
  * --------------------
  * Given an ascii nucleotide kmer, queries the kmerSeedTable for the partially completed range in the backward suffix array,
  *  and returns a pointer to the range of that kmer. This function looks up the range for the
@@ -26,11 +26,12 @@
  *  Returns:
  *    pointer to an AwFmSearchRange containing the startPtr and endPtr for the kmer seed.
  */
-struct AwFmSearchRange awFmNucleotideSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength);
 
+
 /*
- * Function:  awFmAminoSeedKmerRangeFromTable
+ * Function:  awFmAminoKmerSeedRangeFromTable
  * --------------------
  * Given an ascii amino acid kmer, queries the kmerSeedTable for the partially completed range in the backward suffix array,
  *  and returns a pointer to the range of that kmer. This function looks up the range for the
@@ -48,7 +49,13 @@ struct AwFmSearchRange awFmNucleotideSeedKmerRangeFromTable(const struct AwFmInd
  *  Returns:
  *    pointer to an AwFmSearchRange containing the startPtr and endPtr for the kmer seed.
  */
-struct AwFmSearchRange awFmAminoSeedKmerRangeFromTable(const struct AwFmIndex *restrict const index,
+struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength);
+
+
+//Added for testing ONLY, not to be included in final release
+//TODO: remove this function prototype
+uint8_t kmerMatchesInSequenceEnding(const struct AwFmIndex *restrict const index,
+  const uint64_t kmerIndexEncoding, const uint8_t kmerLength);
 
 #endif /* end of include guard: AW_FM_KMER_TABLE_H */

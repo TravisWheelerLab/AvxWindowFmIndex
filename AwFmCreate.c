@@ -207,13 +207,11 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
   //recursive case
   for(uint8_t extendedLetter = 0; extendedLetter < alphabetSize; extendedLetter++){
     struct AwFmSearchRange newRange = range;
-    if(__builtin_expect(awFmSearchRangeIsValid(&range), 1)){
-      if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-        awFmNucleotideIterativeStepBackwardSearch(index, &newRange, extendedLetter);
-      }
-      else{
-        awFmAminoIterativeStepBackwardSearch(index, &newRange, extendedLetter);
-      }
+    if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+      awFmNucleotideIterativeStepBackwardSearch(index, &newRange, extendedLetter);
+    }
+    else{
+      awFmAminoIterativeStepBackwardSearch(index, &newRange, extendedLetter);
     }
 
     uint64_t newKmerIndex = currentKmerIndex + (extendedLetter * letterIndexMultiplier);
@@ -229,18 +227,19 @@ void createSequenceEndKmerEncodings(struct AwFmIndex *restrict const index,
   const uint8_t sequenceEndingLength = index->metadata.kmerLengthInSeedTable - 1;
 
   for(uint8_t kmerPosition = 0; kmerPosition < sequenceEndingLength; kmerPosition++){
+
     uint64_t kmerIndexEncoding = 0;
     for(uint8_t letterInKmer = kmerPosition; letterInKmer < sequenceEndingLength; letterInKmer++){
       uint64_t sequencePosition = (sequenceLength - sequenceEndingLength) + letterInKmer;
       kmerIndexEncoding  = (kmerIndexEncoding * alphabetCardinality) +
       (index->metadata.alphabetType == AwFmAlphabetNucleotide?
-        awFmAsciiAminoAcidToLetterIndex(sequence[sequencePosition]):
-        awFmAsciiNucleotideToLetterIndex(sequence[sequencePosition]));
+        awFmAsciiNucleotideToLetterIndex(sequence[sequencePosition]):
+        awFmAsciiAminoAcidToLetterIndex(sequence[sequencePosition]));
     }
 
     //add the implicit 'a' character to the end to extend the kmer to the required length
     //in order to get the correct index into the kmerTable
-    for(uint8_t appendedLetterIndex = 0; appendedLetterIndex < kmerPosition; appendedLetterIndex++){
+    for(uint8_t appendedLetterIndex = 0; appendedLetterIndex < (kmerPosition+1); appendedLetterIndex++){
       kmerIndexEncoding *= alphabetCardinality;
     }
 

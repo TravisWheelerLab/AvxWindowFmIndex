@@ -142,7 +142,7 @@ uint_fast8_t  awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
  *  Returns:
  *    Number of AwFmSearchRange structs in the table.
  */
-size_t        awFmGetKmerTableLength(const struct AwFmIndex *restrict const index);
+size_t        awFmGetKmerTableLength(const struct AwFmIndex *restrict index);
 
 
 /*

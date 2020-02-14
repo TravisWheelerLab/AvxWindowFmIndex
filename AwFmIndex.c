@@ -79,7 +79,7 @@ uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet){
 }
 
 
-size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict const index){
+size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict index){
   const size_t multiplier = awFmGetAlphabetCardinality(index->metadata.alphabetType);
   size_t length = 1;
   for(size_t i = 0; i < index->metadata.kmerLengthInSeedTable; i++){

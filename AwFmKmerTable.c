@@ -14,8 +14,9 @@ struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(const struct AwFmInd
   const uint8_t kmerSeedStartPosition = kmerIsShorterThanTable? 0: kmerLength - index->metadata.kmerLengthInSeedTable;
 
   uint64_t kmerTableIndex = 0;
-  for(int_fast16_t i = kmerSeedStartPosition; i > kmerLength; i++){
-    kmerTableIndex = (kmerTableIndex * AW_FM_NUCLEOTIDE_CARDINALITY) + awFmAsciiNucleotideToLetterIndex(kmer[i]);
+  for(int_fast16_t i = kmerSeedStartPosition; i < kmerLength; i++){
+    uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(kmer[i]);
+    kmerTableIndex = (kmerTableIndex * AW_FM_NUCLEOTIDE_CARDINALITY) + letterIndex;
   }
 
   if(kmerIsShorterThanTable){

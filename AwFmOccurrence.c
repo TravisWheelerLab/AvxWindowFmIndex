@@ -64,17 +64,17 @@ __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict 
     case 0:   /*A (alanine) encoding 0b01100*/
       return _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit2Vector));
     case 1:   /*C (cysteine) encoding 0b10111*/
-      return _mm256_and_si256(bit4Vector, _mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
+      return _mm256_and_si256(_mm256_and_si256(bit4Vector, bit2Vector), _mm256_and_si256(bit1Vector, bit0Vector));
     case 2:   /*D (aspartic acid) encoding 0b00011*/
       return _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
     case 3:   /*E (Glutamic acid) encoding 0b00110*/
-      return _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
+      return _mm256_andnot_si256(bit4Vector, _mm256_and_si256(bit2Vector, bit1Vector));
     case 4:   /*F (Phenylalanine) encoding 0b11110*/
-      return _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit1Vector))));
+      return _mm256_and_si256(_mm256_and_si256(bit4Vector, bit3Vector), _mm256_and_si256(bit2Vector, bit1Vector));
     case 5:   /*G (Glycine) encoding 0b11010*/
       return _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
     case 6:   /*H (Histidine) encoding 0b11011*/
-      return _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit2Vector, bit0Vector))));
+      return _mm256_and_si256(_mm256_and_si256(bit4Vector, bit3Vector), _mm256_and_si256(bit1Vector, bit0Vector));
     case 7:   /*I (Isoleucine) encoding 0b11001*/
       return _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
     case 8:   /*K (Lysine) encoding 0b10101*/
@@ -82,13 +82,13 @@ __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict 
     case 9:   /*L (aspartic acid) encoding 0b11100*/
       return _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
     case 10:  /*M (Methionine) encoding 0b11101*/
-      return _mm256_and_si256(bit4Vector, _mm256_and_si256(bit3Vector, _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit0Vector))));
+      return _mm256_and_si256(_mm256_and_si256(bit4Vector, bit3Vector), _mm256_and_si256(bit2Vector, bit0Vector));
     case 11:  /*N (Asparagine) encoding 0b01000*/
-      return _mm256_andnot_si256(bit4Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit3Vector, bit0Vector))));
+      return _mm256_andnot_si256(_mm256_or_si256(bit0Vector, bit1Vector), _mm256_andnot_si256(bit2Vector, bit3Vector));
     case 12:  /*P (Proline) encoding 0b01001*/
       return _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
     case 13:  /*Q (glutamine) encoding 0b00100*/
-      return _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, _mm256_andnot_si256(bit4Vector, bit2Vector))));
+      return _mm256_andnot_si256(_mm256_or_si256(bit3Vector, bit1Vector), _mm256_andnot_si256(bit0Vector, bit2Vector));
     case 14:  /*R (Arginine) encoding 0b10011*/
       return _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, bit4Vector));
     case 15:  /*S (Serine) encoding 0b01010*/
@@ -98,9 +98,9 @@ __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict 
     case 17:  /*V (Valine) encoding 0b10110*/
       return _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
     case 18:  /*W (Tryptophan) encoding 0b00001*/
-      return _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector))));
+    return _mm256_andnot_si256(_mm256_or_si256(bit3Vector, bit2Vector), _mm256_andnot_si256(bit1Vector, bit0Vector));
     case 19:  /*Y (Tyrosine) encoding 0b00010*/
-      return _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, _mm256_andnot_si256(bit4Vector, bit1Vector))));
+      return _mm256_andnot_si256(_mm256_or_si256(bit0Vector, bit2Vector), _mm256_andnot_si256(bit3Vector, bit1Vector));
     default: __builtin_unreachable();   //GCC respects this, doesn't check for letters that aren't valid
   }
 }

@@ -20,7 +20,7 @@
  *   Vector with bits set at every position the given letter was found.
  */
 __m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *restrict const blockPtr,
-  const uint8_t localQueryPosition, const uint8_t letter);
+  const uint8_t letter);
 
 
 /*
@@ -37,7 +37,7 @@ __m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *res
  *   Vector with bits set at every position the given letter was found.
  */
 __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict const blockPtr,
-  const uint8_t localQueryPosition, const uint8_t letter);
+  const uint8_t letter);
 
 
 /*
@@ -52,7 +52,7 @@ __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict 
  *  Returns:
  *    Count of the bits set in the occurrenceVector.
  */
-uint16_t awFmVectorPopcount(const __m256i occurrenceVector);
+uint16_t awFmVectorPopcount(const __m256i occurrenceVector, const uint8_t localQueryPosition);
 
 /*
  * Function:  awFmVectorPopcountBuiltin
@@ -67,7 +67,7 @@ uint16_t awFmVectorPopcount(const __m256i occurrenceVector);
  *  Returns:
  *    Count of the bits set in the occurrenceVector.
  */
-uint16_t awFmVectorPopcountBuiltin(const __m256i occurrenceVector);
+uint16_t awFmVectorPopcountBuiltin(const __m256i occurrenceVector, const uint8_t localQueryPosition);
 
 /*
  * Function:  awFmBlockPrefetch

@@ -214,18 +214,11 @@ inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const
 uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *blockPtr, const uint64_t localPosition){
   const uint8_t byteInBlock    = localPosition / 8;
   const uint8_t bitInBlockByte = localPosition % 8;
-  const uint8_t letterBitWidth = 2;
-  uint8_t letter = 0;
 
-  for(int8_t letterBit = letterBitWidth; letterBit >= 0; letterBit--){
-    const uint8_t *restrict const blockVectorAsByteArray = (uint8_t*)(blockPtr->letterBitVectors +letterBit);
-    const uint8_t bit = (blockVectorAsByteArray[byteInBlock] >> bitInBlockByte) & 1;
-
-    letter = (letter << 1) | bit;
+  const uint8_t *restrict const letterBytePointer = (uint8_t*) &blockPtr->letterBitVectors[byteInBlock];
+  return  ((letterBytePointer[0]  >> bitInBlockByte) & 1) |
+          ((letterBytePointer[32] >> bitInBlockByte) & 1) << 1;
   }
-
-  return letter;
-}
 
 /*
  * Function:  awFmGetLetterAtBwtPosition
@@ -242,17 +235,13 @@ uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *b
 uint8_t awFmGetAminoLetterAtBwtPosition(const struct AwFmAminoBlock *blockPtr, const uint64_t localPosition){
   const uint8_t byteInBlock    = localPosition / 8;
   const uint8_t bitInBlockByte = localPosition % 8;
-  uint8_t letter = 0;
-  uint8_t letterBitWidth = 5;
 
-  for(uint8_t letterBit = letterBitWidth; letterBit >= 0; letterBit--){
-    const uint8_t *restrict const blockVectorAsByteArray = (uint8_t*)(blockPtr->letterBitVectors +letterBit);
-    const uint8_t bit = (blockVectorAsByteArray[byteInBlock] >> bitInBlockByte) & 1;
-
-    letter = (letter << 1) | bit;
-  }
-
-  return letter;
+  const uint8_t *restrict const letterBytePointer = (uint8_t*) &blockPtr->letterBitVectors[byteInBlock];
+  return ((letterBytePointer[0] >> bitInBlockByte) & 1)       |
+    ((letterBytePointer[32]     >> bitInBlockByte) & 1) << 1  |
+    ((letterBytePointer[64]     >> bitInBlockByte) & 1) << 2  |
+    ((letterBytePointer[96]     >> bitInBlockByte) & 1) << 3  |
+    ((letterBytePointer[128]    >> bitInBlockByte) & 1) << 4;
 }
 
 

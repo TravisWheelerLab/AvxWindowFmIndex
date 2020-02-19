@@ -217,7 +217,7 @@ uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *b
   const uint8_t letterBitWidth = 2;
   uint8_t letter = 0;
 
-  for(uint8_t letterBit = letterBitWidth; letterBit >= 0; letterBit--){
+  for(int8_t letterBit = letterBitWidth; letterBit >= 0; letterBit--){
     const uint8_t *restrict const blockVectorAsByteArray = (uint8_t*)(blockPtr->letterBitVectors +letterBit);
     const uint8_t bit = (blockVectorAsByteArray[byteInBlock] >> bitInBlockByte) & 1;
 

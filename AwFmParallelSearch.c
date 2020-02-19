@@ -57,7 +57,7 @@ struct AwFmParallelSearchData *awFmCreateParallelSearchData(const size_t capacit
 
   //initialize all the elements in the positionLists to obviously null values
   for(size_t i = 0; i < searchData->capacity; i++){
-    awFmBacktraceVectorCreate(searchData->sequencePositionLists);
+    awFmBacktraceVectorCreate(&searchData->sequencePositionLists[i]);
   }
 
   return searchData;

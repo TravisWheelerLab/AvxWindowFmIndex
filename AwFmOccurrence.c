@@ -199,6 +199,7 @@ inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const
 //   return letter;
 // }
 
+//TODO:  update the documented inputs to this function
 /*
  * Function:  awFmGetNucleotideLetterAtBwtPosition
  * --------------------
@@ -215,7 +216,7 @@ uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *b
   const uint8_t byteInBlock    = localPosition / 8;
   const uint8_t bitInBlockByte = localPosition % 8;
 
-  const uint8_t *restrict const letterBytePointer = (uint8_t*) &blockPtr->letterBitVectors[byteInBlock];
+  const uint8_t *restrict const letterBytePointer = &((uint8_t*) &blockPtr->letterBitVectors)[byteInBlock];
   return  ((letterBytePointer[0]  >> bitInBlockByte) & 1) |
           ((letterBytePointer[32] >> bitInBlockByte) & 1) << 1;
   }
@@ -236,7 +237,7 @@ uint8_t awFmGetAminoLetterAtBwtPosition(const struct AwFmAminoBlock *blockPtr, c
   const uint8_t byteInBlock    = localPosition / 8;
   const uint8_t bitInBlockByte = localPosition % 8;
 
-  const uint8_t *restrict const letterBytePointer = (uint8_t*) &blockPtr->letterBitVectors[byteInBlock];
+  const uint8_t *restrict const letterBytePointer = &((uint8_t*) &blockPtr->letterBitVectors)[byteInBlock];
   return ((letterBytePointer[0] >> bitInBlockByte) & 1)       |
     ((letterBytePointer[32]     >> bitInBlockByte) & 1) << 1  |
     ((letterBytePointer[64]     >> bitInBlockByte) & 1) << 2  |

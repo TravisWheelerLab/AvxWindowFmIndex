@@ -199,20 +199,21 @@ inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const
 //   return letter;
 // }
 
-//TODO:  update the documented inputs to this function
+
 /*
  * Function:  awFmGetNucleotideLetterAtBwtPosition
  * --------------------
  * Given a specific position in the nucleotide BWT, returns the letter in the BWT at this position.
  *
  *  Inputs:
- *    blockList: blockList to be queried.
- *    bwtPosition: Position of the character to be returned.
+ *    blockList: Block to query into. Note, this is usually not the pointer to the bwt,
+ *      but a pointer to the block the query will be found in.
+ *    bwtPosition: Position of the character to be returned, relative to the start of the block to query.
  *
  *  Returns:
  *    letter at the bwtPosition in the specified blockList.
  */
-uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *blockPtr, const uint64_t localPosition){
+uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *blockPtr, const uint8_t localPosition){
   const uint8_t byteInBlock    = localPosition / 8;
   const uint8_t bitInBlockByte = localPosition % 8;
 
@@ -224,16 +225,17 @@ uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *b
 /*
  * Function:  awFmGetLetterAtBwtPosition
  * --------------------
- * Given a specific position in the BWT, returns the letter in the BWT at this position.
+ * Given a specific position in the amino BWT, returns the letter in the BWT at this position.
  *
  *  Inputs:
- *    blockList: blockList to be queried.
- *    bwtPosition: Position of the character to be returned.
+ *    blockList: Block to query into. Note, this is usually not the pointer to the bwt,
+ *      but a pointer to the block the query will be found in.
+ *    bwtPosition: Position of the character to be returned, relative to the start of the block to query.
  *
  *  Returns:
  *    letter at the bwtPosition in the specified blockList.
  */
-uint8_t awFmGetAminoLetterAtBwtPosition(const struct AwFmAminoBlock *blockPtr, const uint64_t localPosition){
+uint8_t awFmGetAminoLetterAtBwtPosition(const struct AwFmAminoBlock *blockPtr, const uint8_t localPosition){
   const uint8_t byteInBlock    = localPosition / 8;
   const uint8_t bitInBlockByte = localPosition % 8;
 

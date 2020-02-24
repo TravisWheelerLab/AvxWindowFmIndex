@@ -42,7 +42,7 @@ struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(const struct AwFmIndex *r
   const uint8_t kmerSeedStartPosition = kmerIsShorterThanTable? 0: kmerLength - index->metadata.kmerLengthInSeedTable;
 
   uint64_t kmerTableIndex = 0;
-  for(int_fast16_t i = kmerSeedStartPosition; i > kmerLength; i++){
+  for(int_fast16_t i = kmerSeedStartPosition; i < kmerLength; i++){
     kmerTableIndex = (kmerTableIndex * AW_FM_AMINO_CARDINALITY) + awFmAsciiAminoAcidToLetterIndex(kmer[i]);
   }
 
@@ -51,7 +51,7 @@ struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(const struct AwFmIndex *r
     uint64_t kmerRangeStartIndex        = kmerTableIndex;
     uint64_t kmerRangeEndIndex          = kmerTableIndex + 1;
 
-    for(uint8_t i =0; i < numImplicitAppendedLetters;i++){
+    for(uint8_t i = 0; i < numImplicitAppendedLetters; i++){
       kmerRangeStartIndex *= AW_FM_AMINO_CARDINALITY;
       kmerRangeEndIndex   *= AW_FM_AMINO_CARDINALITY;
     }

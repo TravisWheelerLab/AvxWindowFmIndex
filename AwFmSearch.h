@@ -10,7 +10,7 @@
 /*
  * Function:  awFmIterativeStepBackwardSearch
  * --------------------
- * Performs a single backwared search step on the given index.
+ * Performs a single backward search step on the given index.
  *  In lieu of returning an additional value, this function updates the data pointed to by
  *  the range ptr.
  *
@@ -26,7 +26,7 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
 /*
  * Function:  awFmIterativeStepBackwardSearch
  * --------------------
- * Performs a single backwared search step on the given index.
+ * Performs a single backward search step on the given index.
  *  In lieu of returning an additional value, this function updates the data pointed to by
  *  the range ptr.
  *
@@ -38,6 +38,15 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
  */
 void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
   struct AwFmSearchRange *restrict const range, const uint8_t letter);
+
+
+uint64_t awFmNucleotideBackwardSearchSingle(const struct AwFmIndex *restrict const index,
+  uint64_t queryPosition, const uint8_t letter);
+
+
+uint64_t awFmAminoBackwardSearchSingle(const struct AwFmIndex *restrict const index,
+  uint64_t queryPosition, const uint8_t letter);
+
 
 /*
  * Function:  awFmFindDatabaseHitPositions

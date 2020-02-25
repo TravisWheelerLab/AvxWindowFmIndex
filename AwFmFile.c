@@ -33,13 +33,12 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
   }
 
   //open the file
-  char fileOpenMode[4] = {'w','b', (allowOverwrite? 0:'x'), 0};
+  char fileOpenMode[5] = {'w','+','b', (allowOverwrite? 0:'x'), 0};
   index->fileHandle = fopen(fileSrc, fileOpenMode);
 
   if(index->fileHandle == NULL){
     return AwFmFileAlreadyExists;
   }
-
 
   //write the header
   size_t elementsWritten = fwrite(IndexFileFormatIdHeader, sizeof(char), IndexFileFormatIdHeaderLength, index->fileHandle);
@@ -94,6 +93,7 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     fclose(index->fileHandle);
     return AwFmFileWriteFail;
   }
+
   //write the prefix sums table
   const size_t prefixSumsLength = awFmGetPrefixSumsLength(index->metadata.alphabetType);
   elementsWritten = fwrite(index->prefixSums, sizeof(uint64_t), prefixSumsLength, index->fileHandle);
@@ -104,8 +104,16 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
 
   //write the kmer seed table
   const size_t numElementsInKmerSeedTable = awFmGetKmerTableLength(index);
-  elementsWritten = fwrite(index->kmerSeedTable, sizeof(struct AwFmSearchRange), numElementsInKmerSeedTable, index->fileHandle);
+  elementsWritten = fwrite(index->kmerSeedTable.table, sizeof(struct AwFmSearchRange), numElementsInKmerSeedTable, index->fileHandle);
   if(elementsWritten != numElementsInKmerSeedTable){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+
+  //write the sequence ending
+  const size_t sequenceEndingLength = index->metadata.kmerLengthInSeedTable - 1;
+  elementsWritten = fwrite(index->kmerSeedTable.sequenceEndingKmerEncodings, sizeof(uint64_t), sequenceEndingLength, index->fileHandle);
+  if(elementsWritten != sequenceEndingLength){
     fclose(index->fileHandle);
     return AwFmFileWriteFail;
   }
@@ -128,9 +136,9 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     }
   }
 
+  fflush(index->fileHandle);
   index->fileDescriptor = fileno(index->fileHandle);
 
-  fflush(index->fileHandle);
   return AwFmFileWriteOkay;
 }
 
@@ -230,8 +238,16 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
 
   //read the kmer seed table
   const size_t kmerSeedTableLength  = awFmGetKmerTableLength(indexData);
-  elementsRead = fread(indexData->kmerSeedTable, sizeof(struct AwFmSearchRange), kmerSeedTableLength, fileHandle);
+  elementsRead = fread(indexData->kmerSeedTable.table, sizeof(struct AwFmSearchRange), kmerSeedTableLength, fileHandle);
   if(elementsRead != kmerSeedTableLength){
+    fclose(fileHandle);
+    awFmDeallocIndex(indexData);
+    return AwFmFileReadFail;
+  }
+
+  const size_t sequenceEndingLength = indexData->metadata.kmerLengthInSeedTable - 1;
+  elementsRead = fread(indexData->kmerSeedTable.sequenceEndingKmerEncodings, sizeof(uint64_t), sequenceEndingLength, fileHandle);
+  if(elementsRead != sequenceEndingLength){
     fclose(fileHandle);
     awFmDeallocIndex(indexData);
     return AwFmFileReadFail;
@@ -288,34 +304,36 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
 
 enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *restrict const index,
   struct AwFmBacktrace *restrict const backtracePtr){
-
   uint64_t suffixArrayPosition = backtracePtr->position / index->metadata.suffixArrayCompressionRatio;
-  const size_t suffixArrayFileOffset = index->suffixArrayFileOffset + ( backtracePtr->position * sizeof(uint64_t));
-  ssize_t numBytesRead = pread(index->fileDescriptor, &suffixArrayPosition, sizeof(uint64_t), suffixArrayFileOffset);
+  const size_t suffixArrayFileOffset = index->suffixArrayFileOffset + (suffixArrayPosition * sizeof(uint64_t));
 
+  ssize_t numBytesRead = pread(index->fileDescriptor, &suffixArrayPosition, sizeof(uint64_t), suffixArrayFileOffset);
   if(numBytesRead == sizeof(uint64_t)){
-    backtracePtr->position += backtracePtr->offset;
+    backtracePtr->position = suffixArrayPosition + backtracePtr->offset;
     return AwFmFileReadOkay;
   }
   else{
-    backtracePtr->position = -1UL;
+    backtracePtr->position = -1ULL;
     return AwFmFileReadFail;
   }
 }
 
 
 size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index){
-  const size_t prefixSumLength = awFmGetAlphabetCardinality(index->metadata.alphabetType);
-  const size_t kmerSeedTableLength = awFmGetKmerTableLength(index);
-  const size_t bytesPerBwtBlock = index->metadata.alphabetType == AwFmAlphabetNucleotide?
+  const size_t metadataLength               = 5 * sizeof(uint8_t);
+  const size_t bytesPerBwtBlock             = index->metadata.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
-  const size_t bwtLengthInBytes = awFmNumBlocksFromBwtLength(index->bwtLength) * bytesPerBwtBlock;
-  const size_t metadataLength = 4 * sizeof(uint32_t);
-  const size_t bwtLengthDataLength = 1 * sizeof(uint64_t);
-  const size_t sentinelPositionDataLength = 1 * sizeof(uint64_t);
+  const size_t bwtLengthDataLength          = sizeof(uint64_t);
+  const size_t sentinelPositionDataLength   = sizeof(uint64_t);
+  const size_t bwtLengthInBytes             = awFmNumBlocksFromBwtLength(index->bwtLength) * bytesPerBwtBlock;
+  const size_t prefixSumLengthInBytes       = awFmGetPrefixSumsLength(index->metadata.alphabetType) * sizeof(uint64_t);
+  const size_t kmerSeedTableLength          = awFmGetKmerTableLength(index);
+  const size_t endingSequenceLenghtInBytes  = (index->metadata.kmerLengthInSeedTable - 1) * sizeof(uint64_t);
+
   return IndexFileFormatIdHeaderLength + metadataLength +
-    bwtLengthDataLength + sentinelPositionDataLength + (bwtLengthInBytes) +
-    (prefixSumLength * sizeof(uint64_t)) + (kmerSeedTableLength * sizeof(struct AwFmSearchRange));
+    bwtLengthDataLength + sentinelPositionDataLength + bwtLengthInBytes +
+    prefixSumLengthInBytes + (kmerSeedTableLength * sizeof(struct AwFmSearchRange) +
+    endingSequenceLenghtInBytes);
 }
 
 

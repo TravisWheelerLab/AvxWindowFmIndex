@@ -288,7 +288,7 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
   const size_t actualPriorFlankLength = (bufferWouldUnderflowSequence?
     sequencePosition: priorFlankLength);
 
-  const size_t seekPosition = index->sequenceFileOffset + sequencePosition - priorFlankLength;
+  const size_t seekPosition = index->sequenceFileOffset + sequencePosition - actualPriorFlankLength;
   const size_t sequenceSegmentLength = actualPriorFlankLength + postFlankLength;
   size_t bytesRead = pread(index->fileDescriptor, sequenceBuffer, sequenceSegmentLength * sizeof(char), seekPosition);
 

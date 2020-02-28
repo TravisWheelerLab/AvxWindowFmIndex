@@ -310,6 +310,7 @@ enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *
   ssize_t numBytesRead = pread(index->fileDescriptor, &suffixArrayPosition, sizeof(uint64_t), suffixArrayFileOffset);
   if(numBytesRead == sizeof(uint64_t)){
     backtracePtr->position = suffixArrayPosition + backtracePtr->offset;
+    backtracePtr->position %= index->bwtLength; //handles the edge case of wrapping around the end of the suffix array.
     return AwFmFileReadOkay;
   }
   else{

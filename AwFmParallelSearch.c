@@ -159,33 +159,42 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
 
 void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const index,
   struct AwFmParallelSearchData *restrict const searchData, struct AwFmSearchRange *restrict const ranges,
-  const size_t threadBlockStartIndex){
+  const size_t threadBlockStartIndex, const size_t threadBlockEndIndex){
 
-  for(uint8_t i = 0; i < NUM_CONCURRENT_QUERIES; i++){
-    const size_t kmerIndex    = i + threadBlockStartIndex;
-    const size_t rangeLength  = awFmSearchRangeLength(&ranges[i]);
+  for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++){
+  const uint64_t rangesIndex = kmerIndex - threadBlockStartIndex;
+    const size_t rangeLength  = awFmSearchRangeLength(&ranges[rangesIndex]);
     struct AwFmBacktrace *restrict const backtraceArray = searchData->sequencePositionLists[kmerIndex].backtraceArray;
     awFmBacktraceVectorSetCount(&searchData->sequencePositionLists[kmerIndex], rangeLength);
 
     size_t positionInRangeToBacktrace = 0;
     while(positionInRangeToBacktrace < rangeLength){
-      uint64_t position = ranges[i].startPtr + positionInRangeToBacktrace;
+      uint64_t position = ranges[rangesIndex].startPtr + positionInRangeToBacktrace;
       uint64_t offset   = 0;
 
       if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
         while(!awFmBwtPositionIsSampled(index, position)){
-          position = awFmNucleotideBacktraceBwtPosition(index, position);
+          if(__builtin_expect(position == index->sentinelCharacterPosition, 0)){
+            position = 0;
+          }else{
+            position = awFmNucleotideBacktraceBwtPosition(index, position);
+          }
           offset++;
         }
       }
       else{
         while(!awFmBwtPositionIsSampled(index, position)){
-          position = awFmAminoBacktraceBwtPosition(index, position);
+          if(__builtin_expect(position == index->sentinelCharacterPosition, 0)){
+            position = 0;
+          }else{
+            position = awFmAminoBacktraceBwtPosition(index, position);
+          }
           offset++;
         }
       }
       backtraceArray[positionInRangeToBacktrace].position = position;
       backtraceArray[positionInRangeToBacktrace].offset   = offset;
+      positionInRangeToBacktrace++;
     }
   }
 }

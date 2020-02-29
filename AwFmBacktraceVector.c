@@ -40,6 +40,7 @@ bool awFmBacktraceVectorSetCount(struct AwFmBacktraceVector *const vector, const
     memcpy(tmpPtr, vector->backtraceArray, oldLength);
     free(vector->backtraceArray);
 
+    vector->count = newCount;
     vector->capacity = newCapacity;
     vector->backtraceArray = tmpPtr;
     return true;

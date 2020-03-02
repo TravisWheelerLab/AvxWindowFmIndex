@@ -21,7 +21,7 @@ __m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *res
   switch(letter){
     case 0: //Nucleotide A
       return
-        _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, _mm256_set1_epi8(0xFF)));
+        _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, _mm256_set1_epi8((uint8_t)0xFF)));
     case 1://Nucleotide C
       return  _mm256_andnot_si256(bit1Vector, bit0Vector);
     case 2://Nucleotide G
@@ -169,7 +169,7 @@ inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const
 
   const uint64_t blockIndex    = awFmGetBlockIndexFromGlobalPosition(nextQueryPosition);
   //make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line boundries.
-  const uint8_t *blockAddress  = (baseBlockListPtr + (blockIndex * blockByteWidth));
+  const uint8_t *blockAddress  = ((uint8_t*)baseBlockListPtr + (blockIndex * blockByteWidth));
 
   for(uint_fast16_t prefetchOffset = 0; prefetchOffset < blockByteWidth; prefetchOffset += AW_FM_CACHE_LINE_SIZE_IN_BYTES){
     _mm_prefetch(blockAddress + prefetchOffset, _MM_HINT_T2);

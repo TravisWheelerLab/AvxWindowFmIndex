@@ -164,6 +164,9 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         letterBitVectorBytes[byteInVector + 96]   = letterBitVectorBytes[byteInVector + 96]   | (((letterAsVectorFormat >> 3) & 0x1) << bitInVectorByte);
         letterBitVectorBytes[byteInVector + 128]  = letterBitVectorBytes[byteInVector + 128]  | (((letterAsVectorFormat >> 4) & 0x1) << bitInVectorByte);
       }
+      else{
+        index->sentinelCharacterPosition = suffixArrayPosition;
+      }
     }
 
     //set the prefix sums

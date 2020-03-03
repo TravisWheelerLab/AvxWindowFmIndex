@@ -145,9 +145,11 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
         const uint8_t queryLetterIndex = awFmAsciiNucleotideToLetterIndex(kmerPtr->string[currentQueryLetterIndex]);
 
         if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+          const uint8_t queryLetterIndex = awFmAsciiNucleotideToLetterIndex(kmerPtr->string[currentQueryLetterIndex]);
           awFmNucleotideIterativeStepBackwardSearch(index, &ranges[rangesIndex], queryLetterIndex);
         }
         else{
+          const uint8_t queryLetterIndex = awFmAsciiAminoAcidToLetterIndex(kmerPtr->string[currentQueryLetterIndex]);
           awFmAminoIterativeStepBackwardSearch(index, &ranges[rangesIndex], queryLetterIndex);
         }
       }

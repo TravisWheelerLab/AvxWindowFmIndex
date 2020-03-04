@@ -57,7 +57,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   }
   //create the suffix array, storing it starting in the second element of the suffix array we allocated.
   //this doesn't clobber the sentinel we added earlier, and makes for easier bwt creation.
-  uint64_t divSufSortReturnCode = divsufsort64(sequence, (int64_t*)(suffixArray + 1), sequenceLength);
+  int64_t divSufSortReturnCode = divsufsort64(sequence, (int64_t*)(suffixArray + 1), sequenceLength);
   if(divSufSortReturnCode < 0){
     free(suffixArray);
     awFmDeallocIndex(indexData);

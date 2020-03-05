@@ -55,3 +55,6 @@ dkms.conf
 # binaries
 occSpeedTest
 test/letterTest/letterTest
+
+#awfmi databases
+*.awfmi

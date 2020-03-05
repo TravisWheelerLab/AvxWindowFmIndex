@@ -41,7 +41,6 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
 
   const size_t kmerSeedTableSize = awFmGetKmerTableLength(index);
   //allocate the kmerSeedTable
-  printf("allocating kmer table of length %zu\n", kmerSeedTableSize);
   index->kmerSeedTable.table = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
     kmerSeedTableSize * sizeof(struct AwFmSearchRange));
   if(index->kmerSeedTable.table == NULL){

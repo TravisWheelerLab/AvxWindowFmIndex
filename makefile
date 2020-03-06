@@ -1,49 +1,117 @@
-#based on https://www.topbug.net/blog/2019/10/28/makefile-template-for-a-shared-library-in-c-with-explanations/
+#for libdivsufsort,  cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX="../../lib" .. -DBUILD_DIVSUFSORT64:BOOL=ON
 
+#when calling, allow for setting the DESTDIR env variable
+#when calling, allow for the #DONT_INSTALL_DIVSUFSORT env variable
+#todo: documentation for calling git clone with --recurse-submodules or use git submodule init & git submodule update
 SHELL = /bin/sh
 
-NAME 							:= awfmindex
-MAJOR_VERSION_NUM := 0
-MINOR_VERSION_NUM := 1
-VERSION 					:= $(MAJOR).$(MINOR)
-TARGET_LIB				:= lib$(NAME).so
+AWFMINDEX_PROJECT_NAME 			= awfmindex
+AWFMINDEX_MAJOR_VERSION_NUM = 0
+AWFMINDEX_MINOR_VERSION_NUM = 1
+AWFMINDEX_VERSION 					= $(MAJOR).$(MINOR)
 
-BUILD_DIR 			:= build#dir to build to, deleted with clean
-SRC_DIR 				:= src#source .c file dir
-SO_OUTPUT_DIR		:= bin
-SRCS 						:= $(wildcard $(SRC_DIR)/*.c)
-# OBJECTS := $(patsubst $(SRC_DIR)/%,$(BUILD_DIR)/%,$(SRCS:.$(.c)=.o))
-OBJS 						:= $(patsubst $(SRC_DIR)/%, $(BUILD_DIR)/%, $(SRCS:.c=.o))
-SO_OUTPUT_FILE	:= $(SO_OUTPUT_DIR)/$(TARGET_LIB)
+CC 			= gcc
+CFLAGS 	= -std=c11 -fpic -O3 -mtune=native -mavx2 -Wall -Werror -Wextra -fopenmp -ldivsufsort64
+LDFLAGS	= -shared # linking flags
 
-CC 				:= gcc
-CFLAGS 		:= -std=c11 -fpic -O3 -mtune=native -mavx2 -Wall -Werror -Wextra -fopenmp -ldivsufsort64
-LDFLAGS		:= -shared # linking flags
+#PREFIX is environment variable, but if it is not set, then set default install location /usr/local
+ifeq ($(PREFIX),)
+    PREFIX := /usr/local
+endif
+
+#directories
+AWFMINDEX_PROJECT_DIR						:= $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+AWFMINDEX_BUILD_DIR 						= $(AWFMINDEX_PROJECT_DIR)/build
+AWFMINDEX_SRC_DIR 							= $(AWFMINDEX_PROJECT_DIR)/src
+AWFMINDEX_BUILD_INCLUDE_DIR			= $(AWFMINDEX_BUILD_DIR)/include
+AWFMINDEX_BUILD_LIBRARY_DIR			= $(AWFMINDEX_BUILD_DIR)/lib
+AWFMINDEX_INSTALL_INCLUDE_DIR		= $(DESTDIR)$(PREFIX)/include
+AWFMINDEX_INSTALL_LIBRARY_DIR		= $(DESTDIR)$(PREFIX)/lib
+LIBDIVSUFSORT_PROJECT_DIR				= $(AWFMINDEX_PROJECT_DIR)/libdivsufsort
+LIBDIVSUFSORT_BUILD_DIR					= $(LIBDIVSUFSORT_PROJECT_DIR)/build
+LIBDIVSUFSORT_BUILD_INCLUDE_DIR	= $(LIBDIVSUFSORT_BUILD_DIR)/include
+LIBDIVSUFSORT_BUILD_LIBRARY_DIR = $(LIBDIVSUFSORT_BUILD_DIR)/lib
+
+#filenames
+AWFMINDEX_HEADER_FILENAME				= AwFmIndex.h
+AWFMINDEX_LIBRARY_FILENAME			= awfmindex.so
+LIBDIVSUFSORT_HEADER_FILENAME		=	divsufsort64.h
+LIBDIVSUFSORT_LIBRARY_FILENAME	= libdivsufsort64.so
+
+#file locations
+AWFMINDEX_SRC_HEADER_FILE 				= $(AWFMINDEX_SRC_DIR)/$(AWFMINDEX_HEADER_FILENAME)
+AWFMINDEX_BUILD_HEADER_FILE				= $(AWFMINDEX_BUILD_INCLUDE_DIR)/$(AWFMINDEX_HEADER_FILENAME)
+AWFMINDEX_BUILD_LIBRARY_FILE			= $(AWFMINDEX_BUILD_LIBRARY_DIR)/$(AWFMINDEX_LIBRARY_FILENAME)
+AWFMINDEX_INSTALL_HEADER_FILE			= $(AWFMINDEX_INSTALL_INCLUDE_DIR)/$(AWFMINDEX_HEADER_FILENAME)
+AWFMINDEX_INSTALL_LIBRARY_FILE		= $(AWFMINDEX_INSTALL_LIBRARY_DIR)/$(AWFMINDEX_LIBRARY_FILENAME)
+LIBDIVSUFSORT_BUILD_HEADER_FILE		= $(LIBDIVSUFSORT_BUILD_INCLUDE_DIR)/$(LIBDIVSUFSORT_HEADER_FILENAME)
+LIBDIVSUFSORT_BUILD_LIBRARY_FILE	= $(LIBDIVSUFSORT_BUILD_LIBRARY_DIR)/$(LIBDIVSUFSORT_LIBRARY_FILENAME)
+
+SOURCE_FILES 	:= $(wildcard $(AWFMINDEX_SRC_DIR)/*.c)
+OBJECT_FILES 	:= $(patsubst $(AWFMINDEX_SRC_DIR)/%, $(AWFMINDEX_BUILD_DIR)/%, $(SOURCE_FILES:.c=.o))
 
 
+#create a variable to hold the libs to install, to make rule generation easier
+LIBS_TO_INSTALL = $(AW_FM_INDEX_SO_FILE)
+ifneq ($(DONT_INSTALL_DIVSUFSORT),)
+	$(LIBS_TO_INSTALL) += $(LIBDIVSUFSORT_SO_FILE)
+endif
+
+
+
+#rules
 .PHONY: all
-all: $(BIN_DIR) $(SO_OUTPUT_DIR) $(BUILD_DIR) $(OBJS) $(SO_OUTPUT_FILE)
-
-#uses the object files to build the shared library into the bin directory
-$(SO_OUTPUT_FILE): $(OBJS)
-	$(CC) $(LDFLAGS)-o $@ $^
-
-#create the object files from each c file in the src directory
-$(BUILD_DIR)/%.o:$(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
+all: $(LIBDIVSUFSORT_BUILD_HEADER_FILE) $(AWFMINDEX_BUILD_LIBRARY_FILE) $(AWFMINDEX_BUILD_HEADER_FILE)
 
 
-#create the directories if needed
-$(BUILD_DIR):
-	mkdir $(BUILD_DIR)
+.PHONY: install
+install: $(AWFMINDEX_BUILD_LIBRARY_FILE) $(AWFMINDEX_BUILD_HEADER_FILE)
+	echo "install"
+	mkdir -p $(DESTDIR)$(PREFIX)/lib
+	mkdir -p $(DESTDIR)$(PREFIX)/include
+	cp $(AWFMINDEX_BUILD_LIBRARY_FILE) $(AWFMINDEX_INSTALL_LIBRARY_FILE)
+	cp $(AWFMINDEX_BUILD_HEADER_FILE) $(AWFMINDEX_INSTALL_HEADER_FILE)
+	#cd into libdivsufsort to make install
+	cd $(LIBDIVSUFSORT_BUILD_DIR) && make install
 
-$(BIN_DIR):
-	mkdir $(BIN_DIR)
-
-$(SO_OUTPUT_DIR):
-	mkdir $(SO_OUTPUT_DIR)
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR) $(BUILD_DIR) $(BIN_DIR)
-	# rm $(SO_OUTPUT_FILE) $(OBJECTS)
+	echo "clean"
+	rm -rf $(AWFMINDEX_BUILD_DIR) #clean the AwFmIndex build files
+	cd $(LIBDIVSUFSORT_BUILD_DIR) && make clean
+
+
+#build the .so and place it in the build lib directory
+$(AWFMINDEX_BUILD_LIBRARY_FILE): $(LIBDIVSUFSORT_BUILD_INCLUDE_DIR) $(AWFMINDEX_BUILD_LIBRARY_DIR) $(OBJECT_FILES)
+	$(CC) $(LDFLAGS) -o $(AWFMINDEX_BUILD_LIBRARY_FILE) $(OBJECT_FILES)
+
+#create the object files from each c file in the src directory
+$(AWFMINDEX_BUILD_DIR)/%.o: $(AWFMINDEX_SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@ -I $(LIBDIVSUFSORT_BUILD_INCLUDE_DIR)
+
+#copies the AwFmIndex.h header to the build directory
+$(AWFMINDEX_BUILD_HEADER_FILE): $(AWFMINDEX_SRC_HEADER_FILE) $(AWFMINDEX_BUILD_INCLUDE_DIR)
+	cp $(AWFMINDEX_SRC_HEADER_FILE) $(AWFMINDEX_BUILD_HEADER_FILE)
+
+#building libdivsufsort
+$(LIBDIVSUFSORT_BUILD_HEADER_FILE): $(LIBDIVSUFSORT_BUILD_DIR)
+	echo $(LIBDIVSUFSORT_BUILD_HEADER_FILE)
+	cd $(LIBDIVSUFSORT_BUILD_DIR) &&	cmake -DCMAKE_BUILD_TYPE="Release" -DBUILD_DIVSUFSORT64:BOOL=ON  -DCMAKE_INSTALL_PREFIX="$(DESTDIR)$(PREFIX)" .. && make
+
+#initialize the libdivsufsort project submodule if not already done
+$(LIBDIVSUFSORT_PROJECT_DIR):
+	git submodule init
+	git submodule update
+
+#make the libdivsufsort build directory if not already done
+$(LIBDIVSUFSORT_BUILD_DIR): $(LIBDIVSUFSORT_PROJECT_DIR)
+	mkdir -p $(LIBDIVSUFSORT_BUILD_DIR)
+
+#make the AwFmIndex build lib directory
+$(AWFMINDEX_BUILD_LIBRARY_DIR):
+	mkdir -p $(AWFMINDEX_BUILD_LIBRARY_DIR)
+
+#make the AwFmIndex build include directory
+$(AWFMINDEX_BUILD_INCLUDE_DIR):
+	mkdir -p $(AWFMINDEX_BUILD_INCLUDE_DIR)

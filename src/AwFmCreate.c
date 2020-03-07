@@ -1,4 +1,4 @@
-#include "AwFmIndex.h"
+#include "AwFmIndexStruct.h"
 #include "AwFmCreate.h"
 #include "AwFmLetter.h"
 #include "AwFmSearch.h"

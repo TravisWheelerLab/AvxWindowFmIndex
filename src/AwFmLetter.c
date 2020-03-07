@@ -1,5 +1,5 @@
 #include "AwFmLetter.h"
-#include "AwFmIndex.h"
+#include "AwFmIndexStruct.h"
 #include <stdlib.h>
 #include <time.h>
 

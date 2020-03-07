@@ -2,7 +2,7 @@
 #define AW_FM_INDEX_SEARCH_H
 
 #include "AwFmFile.h"
-#include "AwFmIndex.h"
+#include "AwFmIndexStruct.h"
 #include <stdbool.h>
 #include <stdint.h>
 

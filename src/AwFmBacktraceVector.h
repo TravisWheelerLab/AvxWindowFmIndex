@@ -3,17 +3,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
-
-struct AwFmBacktrace{
-  size_t position;
-  size_t offset;
-};
-
-struct AwFmBacktraceVector{
-  size_t capacity;
-  size_t count;
-  struct AwFmBacktrace *backtraceArray;
-};
+#include "AwFmIndex.h"
 
 bool awFmBacktraceVectorCreate(struct AwFmBacktraceVector *restrict const vector);
 

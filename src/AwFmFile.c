@@ -2,8 +2,9 @@
 //I have absolutely no idea why this is needed, but the linter seems to think so...
 #define _XOPEN_SOURCE 500
 
-#include "AwFmIndex.h"
 #include "AwFmFile.h"
+#include "AwFmIndexStruct.h"
+#include "AwFmIndex.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>

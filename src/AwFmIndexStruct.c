@@ -1,3 +1,4 @@
+#include "AwFmIndexStruct.h"
 #include "AwFmIndex.h"
 #include <string.h>
 #include <stdlib.h>

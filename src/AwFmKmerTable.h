@@ -1,7 +1,7 @@
 #ifndef AW_FM_KMER_TABLE_H
 #define AW_FM_KMER_TABLE_H
 
-#include "AwFmIndex.h"
+#include "AwFmIndexStruct.h"
 #include <stdint.h>
 
 //TODO: change kmer table to return a pointer (with prefetch!), not a value.

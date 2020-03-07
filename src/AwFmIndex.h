@@ -7,6 +7,37 @@
 #include <stdio.h>
 
 
+struct AwFmBacktrace{
+  size_t position;
+  size_t offset;
+};
+
+struct AwFmBacktraceVector{
+  size_t capacity;
+  size_t count;
+  struct AwFmBacktrace *backtraceArray;
+};
+
+
+struct AwFmKmer{
+  uint16_t  length;
+  char      *string;
+};
+
+struct AwFmParallelSearchData{
+  struct  AwFmKmer            *kmerList;
+  struct  AwFmBacktraceVector *sequencePositionLists;
+          size_t              capacity;
+          size_t              count;
+          uint_fast16_t       numThreads;
+};
+
+struct AwFmSearchRange{
+  uint64_t startPtr;
+  uint64_t endPtr;
+};
+
+
 #define AW_FM_POSITIONS_PER_FM_BLOCK        256
 #define AW_FM_CACHE_LINE_SIZE_IN_BYTES      64
 
@@ -16,11 +47,6 @@
 #define AW_FM_AMINO_VECTORS_PER_WINDOW      5
 #define AW_FM_AMINO_CARDINALITY             20
 
-
-struct AwFmSearchRange{
-  uint64_t startPtr;
-  uint64_t endPtr;
-};
 
 
 enum AwFmAlphabetType{
@@ -85,21 +111,32 @@ enum AwFmReturnCode{
 
 
 /*
- * Function:  awFmIndexAlloc
+ * Function:  awFmCreateIndex
  * --------------------
- * Dynamically allocates memory for the AwFmIndex struct and all internally stored arrays.
+ * Allocates a new AwFmIndex from the sequence using the given metadata configuration.
  *
  *  Inputs:
- *    metadata:         metadata struct that describes the format and parameters of the index.
- *      The metadata struct will be memcpy'd directly into the index.
- *    bwtLength:   Length of the BWT, in positions, that the index will hold
+ *    index:          Double pointer to a AwFmIndex struct to be allocated and constructed.
+ *    metadata:       Fully initialized metadata to construct the index with.
+ *      This metadata will be memcpy'd into the created index.
+ *    sequence:       Database sequence that the AwFmIndex is built from.
+ *    sequenceLength: Length of the sequence.
+ *    fileSrc:        File path to write the Index file to.
+ *    allowOverwrite: If set, will allow overwriting the file at the given fileSrc.
+ *      If allowOverwite is false, will return error code AwFmFileAlreadyExists.
  *
  *  Returns:
- *    Allocated AwFmIndex struct, or NULL on an allocation failure.
- *      If any dynamic allocation fails, all data used in the AwFmIndex will be deallocated, too.
+ *    AwFmReturnCode represnting the result of the write. Possible returns are:
+ *      AwFmFileWriteOkay on success.
+ *      AwFmAllocationFailure if memory could not be allocated during the creation process.
+ *      AwFmFileAlreadyExists if a file exists at the given fileSrc, but allowOverwite was false.
+ *      AwFmSuffixArrayCreationFailure if an error was caused by divsufsort64 in suffix array creation.
+ *      AwFmFileWriteFail if a file write failed.
  */
-struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const metadata,
-  const size_t bwtLength);
+enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
+  const struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
+  const char *restrict const fileSrc, const bool allowFileOverwrite);
+
 
 
 /*
@@ -115,152 +152,140 @@ void          awFmDeallocIndex(struct AwFmIndex *index);
 
 
 /*
- * Function:  awFmGetAlphabetCardinality
+ * Function:  awFmWriteIndexToFile
  * --------------------
- * Returns the number of letters in the given alphabet.
- *  If AwFmAlphabetNucleotide is given, returns 4.
- *  If AwFmAlphabetAmino  is given, returns 20.
+ * With a given AwFmIndex and associated data, writes the index to the file.
+ *  If you, the user, want to create a new index file, use the awFmCreateIndex
+ *  function in AwFmCreate.h
+ *
  *  Inputs:
- *    alphabet: Alphabet to query.
+ *    index:          AwFmIndex struct to be written.
+ *    suffixArray:    Full (uncompressed) suffix array that the AwFmIndex is built from.
+ *    sequence:       Database sequence that the AwFmIndex is built from.
+ *    sequenceLength: Length of the sequence.
+ *    fileSrc:        File path to write the Index file to.
+ *    allowOverwrite: If set, will allow overwriting the file at the given fileSrc.
+ *      If allowOverwite is false, will return error code AwFmFileAlreadyExists.
  *
  *  Returns:
- *    Cardinality of the alphabet.
+ *    AwFmReturnCode represnting the result of the write. Possible returns are:
+ *      AwFmFileWriteOkay on success.
+ *      AwFmFileAlreadyExists if a file exists at the given fileSrc, but allowOverwite was false.
+ *      AwFmFileWriteFail if a file write failed.
  */
-uint_fast8_t  awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
+enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
+  const uint64_t *restrict const suffixArray, const uint8_t *restrict const sequence,
+  const uint64_t sequenceLength, const char *restrict const fileSrc, const bool allowOverwrite);
 
 
 /*
- * Function:  awFmGetKmerTableLength
+ * Function:  awFmReadIndexFromFile
  * --------------------
- * Computes the number of AwFmSearchRange structs in the kmerSeedTable.
- *  This value is equal to |A|^k, where |A| is the cardinalty of the alphabet as
- *    set in the given metadata, and k is the length of the kmers in the lookup table,
- *    also as set in the metadata.
+ * Reads the AwFmIndex file from the given fileSrc
+ *
  *  Inputs:
- *    index: AwFmIndex struct that contains the kmerSeedTable.
+ *    index:          double pointer to an unallocated AwFmIndex to be allocated and populated
+ *      by this function.
+ *    fileSrc:        Path to the file containing the AwFmIndex.
  *
  *  Returns:
- *    Number of AwFmSearchRange structs in the table.
+ *    AwFmReturnCode represnting the result of the write. Possible returns are:
+ *      AwFmFileReadOkay on success.
+ *      AwFmFileAlreadyExists if no file could be opened at the given fileSrc.
+ *      AwFmFileFormatError if the header was not correct. This suggests that the file at this location
+ *        is not the correct format.
+ *      AwFmAllocationFailure on failure to allocated the necessary memory for the index.
  */
-size_t        awFmGetKmerTableLength(const struct AwFmIndex *restrict index);
+enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict index, const char *fileSrc);
 
 
 /*
- * Function:  awFmNumBlocksFromBwtLength
+ * Function:  awFmCreateParallelSearchData
  * --------------------
- * Computes the number of BWT blocks that represent the BWT or suffix array of the given length.
- *  This function essentially acts as the ceiling of (suffixArrayLength/ positions per block)
+ *  Allocates and initializes an AwFmParallelSearchData struct to be used to search
+ *  for groups of kmers in a thread-parallel manner that also hides memory read latency
+ *  through multiple concurrent queries per thread.
+ *
+ *  Note that the kmers inside the searchData are not allocated, and only contain
+ *  char pointers that can be set to the kmers you want to query for.
  *
  *  Inputs:
- *    suffixArrayLength: Length of the suffix array, and implicitly, the BWT, in blocks..
+ *    capacity:     How many kmers the searchData struct can hold.
+ *    numThreads:   number of threads to use to query the searchData.
  *
  *  Returns:
- *    Number of blocks required to store the BWT.
+ *    Pointer to the allocated searchData struct, or null on failure.
  */
-size_t        awFmNumBlocksFromBwtLength(const size_t suffixArrayLength);
+struct AwFmParallelSearchData *awFmCreateParallelSearchData(const size_t capacity,
+  const uint_fast8_t numThreads);
 
-
-
-uint8_t awFmGetPrefixSumsLength(const enum AwFmAlphabetType alphabet);
 
 /*
- * Function:  awFmBwtPositionIsSampled
+ * Function:  awFmDeallocParallelSearchData
  * --------------------
- * Determines if the given position in the BWT is sampled in the compressed suffix array.
+ *  Deallocates the given search data, and all internally stored dynamically allocated memory.
+ *
+ *  Note that, since the searchData doesn't own the kmer char strings, it will not try to
+ *  deallocate them. If kmers were dynamically allocated externally, it is the caller's responsibility
+ *  to deallocate them. This means that if these pointers are the only pointer to the data,
+ *  and if they were dynamically allocated, forgetting to deallocate them before calling this function
+ *  will leak the data.
  *
  *  Inputs:
- *    index: AwFmIndex struct representing the BWT and suffix array.
- *    position: position in the BWT to query if it is sampled in the suffix array
+ *    searchData:   pointer to the searchData struct to deallocate
+ */
+void awFmDeallocParallelSearchData(struct AwFmParallelSearchData *restrict const searchData);
+
+
+/*
+ * Function:  awFmParallelSearch
+ * --------------------
+ *  Using the given index and a searchData struct preloaded with kmers, query the kmers
+ *  in a concurrent, thread-parallel manner. The suggested use case for this function is as follows:
+ *
+ *    1. allocate a searchData struct with awFmCreateParallelSearchData().
+ *    2. for searching for n kmers, set count to n (must be smaller than capacity!), and
+ *      set the first n kmers with the correct char pointer and length.
+ *    3. call this function using the index to search.
+ *    4. use the database sequence positions returned in the sequencePositionLists member.
+ *    5. to query for additional kmers, reuse the searchData struct, starting with step (2).
+ *    6. deallocate the searchData with awFmDeallocParallelSearchData when finished.
+ *
+ *
+ *  Inputs:
+ *    index:        pointer to the index to search.
+ *    searchData:   pointer to the searchData loaded with kmers to search for.
+ */
+void awFmParallelSearch(const struct AwFmIndex *restrict const index,
+  struct AwFmParallelSearchData *restrict const searchData);
+
+
+/*
+ * Function:  awFmReadSequenceFromFile
+ * --------------------
+ * Given a sequence position, reads a section of sequence surrounding that position from the
+ *  corresponding index file.
+ *
+ *  Inputs:
+ *    index:          Pointer to the AwFmIndex struct that contains the file handle to read.
+ *      index file that stores the compressed suffix array.
+ *    sequencePosition:        Position in the sequence to read.
+ *    priorFlankLength: How many character before the given sequence position to include
+ *      in the sequence segment.
+ *    postFlankLength:  How many characters after the given sequence position to include
+ *      in the sequence segement.
+ *    sequenceBuffer: Pointer to the buffer to read the sequence segment into. This
+ *      buffer  must be large enough to hold (postFlankLength + priorFlankLength +1) characters.
+ *      the + 1 on this length is for the null terminator added to the end of the string.
  *
  *  Returns:
- *    True if the given position is sampled in the suffix array, false otherwise.
+ *    AwFmReturnCode represnting the result of the read. Possible returns are:
+ *      AwFmFileReadOkay on success.
+ *      AwFmFileReadFail if the file could not be read sucessfully.
  */
-bool          awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
-
-
-/*
- * Function:  awFmGetCompressedSuffixArrayLength
- * --------------------
- * Calculates the length of the compressed suffix array.
- *
- *  Inputs:
- *    index: AwFmIndex struct representing the BWT and suffix array.
- *
- *  Returns:
- *    Number of positions in the compressed suffix array.
- */
-uint64_t      awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
-
-
-/*
- * Function:  awFmSearchRangeIsValid
- * --------------------
- * Determines if the given AwFmSearchRange represents represents a range of positions, or
- *  if no positions are represented by the search range.
- *  A search range is valid if and only if the start ptr is less than or equal to the end pointer.
- *
- *  Inputs:
- *    searchRange: Pointer to the search range to query.
- *
- *  Returns:
- *    True if the search range represents a valid range of positions, or false if it represents no elements.
- */
-bool          awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
-
-
-/*
- * Function:  awFmReturnCodeSuccess
- * --------------------
- * With a given return code, returns true if the return code represented a successful state,
- *  or false if it represeted a failure state.
- *
- *  Inputs:
- *    returnCode: Return code to query for success.
- *
- *  Returns:
- *    True if the return code represents a successful action, otherwise returns false.
- */
-bool          awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode);
-
-
-/*
-* Function:  getBlockIndexFromGlobalPosition
-* --------------------
-*  Computes the block index, given the full BWT query position.
-*  Inputs:
-*    globalQueryPosition: Position in the BWT that the occurrence function is requesting
-*   Returns:
-*     Index of the block where the given query position resides.
-*/
-size_t awFmGetBlockIndexFromGlobalPosition(const size_t globalQueryPosition);
-
-
-/*
- * Function:  getBlockQueryPositionFromGlobalPosition
- * --------------------
- *  Computes bit position inside the block that represents the given full BWT position.
- *  Inputs:
- *    globalQueryPosition: Position in the BWT that the occurrence function is requesting
- *   Returns:
- *     Bit position into the block's AVX2 vectors where the query position lands.
- */
-uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition);
-
-
-/*
- * Function:  awFmSearchRangeLength
- * --------------------
- * Gets the number of positions included in the given AwFmSearchRange
- *
- *  Inputs:
- *    range: Range of positions in the BWT that corresponds to some number of
- *      instances of a given kmer.
- *
- *  Returns:
- *    Number of positions in the given range if the range is valid (startPtr < endPtr),
- *      or 0 otherwise, as that would imply that no instances of that kmer were found.
- */
-size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range);
+enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
+  const size_t sequencePosition, const size_t priorFlankLength, const size_t postFlankLength,
+  char *const sequenceBuffer);
 
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

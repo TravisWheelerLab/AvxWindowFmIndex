@@ -1,7 +1,7 @@
 #ifndef AW_FM_OCCURANCE_H
 #define AW_FM_OCCURANCE_H
 
-#include "AwFmIndex.h"
+#include "AwFmIndexStruct.h"
 #include <stdint.h>
 
 

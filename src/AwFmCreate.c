@@ -5,7 +5,7 @@
 #include "AwFmFile.h"
 #include <stdlib.h>
 #include <string.h>
-#include <divsufsort64.h>
+#include "divsufsort64.h"
 
 void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t sequenceLength,
   const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray);

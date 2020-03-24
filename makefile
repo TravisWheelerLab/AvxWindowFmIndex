@@ -82,6 +82,7 @@ clean:
 	cd $(LIBDIVSUFSORT_BUILD_DIR) && make clean
 
 .PHONY: uninstall
+uninstall:
 	rm -f  $(AWFMINDEX_INSTALL_LIBRARY_FILE)
 	rm -f $(AWFMINDEX_INSTALL_HEADER_FILE)
 	cd $(LIBDIVSUFSORT_BUILD_DIR) && cmake -DCMAKE_BUILD_TYPE="Release" -DBUILD_DIVSUFSORT64:BOOL=ON  -DCMAKE_INSTALL_PREFIX="$(PREFIX)" .. && make uninstall

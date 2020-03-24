@@ -145,57 +145,72 @@ void buildFullGenomeIndex(uint8_t suffixArrayCompressionRatio, uint8_t kmerLengt
 }
 
 int64_t getChromosomeFromFullFasta(char *fastaFileSrc, int chromosomeNumber, char *buffer){
-  int64_t sequenceLength = 0;
+
+  const uint8_t chromosomeNumberOnesPlace = chromosomeNumber % 10;
+  const uint8_t chromosomeNumberTensPlace = chromosomeNumber / 10;
+
   FILE *sequenceFile = fopen(fastaFileSrc, "r");
   if(sequenceFile == NULL){
     printf("ERROR: could not read sequence fasta file at location %s\n", fastaFileSrc);
     exit(-1000);
   }
+  size_t sequenceLength = 0;
+  bool readingSelectedChromosome = false;
 
   while(!feof(sequenceFile)){
-    char headerBuffer[8] = {0};
-    //read the header
-    fgets(headerBuffer, 8, sequenceFile);
-    //read in the chromosome
-    fgets(buffer+sequenceLength, 1<<30, sequenceFile);
 
-    //check to see if this was the chromosome we want to return
-    bool headerMatches = (chromosomeNumber >9 &&( headerBuffer[3] == chromosomeNumber/10) && (headerBuffer[4] == chromosomeNumber%10)) ||
-      headerBuffer[3] == chromosomeNumber;
+    //read a line into the buffer.
+    char *fgetsResult = fgets(buffer+sequenceLength, 1024, sequenceFile);
 
-    if(headerMatches){
+    if(fgetsResult == NULL){
+      printf("CRITICAL ERROR: fgets returned null. terminating.");
       fclose(sequenceFile);
-
-      //count the number of characters in the sequence
-      while(isalpha(buffer[sequenceLength])){
-        sequenceLength++;
-      }
-      return sequenceLength;
+      exit(-1);
     }
-  }
+    // check to see if it's a header
+    bool isHeader = (buffer[sequenceLength]) == '>';
 
+    //if it was a header, check to see if it's the one we care about
+    if(isHeader){
+      bool thisHeaderIsCorrectChromosomeHeader =
+        (chromosomeNumber <= 9 && buffer[sequenceLength+4] == chromosomeNumberOnesPlace) ||
+        (chromosomeNumber > 9 && buffer[sequenceLength+4] == chromosomeNumberTensPlace && buffer[sequenceLength+5] == chromosomeNumberOnesPlace);
+        //if we just were reading the correct chromosome, and just hit a header for a new chromosome, we're done.
+      if(readingSelectedChromosome && !thisHeaderIsCorrectChromosomeHeader){
+        fclose(sequenceFile);
+        return sequenceLength;
+
+      }
+      readingSelectedChromosome = thisHeaderIsCorrectChromosomeHeader;
+    }
+
+    //if we're reading from the correct chromosome, move the buffer offset to preserve the read data.
+    if(!isHeader && readingSelectedChromosome){
+      sequenceLength += strlen(buffer+sequenceLength);
+    }
+
+  }
   fclose(sequenceFile);
-  return 0;
+  return sequenceLength;
 }
 
 
 int64_t getFullGenomeFromFasta(char *fastaFileSrc, char *buffer){
-  int64_t sequenceLength = 0;
   FILE *sequenceFile = fopen(fastaFileSrc, "r");
   if(sequenceFile == NULL){
     printf("ERROR: could not read sequence fasta file at location %s\n", fastaFileSrc);
     exit(-2000);
   }
-
+  size_t sequenceLength = 0;
   while(!feof(sequenceFile)){
-  //read the header
-    fgets(buffer+sequenceLength, 8, sequenceFile);
-    //read in the chromosome
-    fgets(buffer+sequenceLength, 1<<30, sequenceFile);
 
-    //move to the  end of what we've set, and count the characters.
-    while(isalpha(buffer[sequenceLength])){
-      sequenceLength++;
+    //read a line into the buffer
+    fgets(buffer+sequenceLength, 1024, sequenceFile);
+
+    // if the line wasn't a header, include it in the buffer.
+    //otherwise, don't change bufferOffset and allow it to be overwritten.
+    if(buffer[sequenceLength] != '<'){
+      sequenceLength += strlen(buffer+sequenceLength);
     }
   }
 

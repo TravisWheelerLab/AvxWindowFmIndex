@@ -30,13 +30,17 @@ char indexFilenameBuffer[256];
 int main(int argc, char **argv){
   //init parameters
   strcpy(indexFilenameBuffer, "index.awfmi");
-  bool isAminoSequence            = false;
-  int chromosomeNumber            = -1;
-  bool fullGenomeIndexRequested   = false;
-  int suffixArrayCompressionRatio = 8;
-  int kmerLengthInSeedTable       = 12;
-  bool kmerLengthSetInArgs        = false;
+  isAminoSequence            = false;
+  chromosomeNumber            = -1;
+  fullGenomeIndexRequested   = false;
+  suffixArrayCompressionRatio = 8;
+  kmerLengthInSeedTable       = 12;
+  kmerLengthSetInArgs        = false;
   parseArgs(argc, argv);
+
+	printf("parse finished: isAmino %i, chrNo %i, fulGenome %i, sacr %i, klist %i\n",
+		isAminoSequence, chromosomeNumber, fullGenomeIndexRequested, suffixArrayCompressionRatio, kmerLengthInSeedTable
+	);
 
   //set the kmer length in seed table based on the alphabet type, if not specified.
   if(!kmerLengthSetInArgs){
@@ -77,6 +81,7 @@ void parseArgs(int argc, char **argv){
         break;
       case 'c':
         sscanf(optarg, "%i", &chromosomeNumber);
+	printf("chrom # set to %i in parseArgs\n", chromosomeNumber);
         chromosomeNumberSetInArgs = true;
         break;
       case 'g':
@@ -145,15 +150,17 @@ void buildFullGenomeIndex(uint8_t suffixArrayCompressionRatio, uint8_t kmerLengt
 }
 
 int64_t getChromosomeFromFullFasta(char *fastaFileSrc, int chromosomeNumber, char *buffer){
+printf("getting chromosome full fasta\n");
+  const uint8_t chromosomeNumberOnesPlace = chromosomeNumber % 10 + '0';
+  const uint8_t chromosomeNumberTensPlace = chromosomeNumber / 10 + '0';
 
-  const uint8_t chromosomeNumberOnesPlace = chromosomeNumber % 10;
-  const uint8_t chromosomeNumberTensPlace = chromosomeNumber / 10;
-
+	printf("chrom ones: %c, tens %c", chromosomeNumberOnesPlace, chromosomeNumberTensPlace);
   FILE *sequenceFile = fopen(fastaFileSrc, "r");
   if(sequenceFile == NULL){
     printf("ERROR: could not read sequence fasta file at location %s\n", fastaFileSrc);
     exit(-1000);
   }
+printf("file opened\n");
   size_t sequenceLength = 0;
   bool readingSelectedChromosome = false;
 
@@ -169,14 +176,24 @@ int64_t getChromosomeFromFullFasta(char *fastaFileSrc, int chromosomeNumber, cha
     }
     // check to see if it's a header
     bool isHeader = (buffer[sequenceLength]) == '>';
+	
 
     //if it was a header, check to see if it's the one we care about
     if(isHeader){
       bool thisHeaderIsCorrectChromosomeHeader =
-        (chromosomeNumber <= 9 && buffer[sequenceLength+4] == chromosomeNumberOnesPlace) ||
-        (chromosomeNumber > 9 && buffer[sequenceLength+4] == chromosomeNumberTensPlace && buffer[sequenceLength+5] == chromosomeNumberOnesPlace);
-        //if we just were reading the correct chromosome, and just hit a header for a new chromosome, we're done.
+        (chromosomeNumber <10 && buffer[sequenceLength+4] == chromosomeNumberOnesPlace) ||
+        (chromosomeNumber >=10 && buffer[sequenceLength+4] == chromosomeNumberTensPlace && buffer[sequenceLength+5] == chromosomeNumberOnesPlace);
+       	
+	printf("header %c%c found", buffer[sequenceLength+4], buffer[sequenceLength+5] );
+
+	if(thisHeaderIsCorrectChromosomeHeader){
+		printf(" this is the correct header.");
+	}
+	printf("\n");
+
+	 //if we just were reading the correct chromosome, and just hit a header for a new chromosome, we're done.
       if(readingSelectedChromosome && !thisHeaderIsCorrectChromosomeHeader){
+	printf("closing file and returning.\n");
         fclose(sequenceFile);
         return sequenceLength;
 

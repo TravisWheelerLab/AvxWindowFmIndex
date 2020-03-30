@@ -39,17 +39,17 @@ int main(int argc, char **argv){
   srand(randSeed);
 
   struct AwFmIndex *index;
-  printf("reading AwFmIndex file...");
+//  printf("reading AwFmIndex file...");
   enum AwFmReturnCode returnCode = awFmReadIndexFromFile(&index, indexFilenameBuffer);
-  printf(" index file read.\n");
-  if(returnCode > 0){
+//  printf(" index file read.\n");
+  if(returnCode < 0){
     printf("Error during index read: awFmReadIndexFromFile returned error code %i\n", returnCode);
     exit(-1);
   }
-  printf("generating search data struct...");
+//  printf("generating search data struct...");
   struct AwFmParallelSearchData *searchData = awFmCreateParallelSearchData(numKmersToQuery,
     numThreadsInParallelQuery);
-    printf(" search data struct generated.\n");
+ //   printf(" search data struct generated.\n");
 
   if(searchData == NULL){
     printf("Error: could not allocate memory for the search data struct.\n");
@@ -75,17 +75,17 @@ int main(int argc, char **argv){
     searchData->kmerList[i].length = kmerLength;
   }
 
-  printf("beginning parallel search...");
+  //printf("beginning parallel search...");
   clock_t searchStartTime = clock();
   //search for the kmers
   awFmParallelSearch(index, searchData);
   clock_t searchEndTime = clock();
   clock_t elapsedSearchTime = searchEndTime - searchStartTime;
 
-  printf("parallel search complete.\n");
-  printf("elapsed search time for %i kmers: %zu ticks (%f) seconds\n",
-  numKmersToQuery, elapsedSearchTime, (float)elapsedSearchTime/ (float)CLOCKS_PER_SEC);
-
+  //printf("parallel search complete.\n");
+  //printf("elapsed search time for %i kmers: %zu ticks (%f) seconds\n",
+//  numKmersToQuery, elapsedSearchTime, (float)elapsedSearchTime/ (float)CLOCKS_PER_SEC);
+//	printf("start time %zu, end time %zu\n", searchStartTime, searchEndTime);
   //dealloc the searchData struct
   awFmDeallocParallelSearchData(searchData);
   awFmDeallocIndex(index);
@@ -97,7 +97,7 @@ int main(int argc, char **argv){
 void parseArgs(int argc, char **argv){
   int option = 0;
   while((option = getopt(argc, argv, "f:n:k:t:s:")) != -1){
-    printf("option: %c ", option);
+    //printf("option: %c ", option);
     switch(option){
       case 'f':
         strcpy(indexFilenameBuffer, optarg);

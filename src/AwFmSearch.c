@@ -36,8 +36,8 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
   //prefetch the next start ptr
   uint64_t newStartBlock    = (newStartPointer-1) / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newStartBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newStartBlock * sizeof(struct AwFmNucleotideBlock));
-  _mm_prefetch(newStartBlockPtr, _MM_HINT_T2);
-  _mm_prefetch(newStartBlockPtr + 64, _MM_HINT_T2);
+  _mm_prefetch(newStartBlockPtr, AW_FM_PREFETCH_STRATEGY);
+  _mm_prefetch(newStartBlockPtr + 64, AW_FM_PREFETCH_STRATEGY);
 
   //query for the new end pointer
   queryPosition   = range->endPtr;
@@ -62,8 +62,8 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
   //prefetch the next start ptr
   uint64_t newEndBlock    = (newEndPointer) / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newEndBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newEndBlock * sizeof(struct AwFmNucleotideBlock));
-  _mm_prefetch(newEndBlockPtr, _MM_HINT_T2);
-  _mm_prefetch(newEndBlockPtr + 64, _MM_HINT_T2);
+  _mm_prefetch(newEndBlockPtr, AW_FM_PREFETCH_STRATEGY);
+  _mm_prefetch(newEndBlockPtr + 64, AW_FM_PREFETCH_STRATEGY);
 
   range->endPtr = newEndPointer;
 }
@@ -89,7 +89,7 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
   uint64_t newStartBlock    = (newStartPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newStartBlockPtr = ((uint8_t*)index->bwtBlockList.asAmino) + (newStartBlock * sizeof(struct AwFmAminoBlock));
   for(size_t cacheLine = 0; cacheLine < 5; cacheLine++){
-    _mm_prefetch(newStartBlockPtr + (cacheLine * 64), _MM_HINT_T2);
+    _mm_prefetch(newStartBlockPtr + (cacheLine * 64), AW_FM_PREFETCH_STRATEGY);
   }
 
   range->startPtr = newStartPointer;
@@ -109,7 +109,7 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
   uint64_t newEndBlock    = (newEndPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newEndBlockPtr = ((uint8_t*)index->bwtBlockList.asAmino) + (newEndBlock * sizeof(struct AwFmAminoBlock));
   for(size_t cacheLine = 0; cacheLine < 5; cacheLine++){
-    _mm_prefetch(newEndBlockPtr + (cacheLine * 64), _MM_HINT_T2);
+    _mm_prefetch(newEndBlockPtr + (cacheLine * 64), AW_FM_PREFETCH_STRATEGY);
   }
 
   range->endPtr   = newEndPointer;
@@ -146,8 +146,8 @@ uint64_t awFmNucleotideBackwardSearchSingle(const struct AwFmIndex *restrict con
   //prefetch the next start ptr
   uint64_t newStartBlock    = (result-1) / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newStartBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newStartBlock * sizeof(struct AwFmNucleotideBlock));
-  _mm_prefetch(newStartBlockPtr, _MM_HINT_T2);
-  _mm_prefetch(newStartBlockPtr + 64, _MM_HINT_T2);
+  _mm_prefetch(newStartBlockPtr, AW_FM_PREFETCH_STRATEGY);
+  _mm_prefetch(newStartBlockPtr + 64, AW_FM_PREFETCH_STRATEGY);
 
   return result;
 }
@@ -172,7 +172,7 @@ uint64_t awFmAminoBackwardSearchSingle(const struct AwFmIndex *restrict const in
   uint64_t newStartBlock    = (result - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newStartBlockPtr = ((uint8_t*)index->bwtBlockList.asAmino) + (newStartBlock * sizeof(struct AwFmAminoBlock));
   for(size_t cacheLine = 0; cacheLine < 5; cacheLine++){
-    _mm_prefetch(newStartBlockPtr + (cacheLine * 64), _MM_HINT_T2);
+    _mm_prefetch(newStartBlockPtr + (cacheLine * 64), AW_FM_PREFETCH_STRATEGY);
   }
 
   return result;

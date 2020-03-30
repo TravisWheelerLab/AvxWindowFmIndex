@@ -84,10 +84,10 @@ void awFmParallelSearch(const struct AwFmIndex *restrict const index,
   const size_t searchDataCount = searchData->count;
 
   #pragma omp parallel for num_threads(searchData->numThreads)
-  for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchDataCount; threadBlockStartIndex += NUM_CONCURRENT_QUERIES){
-    const size_t threadBlockEndIndex = threadBlockStartIndex + NUM_CONCURRENT_QUERIES > searchData->count?
-      searchData->count: threadBlockStartIndex + NUM_CONCURRENT_QUERIES;
-    struct AwFmSearchRange ranges[NUM_CONCURRENT_QUERIES];
+  for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchDataCount; threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES){
+    const size_t threadBlockEndIndex = threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES > searchData->count?
+      searchData->count: threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES;
+    struct AwFmSearchRange ranges[AW_FM_NUM_CONCURRENT_QUERIES];
 
     parallelSearchFindKmerSeedsForBlock(  index, searchData, ranges,  threadBlockStartIndex, threadBlockEndIndex);
     parallelSearchExtendKmersInBlock(     index, searchData, ranges,  threadBlockStartIndex, threadBlockEndIndex);

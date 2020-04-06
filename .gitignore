@@ -56,5 +56,11 @@ dkms.conf
 occSpeedTest
 test/letterTest/letterTest
 
+#ignore directories for build/install stuff
+build/
+.idea/
+bin/
+lib/
+
 #awfmi databases
 *.awfmi

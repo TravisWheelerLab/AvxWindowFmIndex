@@ -1,6 +1,7 @@
-# AvxWindowFmIndex
+# AvxWindowFmIndex (BETA)
 A fast, AVX2 accelerated FM index library that utilizes windows of AVX2 vectors to quickly locate exact match Kmers in genetic data. This FM-index is highly optimized for both nucleotide and amino sequences.
 
+This library is currently in beta release, so some bugs are expected. Please report any issues on the git project page.
 
 
 ## Prerequisites

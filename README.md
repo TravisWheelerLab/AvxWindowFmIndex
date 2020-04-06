@@ -47,7 +47,8 @@ To create an .awfmi index, use the awFmCreateIndex() function. This function wil
 
 ``` c
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
-  const struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength, const char *restrict const fileSrc, const bool allowFileOverwrite);
+  const struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence,
+  const size_t sequenceLength, const char *restrict const fileSrc, const bool allowFileOverwrite);
 ```
 
 The metadata struct is as follows:
@@ -113,10 +114,12 @@ e.g., to print the positions in the database sequence where a given kmer index w
 ``` c
 void printKmerHitPositions(struct AwFmParallelSearchData *searchData, size_t kmerIndex)
   size_t numHitPositions = searchData->sequencePositionLists[kmerIndex].count;
-  struct AwFmBacktrace *backtracePositionList =  searchData->sequencePositionLists[kmerIndex].backtraceArray;
+  struct AwFmBacktrace *backtracePositionList =  
+    searchData->sequencePositionLists[kmerIndex].backtraceArray;
 
   for(size_t i = 0; i < numHitPositions; i++){
-    printf("kmer at index %zu found at database position %zu."\n, kmerIndex, backtracePositionList[i].position);
+    printf("kmer at index %zu found at database position %zu."\n,
+    kmerIndex, backtracePositionList[i].position);
   }
 }
 ```

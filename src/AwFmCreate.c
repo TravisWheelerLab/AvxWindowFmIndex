@@ -86,7 +86,6 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   //create the file
   enum AwFmReturnCode returnCode = awFmWriteIndexToFile(indexData, suffixArray, sequence, sequenceLength,
     fileSrc, allowFileOverwrite);
-
     //if suffix array was requested to be kept in memory, realloc it to it's compressed shape
     if(metadata->keepSuffixArrayInMemory){
       //if the suffix array is uncompressed, we get to skip the compression and realloc
@@ -110,7 +109,6 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
       indexData->inMemorySuffixArray = NULL;
       free(suffixArray);
     }
-
     //set the index as an out argument.
     *index = indexData;
 
@@ -280,7 +278,7 @@ void createSequenceEndKmerEncodings(struct AwFmIndex *restrict const index,
 
 //copies the compressed suffix array over the full suffix array.
 void compressSuffixArrayInPlace(uint64_t *const suffixArray, uint64_t suffixArrayLength, const uint8_t compressionRatio){
-  for(size_t i = 1; i < suffixArrayLength / compressionRatio; i++){
+  for(size_t i = 1; i * compressionRatio < suffixArrayLength; i++){
     suffixArray[i] = suffixArray[i*compressionRatio];
   }
 }

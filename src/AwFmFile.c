@@ -261,6 +261,8 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   indexData->metadata.keepSuffixArrayInMemory = keepSuffixArrayInMemory;
   indexData->inMemorySuffixArray = NULL;  //probably unnecessary, but here for safety.
   if(keepSuffixArrayInMemory){
+    //seek to the suffix array
+    fseek(fileHandle, awFmGetSuffixArrayFileOffset(indexData), SEEK_SET);
     size_t compressedSuffixArrayLength = awFmGetCompressedSuffixArrayLength(indexData);
     indexData->inMemorySuffixArray = malloc(compressedSuffixArrayLength * sizeof(uint64_t));
 
@@ -342,9 +344,11 @@ enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *
   struct AwFmBacktrace *restrict const backtracePtr){
   if(index->metadata.keepSuffixArrayInMemory){
     uint64_t suffixArrayPosition = backtracePtr->position / index->metadata.suffixArrayCompressionRatio;
-    backtracePtr->position = index->inMemorySuffixArray[suffixArrayPosition] + backtracePtr->offset;
 
+    backtracePtr->position = index->inMemorySuffixArray[suffixArrayPosition] + backtracePtr->offset;
     backtracePtr->position %= index->bwtLength; //handles the edge case of wrapping around the end of the suffix array.
+
+
     return AwFmSuccess;
   }
   else{

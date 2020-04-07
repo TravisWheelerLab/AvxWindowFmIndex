@@ -88,7 +88,6 @@ void awFmParallelSearch(const struct AwFmIndex *restrict const index,
     const size_t threadBlockEndIndex = threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES > searchData->count?
       searchData->count: threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES;
     struct AwFmSearchRange ranges[AW_FM_NUM_CONCURRENT_QUERIES];
-
     parallelSearchFindKmerSeedsForBlock(  index, searchData, ranges,  threadBlockStartIndex, threadBlockEndIndex);
     parallelSearchExtendKmersInBlock(     index, searchData, ranges,  threadBlockStartIndex, threadBlockEndIndex);
     parallelSearchTracebackPositionLists( index, searchData, ranges,  threadBlockStartIndex, threadBlockEndIndex);

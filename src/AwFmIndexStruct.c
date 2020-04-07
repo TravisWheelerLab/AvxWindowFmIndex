@@ -92,12 +92,12 @@ size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict index){
 
 
  bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position){
-  return (position % index->metadata.suffixArrayCompressionRatio )== 0;
+  return (position % index->metadata.suffixArrayCompressionRatio) == 0;
 }
 
 
  uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index){
-  return index->bwtLength / index->metadata.suffixArrayCompressionRatio;
+  return 1+ ((index->bwtLength-1) / index->metadata.suffixArrayCompressionRatio);
 }
 
 

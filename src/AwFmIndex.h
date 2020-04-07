@@ -90,6 +90,7 @@ struct AwFmIndexMetadata{
   uint8_t               suffixArrayCompressionRatio;
   uint8_t               kmerLengthInSeedTable;
   enum AwFmAlphabetType alphabetType;
+  bool                  keepSuffixArrayInMemory;
 };
 
 struct AwFmKmerSeedTable{
@@ -103,6 +104,7 @@ struct AwFmIndex{
   union   AwFmBwtBlockList  bwtBlockList;
           uint64_t          *prefixSums;
   struct  AwFmKmerSeedTable kmerSeedTable;
+          uint64_t          *inMemorySuffixArray;
           FILE              *fileHandle;
   struct  AwFmIndexMetadata metadata;
           int               fileDescriptor;
@@ -195,9 +197,11 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
  * Reads the AwFmIndex file from the given fileSrc
  *
  *  Inputs:
- *    index:          double pointer to an unallocated AwFmIndex to be allocated and populated
- *      by this function.
- *    fileSrc:        Path to the file containing the AwFmIndex.
+ *    index:                    Double pointer to an unallocated AwFmIndex to be
+ *        allocated and populated by this function.
+ *    fileSrc:                  Path to the file containing the AwFmIndex.
+ *    keepSuffixArrayInMemory:  flag to determine whether to read the compressed
+ *        suffix array into memory, or leave it on disk.
  *
  *  Returns:
  *    AwFmReturnCode represnting the result of the write. Possible returns are:
@@ -207,7 +211,8 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
  *        is not the correct format.
  *      AwFmAllocationFailure on failure to allocated the necessary memory for the index.
  */
-enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict index, const char *fileSrc);
+enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict index,
+  const char *fileSrc, const bool keepSuffixArrayInMemory);
 
 
 /*

@@ -144,7 +144,9 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
 }
 
 
-enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict index, const char *fileSrc){
+enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict index,
+  const char *fileSrc, const bool keepSuffixArrayInMemory){
+
   if(__builtin_expect(fileSrc == NULL, 0)){
     return AwFmNoFileSrcGiven;
   }
@@ -254,6 +256,29 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     return AwFmFileReadFail;
   }
 
+
+  //handle the in memory suffix array, if requested.
+  indexData->metadata.keepSuffixArrayInMemory = keepSuffixArrayInMemory;
+  indexData->inMemorySuffixArray = NULL;  //probably unnecessary, but here for safety.
+  if(keepSuffixArrayInMemory){
+    size_t compressedSuffixArrayLength = awFmGetCompressedSuffixArrayLength(indexData);
+    indexData->inMemorySuffixArray = malloc(compressedSuffixArrayLength * sizeof(uint64_t));
+
+    if(indexData->inMemorySuffixArray == NULL){
+      fclose(fileHandle);
+      awFmDeallocIndex(indexData);
+      return AwFmAllocationFailure;
+    }
+    else{
+      fread(indexData->inMemorySuffixArray, sizeof(uint64_t), compressedSuffixArrayLength, fileHandle);
+      if(elementsRead != compressedSuffixArrayLength){
+        fclose(fileHandle);
+        awFmDeallocIndex(indexData);
+        return AwFmFileReadFail;
+      }
+    }
+  }
+
   indexData->suffixArrayFileOffset  = awFmGetSuffixArrayFileOffset(indexData);
   indexData->sequenceFileOffset     = awFmGetSequenceFileOffset(indexData);
   indexData->fileHandle             = fileHandle;
@@ -267,16 +292,26 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
 enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *restrict const index,
   uint64_t *restrict const positionArray, const size_t positionArrayLength){
 
-  for(size_t i = 0; i < positionArrayLength; i++){
-    size_t indexInSuffixArray = positionArray[i] / index->metadata.suffixArrayCompressionRatio;
-    uint64_t seekPosition = index->suffixArrayFileOffset + (indexInSuffixArray * sizeof(uint64_t));
-
-    size_t bytesRead = pread(index->fileDescriptor, &(positionArray[i]), sizeof(uint64_t), seekPosition);
-    if(bytesRead != sizeof(uint64_t)){
-      return AwFmFileReadFail;
+  if(index->metadata.keepSuffixArrayInMemory){
+    for(size_t i = 0; i < positionArrayLength; i++){
+      size_t indexInSuffixArray = positionArray[i] / index->metadata.suffixArrayCompressionRatio;
+      positionArray[i] = index->inMemorySuffixArray[indexInSuffixArray];
     }
+
+    return AwFmSuccess;
   }
-  return AwFmFileReadOkay;
+  else{
+    for(size_t i = 0; i < positionArrayLength; i++){
+      size_t indexInSuffixArray = positionArray[i] / index->metadata.suffixArrayCompressionRatio;
+      uint64_t seekPosition = index->suffixArrayFileOffset + (indexInSuffixArray * sizeof(uint64_t));
+
+      size_t bytesRead = pread(index->fileDescriptor, &(positionArray[i]), sizeof(uint64_t), seekPosition);
+      if(bytesRead != sizeof(uint64_t)){
+        return AwFmFileReadFail;
+      }
+    }
+    return AwFmFileReadOkay;
+  }
 }
 
 
@@ -305,18 +340,27 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
 
 enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *restrict const index,
   struct AwFmBacktrace *restrict const backtracePtr){
-  uint64_t suffixArrayPosition = backtracePtr->position / index->metadata.suffixArrayCompressionRatio;
-  const size_t suffixArrayFileOffset = index->suffixArrayFileOffset + (suffixArrayPosition * sizeof(uint64_t));
+  if(index->metadata.keepSuffixArrayInMemory){
+    uint64_t suffixArrayPosition = backtracePtr->position / index->metadata.suffixArrayCompressionRatio;
+    backtracePtr->position = index->inMemorySuffixArray[suffixArrayPosition] + backtracePtr->offset;
 
-  ssize_t numBytesRead = pread(index->fileDescriptor, &suffixArrayPosition, sizeof(uint64_t), suffixArrayFileOffset);
-  if(numBytesRead == sizeof(uint64_t)){
-    backtracePtr->position = suffixArrayPosition + backtracePtr->offset;
     backtracePtr->position %= index->bwtLength; //handles the edge case of wrapping around the end of the suffix array.
-    return AwFmFileReadOkay;
+    return AwFmSuccess;
   }
   else{
-    backtracePtr->position = -1ULL;
-    return AwFmFileReadFail;
+    uint64_t suffixArrayPosition = backtracePtr->position / index->metadata.suffixArrayCompressionRatio;
+    const size_t suffixArrayFileOffset = index->suffixArrayFileOffset + (suffixArrayPosition * sizeof(uint64_t));
+
+    ssize_t numBytesRead = pread(index->fileDescriptor, &suffixArrayPosition, sizeof(uint64_t), suffixArrayFileOffset);
+    if(numBytesRead == sizeof(uint64_t)){
+      backtracePtr->position = suffixArrayPosition + backtracePtr->offset;
+      backtracePtr->position %= index->bwtLength; //handles the edge case of wrapping around the end of the suffix array.
+      return AwFmFileReadOkay;
+    }
+    else{
+      backtracePtr->position = -1ULL;
+      return AwFmFileReadFail;
+    }
   }
 }
 

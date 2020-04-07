@@ -20,6 +20,8 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
 void createSequenceEndKmerEncodings(struct AwFmIndex *restrict const index,
   const uint8_t *restrict const sequence, const uint64_t sequenceLength);
 
+void compressSuffixArrayInPlace(uint64_t *const suffixArray, uint64_t suffixArrayLength, const uint8_t compressionRatio);
+
 
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   const struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
@@ -33,6 +35,9 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
     return AwFmFileFormatError;
   }
 
+  //set the index out arg initally to NULL, if this function fully completes this will get overwritten
+  *index = NULL;
+
   //allocate the index and all internal arrays.
   struct AwFmIndex *restrict indexData = awFmIndexAlloc(metadata, sequenceLength + 1);
   if(indexData == NULL){
@@ -41,6 +46,9 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 
   memcpy(&indexData->metadata, metadata, sizeof(struct AwFmIndexMetadata));
 
+  //init the in memory suffix array to NULL, to be safe. this will get overwritten on success,
+  //if the metadata demands in memory SA. If not, this will be left NULL.
+  indexData->inMemorySuffixArray = NULL;
 
   //set the bwtLength
   indexData->bwtLength = sequenceLength + 1;
@@ -71,10 +79,6 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 
   createSequenceEndKmerEncodings(indexData, sequence, sequenceLength);
 
-
-  //set the index as an out argument.
-  *index = indexData;
-
   indexData->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(*index);
   indexData->sequenceFileOffset    = awFmGetSequenceFileOffset(*index);
   //file descriptor will be set in awFmWriteIndexToFile
@@ -83,8 +87,32 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   enum AwFmReturnCode returnCode = awFmWriteIndexToFile(indexData, suffixArray, sequence, sequenceLength,
     fileSrc, allowFileOverwrite);
 
-  //since the suffix array is allocated in this function, we need to clean it up before returning.
-  free(suffixArray);
+    //if suffix array was requested to be kept in memory, realloc it to it's compressed shape
+    if(metadata->keepSuffixArrayInMemory){
+      //if the suffix array is uncompressed, we get to skip the compression and realloc
+      if(metadata->suffixArrayCompressionRatio != 1){
+        compressSuffixArrayInPlace(suffixArray, sequenceLength+1,indexData->metadata.suffixArrayCompressionRatio);
+        uint64_t *compressedSuffixArray = realloc(suffixArray, awFmGetCompressedSuffixArrayLength(indexData) * sizeof(uint64_t));
+
+        //check for allocation failure in the realloc
+        if(compressedSuffixArray == NULL){
+          free(suffixArray);
+          awFmDeallocIndex(indexData);
+          return AwFmAllocationFailure;
+        }
+        suffixArray = compressedSuffixArray;
+      }
+
+      indexData->inMemorySuffixArray = suffixArray;
+    }
+    else{
+      //if the suffix array isn't supposed to be kept in memory, free it to free up memory.
+      indexData->inMemorySuffixArray = NULL;
+      free(suffixArray);
+    }
+
+    //set the index as an out argument.
+    *index = indexData;
 
   return returnCode;
 }
@@ -247,5 +275,12 @@ void createSequenceEndKmerEncodings(struct AwFmIndex *restrict const index,
     }
 
     index->kmerSeedTable.sequenceEndingKmerEncodings[kmerPosition] = kmerIndexEncoding;
+  }
+}
+
+//copies the compressed suffix array over the full suffix array.
+void compressSuffixArrayInPlace(uint64_t *const suffixArray, uint64_t suffixArrayLength, const uint8_t compressionRatio){
+  for(size_t i = 1; i < suffixArrayLength / compressionRatio; i++){
+    suffixArray[i] = suffixArray[i*compressionRatio];
   }
 }

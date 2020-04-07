@@ -68,6 +68,7 @@ void awFmDeallocIndex(struct AwFmIndex *index){
     free(index->prefixSums);
     free(index->kmerSeedTable.table);
     free(index->kmerSeedTable.sequenceEndingKmerEncodings);
+    free(index->inMemorySuffixArray);
     free(index);
   }
 }

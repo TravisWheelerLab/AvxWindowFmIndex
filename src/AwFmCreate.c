@@ -79,8 +79,8 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 
   createSequenceEndKmerEncodings(indexData, sequence, sequenceLength);
 
-  indexData->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(*index);
-  indexData->sequenceFileOffset    = awFmGetSequenceFileOffset(*index);
+  indexData->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(indexData);
+  indexData->sequenceFileOffset    = awFmGetSequenceFileOffset(indexData);
   //file descriptor will be set in awFmWriteIndexToFile
 
   //create the file

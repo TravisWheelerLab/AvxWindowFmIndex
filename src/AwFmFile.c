@@ -270,7 +270,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
       return AwFmAllocationFailure;
     }
     else{
-      fread(indexData->inMemorySuffixArray, sizeof(uint64_t), compressedSuffixArrayLength, fileHandle);
+      elementsRead = fread(indexData->inMemorySuffixArray, sizeof(uint64_t), compressedSuffixArrayLength, fileHandle);
       if(elementsRead != compressedSuffixArrayLength){
         fclose(fileHandle);
         awFmDeallocIndex(indexData);

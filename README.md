@@ -59,6 +59,7 @@ struct AwFmIndexMetadata{
   uint8_t               suffixArrayCompressionRatio;
   uint8_t               kmerLengthInSeedTable;
   enum AwFmAlphabetType alphabetType;
+  bool                  keepSuffixArrayInMemory;
 };
 ```
 
@@ -66,6 +67,7 @@ struct AwFmIndexMetadata{
 * suffixArrayCompressionRatio represents how much to compress the suffix array to reduce the size of the .awfmi file on drive. As an example, a value of 8 will tell AwFmIndex to build a suffix array where 1/8th of the suffix array is sampled, and on average, each hit will take 8 additional backtrace operations to find the actual database sequence position. As the suffix array is never kept in memory queries, it will have no affect on memory usage during index searches.
 * kmerLengthInSeedTable represents how long of kmers to memoize in a lookup table to speed up queries. Higher values will speed up searches, but will take exponentially more memory. A value of 12 (268MB lookup table) is recommended for nucleotide indices, and a value of 5 (51MB) is recommended for protein indices. increasing this value by one will result in 4x table size for nucleotide indices, and a 20x table size for protein indices.
 * alphabetType allows the user to set the type of index to make. Options are AwFmAlphabetNucleotide and AwFmAlphabetAmino
+* keepSuffixArrayInMemory determines if the compressed suffix array is loaded into memory, or left on disk. keeping the suffix array will consume a lot of memory (8 bytes per position in the database sequence), but will speed up searches by not having to go to disk for the final position lookup of each hit. An index made from an average mammalian nucleotide genome with this flag set to true will consume around 28GB of additional memory.
 
 
 To use awFmCreateIndex, pass a pointer to an uninitialized AwFmIndex struct pointer. The function will allocate memory for the index, build it in memory, and write it to the given fileSrc. The AwFmIndex struct is usable immediately after calling this function, and must be manually deallocated with awFmDeallocIndex().
@@ -74,10 +76,11 @@ To use awFmCreateIndex, pass a pointer to an uninitialized AwFmIndex struct poin
 ### Loading an existing Index
 To load an existing .awfmi file, use the function
 ``` c
-enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict index, const char *fileSrc);
+enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict index, const char *fileSrc,
+  const bool keepSuffixArrayInMemory);
 ```
 
-The index argument should be a pointer to an unallocated index pointer, just as with awFmCreateIndex().
+The index argument should be a pointer to an unallocated index pointer, just as with awFmCreateIndex(). Setting the keepSuffixArrayInMemory flag to true will load the compressed suffix array into memory along with the rest of the index.
 
 
 ### Querying batches of kmers in parallel

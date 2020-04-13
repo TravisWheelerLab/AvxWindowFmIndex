@@ -6,30 +6,23 @@
 #include <immintrin.h>
 #include <stdio.h>
 
-
 struct AwFmBacktrace{
-  size_t position;
-  size_t offset;
+  uint64_t position;
+  uint64_t _offset;
 };
 
-struct AwFmBacktraceVector{
-  size_t capacity;
-  size_t count;
-  struct AwFmBacktrace *backtraceArray;
+struct AwFmKmerSearchData{
+  char                        *kmerString;
+  uint64_t                    kmerLength;
+  struct AwFmBacktrace        *positionBacktraceList;
+  uint32_t                    count;
+  uint32_t                    capacity;
 };
 
-
-struct AwFmKmer{
-  uint16_t  length;
-  char      *string;
-};
-
-struct AwFmParallelSearchData{
-  struct  AwFmKmer            *kmerList;
-  struct  AwFmBacktraceVector *sequencePositionLists;
-          size_t              capacity;
-          size_t              count;
-          uint_fast16_t       numThreads;
+struct AwFmKmerSearchList{
+  size_t                      capacity;
+  size_t                      count;
+  struct AwFmKmerSearchData   *kmerSearchData;
 };
 
 struct AwFmSearchRange{
@@ -214,6 +207,95 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   const char *fileSrc, const bool keepSuffixArrayInMemory);
 
 
+
+/*
+ * Function:  awFmCreateKmerSearchList
+ * --------------------
+ *  Allocates and initializes an AwFmKmerSearchList struct to be used to search
+ *  for groups of kmers in a thread-parallel manner that also hides memory read latency
+ *  through multiple concurrent queries per thread.
+ *  This struct can be used for both count and locate functions.
+ *
+ *  Note that the kmers inside the searchList are not allocated, and only contain
+ *  char pointers that can be set to the kmers you want to query for.
+ *
+ *  Inputs:
+ *    capacity:     How many kmers the searchData struct can hold.
+ *
+ *  Returns:
+ *    Pointer to the allocated searchData struct, or null on failure.
+ */
+struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity);
+
+/*
+ * Function:  awFmDeallocKmerSearchList
+ * --------------------
+ *  Deallocates the given search list struct, and both the internal searchData list
+ *    and positionLists inside the searchData.
+ *
+ *  Note that, since the searchData doesn't own the kmer char strings, it will not try to
+ *  deallocate them. If kmers were dynamically allocated externally, it is the caller's responsibility
+ *  to deallocate them. This means that if these pointers are the only pointer to the data,
+ *  and if they were dynamically allocated, forgetting to deallocate them before calling this function
+ *  will leak the data.
+ *
+ *  Inputs:
+ *    searchData:   pointer to the searchData struct to deallocate
+ */
+void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchList);
+
+
+/*
+ * Function:  awFmParallelSearchLocate
+ * --------------------
+ *  Using the given index and a searchData struct preloaded with kmers, query the kmers
+ *    in a concurrent, thread-parallel manner to find the positions of each occurrence of each
+ *    respective kmer. The suggested use case for this function is as follows:
+ *
+ *    1. Allocate a searchList struct with awFmCreateKmerSearchList().
+ *    2. For searching for n kmers, set count to n (must be smaller than capacity!), and
+ *      set the first n kmers with the correct char pointer and length.
+ *    3. Call this function using the index to search. The positions of each kmer will be loaded
+ *      into the positionList member variable of the corresponding AwFmKmerSearchData struct.
+ *    4. To query for additional kmers, reuse the searchList struct, starting with step (2).
+ *    5. Deallocate the searchData with awFmDeallocKmerSearchList when finished.
+ *
+ *  Inputs:
+ *    index:        pointer to the index to search.
+ *    searchList:   pointer to the searchList struct loaded with kmers to search for.
+ *    numThreads:   How many threads to direct OpenMP to use. The best value for this argument
+ *                    will likely vary from system to system. Suggested default value is 4
+ */
+void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
+  struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
+
+/*
+ * Function:  awFmParallelSearchCount
+ * --------------------
+ *  Using the given index and a searchData struct preloaded with kmers, query the kmers
+ *    in a concurrent, thread-parallel manner to find the count of occurrences of each
+ *    respective kmer. The suggested use case for this function is as follows:
+ *
+ *    1. Allocate a searchList struct with awFmCreateKmerSearchList().
+ *    2. For searching for n kmers, set count to n (must be smaller than capacity!), and
+ *      set the first n kmers with the correct char pointer and length.
+ *    3. Call this function using the index to search. The count of matching kmers
+ *      will be loaded into the AwFmKmerSearchData's count member variable.
+ *    4. To query for additional kmers, reuse the searchList struct, starting with step (2).
+ *    5. Deallocate the searchData with awFmDeallocKmerSearchList when finished.
+ *
+ *  Inputs:
+ *    index:        pointer to the index to search.
+ *    searchList:   pointer to the searchList struct loaded with kmers to search for.
+ *    numThreads:   How many threads to direct OpenMP to use. The best value for this argument
+ *                    will likely vary from system to system. Suggested default value is 4
+ */
+void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
+  struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
+
+
+
+//TODO: dreprecated
 /*
  * Function:  awFmCreateParallelSearchData
  * --------------------
@@ -235,6 +317,7 @@ struct AwFmParallelSearchData *awFmCreateParallelSearchData(const size_t capacit
   const uint_fast8_t numThreads);
 
 
+//TODO: deprecated
 /*
  * Function:  awFmDeallocParallelSearchData
  * --------------------
@@ -251,7 +334,7 @@ struct AwFmParallelSearchData *awFmCreateParallelSearchData(const size_t capacit
  */
 void awFmDeallocParallelSearchData(struct AwFmParallelSearchData *restrict const searchData);
 
-
+//TODO: dreprecated
 /*
  * Function:  awFmParallelSearch
  * --------------------
@@ -273,7 +356,6 @@ void awFmDeallocParallelSearchData(struct AwFmParallelSearchData *restrict const
  */
 void awFmParallelSearch(const struct AwFmIndex *restrict const index,
   struct AwFmParallelSearchData *restrict const searchData);
-
 
 /*
  * Function:  awFmReadSequenceFromFile

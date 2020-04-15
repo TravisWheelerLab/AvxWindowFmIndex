@@ -6,30 +6,7 @@
 #include <immintrin.h>
 #include <stdio.h>
 
-struct AwFmBacktrace{
-  uint64_t position;
-  uint64_t _offset;
-};
-
-struct AwFmKmerSearchData{
-  char                        *kmerString;
-  uint64_t                    kmerLength;
-  struct AwFmBacktrace        *positionBacktraceList;
-  uint32_t                    count;
-  uint32_t                    capacity;
-};
-
-struct AwFmKmerSearchList{
-  size_t                      capacity;
-  size_t                      count;
-  struct AwFmKmerSearchData   *kmerSearchData;
-};
-
-struct AwFmSearchRange{
-  uint64_t startPtr;
-  uint64_t endPtr;
-};
-
+//optimization macros
 #ifndef AW_FM_PREFETCH_STRATEGY
   #define AW_FM_PREFETCH_STRATEGY _MM_HINT_T2
   //#define AW_FM_PREFETCH_STRATEGY _MM_HINT_T1
@@ -58,7 +35,6 @@ enum AwFmAlphabetType{
 enum AwFmBwtType{
   AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2};
 
-/*Structs*/
 struct AwFmAminoBlock{
   __m256i   letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
   uint64_t  baseOccurrences[AW_FM_AMINO_CARDINALITY];
@@ -85,6 +61,11 @@ struct AwFmIndexMetadata{
   bool                  keepSuffixArrayInMemory;
 };
 
+struct AwFmSearchRange{
+  uint64_t startPtr;
+  uint64_t endPtr;
+};
+
 struct AwFmKmerSeedTable{
   struct  AwFmSearchRange *table;
           uint64_t        *sequenceEndingKmerEncodings;
@@ -103,6 +84,27 @@ struct AwFmIndex{
           size_t            suffixArrayFileOffset;
           size_t            sequenceFileOffset;
 };
+
+struct AwFmBacktrace{
+  uint64_t position;
+  uint64_t _offset;
+};
+
+struct AwFmKmerSearchData{
+  char                        *kmerString;
+  uint64_t                    kmerLength;
+  struct AwFmBacktrace        *positionBacktraceList;
+  uint32_t                    count;
+  uint32_t                    capacity;
+};
+
+struct AwFmKmerSearchList{
+  size_t                      capacity;
+  size_t                      count;
+  struct AwFmKmerSearchData   *kmerSearchData;
+};
+
+
 
 
 //todo: remove unused return codes

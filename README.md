@@ -84,52 +84,73 @@ The index argument should be a pointer to an unallocated index pointer, just as 
 
 
 ### Querying batches of kmers in parallel
-To query for batches of kmers, create a AwFmParallelSearchData struct with the function
+To query for batches of kmers, create a AwFmKmerSearchList struct with the function
 ``` c
-struct AwFmParallelSearchData *awFmCreateParallelSearchData(const size_t capacity,
-  const uint_fast8_t numThreads);
+struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity);
 ```
 
 * capacity is the number of kmers the search data struct can hold.
-* numThreads is the number of threads to tell OpenMP to use while querying. The best value for this will vary from system to system, but I've had the best luck with values of 4 or 8.
 
-Once the AwFmParallelSearchData struct had been allocated and initialized with the above function, load the kmer strings you wish to query for.
+Once the AwFmKmerSearchList struct had been allocated and initialized with the above function, load the kmer strings you wish to query for.
 ``` c
-struct AwFmParallelSearchData *loadKmers(char **kmerStrings, uint32_t *kmerStringLengths, uint32_t numKmers){
-  struct AwFmParallelSearchData * searchData = awFmCreateParallelSearchData(numKmers, 4);
+struct AwFmKmerSearchList *loadKmers(char **kmerStrings, uint32_t *kmerStringLengths, uint32_t numKmers){
+  struct AwFmKmerSearchList * searchList = awFmCreateKmerSearchList(numKmers);
   for(size_t i = 0; i < numKmers; i++){
-    searchData->kmerList[i].string = kmerStrings[i];
-    searchData->kmerList[i].length = kmerStringLengths[i];
+    searchList->kmerSearchData[i].kmerString = kmerStrings[i];
+    searchList->kmerSearchData[i].kmerLength = kmerStringLengths[i];
   }
+  searchList->count = numKmers;
 
   return searchData;
 }
 ```
 
-Then, to query the batch of kmers against an AwFmIndex, use the awFmParallelSearch() function.
+### Locate() function
+To locate all instances of the kmers against an AwFmIndex, use the awFmParallelSearchLocate() function.
 ``` c
-void awFmParallelSearch(const struct AwFmIndex *restrict const index,
-  struct AwFmParallelSearchData *restrict const searchData);
+void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
+ struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
 ```
 
-When the function returns, each kmer will have been queried, and a corresponding list of hit positions can be found in the corresponding entry in searchData->sequencePositionLists.
+When the function returns, each kmer will have been queried, and a corresponding list of locations can be found in the corresponding entry in searchList->kmerSearchData[x].positionBacktraceList.position . The numThreads argument tells the algorithm how many threads to use. The optimal setting will vary from system to system, but 4 or 8 seem to be good choices on many systems.
 
-e.g., to print the positions in the database sequence where a given kmer index was found:
+e.g., to print the positions in the database sequence where a kmer at a given index was found:
 ``` c
-void printKmerHitPositions(struct AwFmParallelSearchData *searchData, size_t kmerIndex)
-  size_t numHitPositions = searchData->sequencePositionLists[kmerIndex].count;
-  struct AwFmBacktrace *backtracePositionList =  
-    searchData->sequencePositionLists[kmerIndex].backtraceArray;
+void printKmerHitPositions(struct AwFmKmerSearchList *searchList, size_t kmerIndex)
+  const uint32_t numHitPositions = searchList->kmerSearchData[kmerIndex].count;
+  struct AwFmBacktrace *positionBacktraceList =  
+    searchList->kmerSearchData[kmerIndex].positionBacktraceList;
 
   for(size_t i = 0; i < numHitPositions; i++){
     printf("kmer at index %zu found at database position %zu."\n,
-    kmerIndex, backtracePositionList[i].position);
+    kmerIndex, positionBacktraceList[i].position);
   }
 }
 ```
 
-When finished using the AwFmParallelSearchData struct, deallocate it with the awFmDeallocParallelSearchData() function.
+### Count() function
+The count() function is used similary to the locate() function.
 
+``` c
+void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
+  struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
+```
+
+After querying for the count, the number of occurences of each kmer is located in the 'count' member variable of the corresponding AwFmKmerSearchData.
+
+``` c
+void printKmerHitCount(struct AwFmKmerSearchList *searchList, size_t kmerIndex)
+  const uint32_t kmerCount = searchList->kmerSearchData[kmerIndex].count;
+  printf("kmer at position %zu has %u occurrences.\n", kmerIndex, kmerCount);
+}
+```
+
+
+### Deallocating the AwFmKmerSearchList
+When finished using the AwFmKmerSearchList struct, deallocate it with the awFmDeallocKmerSearchList() function.
+``` c
+void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchList);
+```
 
 ### Reading back sections of the database sequence
 If you would like to read sections of the database sequence around a given position, use the function:

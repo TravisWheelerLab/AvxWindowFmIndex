@@ -11,7 +11,7 @@ AWFMINDEX_MINOR_VERSION_NUM = 1
 AWFMINDEX_VERSION 					= $(MAJOR).$(MINOR)
 
 CC 			= gcc
-CFLAGS 	= -std=c11 -fpic -O3 -mtune=native -mavx2 -Wall -Werror -Wextra -fopenmp -ldivsufsort64
+CFLAGS 	= -std=gnu11 -fpic -O3 -mtune=native -mavx2 -Wall -Werror -Wextra -fopenmp -ldivsufsort64
 LDFLAGS	= -shared # linking flags
 
 #PREFIX is environment variable, but if it is not set, then set default install location /usr/local

@@ -30,12 +30,12 @@ char indexFilenameBuffer[256];
 int main(int argc, char **argv){
   //init parameters
   strcpy(indexFilenameBuffer, "index.awfmi");
-  isAminoSequence            = false;
+  isAminoSequence             = false;
   chromosomeNumber            = -1;
-  fullGenomeIndexRequested   = false;
+  fullGenomeIndexRequested    = false;
   suffixArrayCompressionRatio = 8;
   kmerLengthInSeedTable       = 12;
-  kmerLengthSetInArgs        = false;
+  kmerLengthSetInArgs         = false;
   parseArgs(argc, argv);
 
 	printf("parse finished: isAmino %i, chrNo %i, fulGenome %i, sacr %i, klist %i\n",
@@ -112,7 +112,18 @@ void buildChromosomeIndex(int chromosomeNumber, uint8_t suffixArrayCompressionRa
 
   struct AwFmIndex *index;
   struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio=suffixArrayCompressionRatio,
-    .kmerLengthInSeedTable=kmerLengthInSeedTable, .alphabetType=AwFmAlphabetNucleotide};
+    .kmerLengthInSeedTable=kmerLengthInSeedTable, .alphabetType=AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=false};
+
+    if(sequenceLength>1000){
+      printf("for reference, here's the first 1000 characters in the sequence: %.*s\n", 1000, sequenceBuffer);
+      printf("...and the last 10 characters: %.*s\n", 10, &sequenceBuffer[sequenceLength-10]);
+
+    }
+    else{
+      printf("for reference, here's all %zu characters in the sequence: %.*s\n", sequenceLength, (int)sequenceLength, sequenceBuffer);
+
+    }
+
   enum AwFmReturnCode returnCode = awFmCreateIndex(&index, &metadata, (uint8_t*)sequenceBuffer, sequenceLength,
     indexFilename, true);
 
@@ -176,14 +187,14 @@ printf("file opened\n");
     }
     // check to see if it's a header
     bool isHeader = (buffer[sequenceLength]) == '>';
-	
+
 
     //if it was a header, check to see if it's the one we care about
     if(isHeader){
       bool thisHeaderIsCorrectChromosomeHeader =
         (chromosomeNumber <10 && buffer[sequenceLength+4] == chromosomeNumberOnesPlace) ||
         (chromosomeNumber >=10 && buffer[sequenceLength+4] == chromosomeNumberTensPlace && buffer[sequenceLength+5] == chromosomeNumberOnesPlace);
-       	
+
 	printf("header %c%c found", buffer[sequenceLength+4], buffer[sequenceLength+5] );
 
 	if(thisHeaderIsCorrectChromosomeHeader){
@@ -204,6 +215,10 @@ printf("file opened\n");
     //if we're reading from the correct chromosome, move the buffer offset to preserve the read data.
     if(!isHeader && readingSelectedChromosome){
       sequenceLength += strlen(buffer+sequenceLength);
+      //if a newline got added to the end, remove it by shortening the sequence length.
+      if(buffer[sequenceLength-1] < '0'){
+        sequenceLength--;
+      }
     }
 
   }
@@ -228,6 +243,10 @@ int64_t getFullGenomeFromFasta(char *fastaFileSrc, char *buffer){
     //otherwise, don't change bufferOffset and allow it to be overwritten.
     if(buffer[sequenceLength] != '<'){
       sequenceLength += strlen(buffer+sequenceLength);
+      //if a newline got added to the end, remove it by shortening the sequence length.
+      if(buffer[sequenceLength-1] < '0'){
+        sequenceLength--;
+      }
     }
   }
 

@@ -20,6 +20,8 @@ int kmerLength;
 int numThreadsInParallelQuery;
 int randSeed;
 bool randSeedSetInArgs;
+bool keepSuffixArrayInMemory;
+bool useCountFunction;
 
 void parseArgs(int argc, char **argv);
 
@@ -29,6 +31,8 @@ int main(int argc, char **argv){
   numKmersToQuery = 10000;
   kmerLength = 12;
   randSeedSetInArgs = false;
+  keepSuffixArrayInMemory = false;
+  useCountFunction = false;
 
   parseArgs(argc, argv);
 
@@ -40,18 +44,18 @@ int main(int argc, char **argv){
 
   struct AwFmIndex *index;
 //  printf("reading AwFmIndex file...");
-  enum AwFmReturnCode returnCode = awFmReadIndexFromFile(&index, indexFilenameBuffer);
+  enum AwFmReturnCode returnCode = awFmReadIndexFromFile(&index, indexFilenameBuffer, keepSuffixArrayInMemory);
 //  printf(" index file read.\n");
   if(returnCode < 0){
     printf("Error during index read: awFmReadIndexFromFile returned error code %i\n", returnCode);
     exit(-1);
   }
-//  printf("generating search data struct...");
-  struct AwFmParallelSearchData *searchData = awFmCreateParallelSearchData(numKmersToQuery,
-    numThreadsInParallelQuery);
+
+  struct AwFmKmerSearchList *searchList = awFmCreateKmerSearchList(numKmersToQuery);
+  searchList->count = numKmersToQuery;
  //   printf(" search data struct generated.\n");
 
-  if(searchData == NULL){
+  if(searchList == NULL){
     printf("Error: could not allocate memory for the search data struct.\n");
     exit(-2);
   }
@@ -71,14 +75,19 @@ int main(int argc, char **argv){
 
   //set the kmers in the search data.
   for(size_t i = 0; i < numKmersToQuery;i++){
-    searchData->kmerList[i].string = kmerQuerySequence+i;
-    searchData->kmerList[i].length = kmerLength;
+    searchList->kmerSearchData[i].kmerLength = kmerLength;
+    searchList->kmerSearchData[i].kmerString = kmerQuerySequence+i;
   }
 
   //printf("beginning parallel search...");
   clock_t searchStartTime = clock();
   //search for the kmers
-  awFmParallelSearch(index, searchData);
+  if(useCountFunction){
+    awFmParallelSearchCount(index, searchList, numThreadsInParallelQuery);
+  }
+  else{
+    awFmParallelSearchLocate(index, searchList, numThreadsInParallelQuery);
+  }
   clock_t searchEndTime = clock();
   clock_t elapsedSearchTime = searchEndTime - searchStartTime;
 
@@ -87,7 +96,7 @@ int main(int argc, char **argv){
 //  numKmersToQuery, elapsedSearchTime, (float)elapsedSearchTime/ (float)CLOCKS_PER_SEC);
 //	printf("start time %zu, end time %zu\n", searchStartTime, searchEndTime);
   //dealloc the searchData struct
-  awFmDeallocParallelSearchData(searchData);
+  awFmDeallocKmerSearchList(searchList);
   awFmDeallocIndex(index);
   free(kmerQuerySequence);
 
@@ -96,9 +105,15 @@ int main(int argc, char **argv){
 
 void parseArgs(int argc, char **argv){
   int option = 0;
-  while((option = getopt(argc, argv, "f:n:k:t:s:")) != -1){
+  while((option = getopt(argc, argv, "mcf:n:k:t:s:")) != -1){
     //printf("option: %c ", option);
     switch(option){
+      case 'm':
+        keepSuffixArrayInMemory = true;
+        break;
+      case 'c':
+        useCountFunction = true;
+        break;
       case 'f':
         strcpy(indexFilenameBuffer, optarg);
         break;

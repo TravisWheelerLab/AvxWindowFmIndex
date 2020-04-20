@@ -11,7 +11,13 @@ The following is required to build and use this software
 * Cmake (for libdivsufsort submodule build process)
 
 
-## Building on Linux
+The first time the project is built, it will attempt to clone the LibDivSufSort library into the project directory. As such, an internet connection is required during the initial call to make. This can be performed manually, if needed, but this is almost always unnecessary.
+```shell
+$ git submodule init
+$ git submodule update
+```
+
+## Building a shared library on Linux
 To build and the AwFmIndex shared library into the default install location, clone the repo, and cd into the project directory.
 ```shell
 $ make
@@ -33,11 +39,12 @@ $ export LD_RUN_PATH=~/usr/local/include
 ```
 
 
-The first time the project is built, it will attempt to clone the LibDivSufSort library into the project directory. As such, an internet connection is required during the initial call to make. This can be performed manually, if needed, but this is almost always unnecessary.
+## Building a static library
+To build a static library,
 ```shell
-$ git submodule init
-$ git submodule update
+$ make static
 ```
+This will generate two static libraries, libawfmindex.a and libdivsufsort64.a inside the bin/ directory. Your software will need to link to both of these.
 
 
 ## AwFmIndex Quick Start Guide

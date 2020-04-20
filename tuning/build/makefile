@@ -8,7 +8,7 @@ TEST_OBJ	= buildIndex.o
 
 .PHONY: all
 all: $(TEST_OBJ)
-	 gcc $(TEST_OBJ) -o $(EXE)  $(LIB_FLAGS) $(CFLAGS) -L $(RPATH_DIR) 
+	 gcc $(TEST_OBJ) -o $(EXE)  $(LIB_FLAGS) $(CFLAGS) -L $(RPATH_DIR)
 
 $(TEST_OBJ): $(TEST_SRC)
 	 gcc $(TEST_SRC) -c $(CFLAGS) -I $(INCLUDE_DIR)

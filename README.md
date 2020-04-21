@@ -27,7 +27,7 @@ $ sudo make install
 ### Building to non-default location
 Sometimes you may need to install the library to a non-default location, for example, if you do not have sudo privileges to write to /usr/local. To install the shared library into a non-default location, such as ~/usr/local:
 ```shell
-$ destdir="~/usr/local"
+$ DESTDIR="~/usr/local"
 $ make
 $ make install
 ```
@@ -44,7 +44,13 @@ To build a static library,
 ```shell
 $ make static
 ```
-This will generate two static libraries, libawfmindex.a and libdivsufsort64.a inside the bin/ directory. Your software will need to link to both of these.
+This will generate two static libraries, libawfmindex.a and libdivsufsort64.a. The DESTDIR environment variable above is respected while making a static library, so
+```shell
+$ DESTDIR="~/usr/local"
+$ make static
+```
+
+will install the static library files and headers to ~/usr/local/lib and ~/usr/local/include respectively.
 
 
 ## AwFmIndex Quick Start Guide

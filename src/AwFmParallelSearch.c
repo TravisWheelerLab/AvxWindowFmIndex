@@ -215,10 +215,7 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
       backtracePositionList[positionInRangeToBacktrace].position = position;
       backtracePositionList[positionInRangeToBacktrace]._offset = offset;
 
-      if(kmerIndex == 819){
-        printf("\n\n\n420GAY420 CRITICALFAILURE: position %zu greater than bwt length %zu pos in range %zu, backtrace list ptr: %p\n",
-        position, index->bwtLength, positionInRangeToBacktrace, backtracePositionList);
-      }
+
       positionInRangeToBacktrace++;
     }
   }
@@ -233,10 +230,6 @@ void parallelSearchSuffixArrayLookup(const struct AwFmIndex *restrict const inde
     for(size_t backtraceIndex = 0; backtraceIndex < numSuffixArrayPositions; backtraceIndex++){
       struct AwFmBacktrace *restrict const backtracePtr = &searchList->kmerSearchData[kmerIndex].positionBacktraceList[backtraceIndex];
 
-        if(kmerIndex == 819){
-          printf("\n\n\nin sal: position %zu greater than bwt length %zu (backtrace index %zu), kmer index %zu\n",
-            backtracePtr->position, index->bwtLength, backtraceIndex, kmerIndex);
-        }
       awFmSuffixArrayReadPositionParallel(index, backtracePtr);
     }
   }

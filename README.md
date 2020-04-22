@@ -44,13 +44,13 @@ To build a static library,
 ```shell
 $ make static
 ```
-This will generate two static libraries, libawfmindex.a and libdivsufsort64.a. The DESTDIR environment variable above is respected while making a static library, so
+This will generate two static libraries, libawfmindex.a and libdivsufsort64.a.
 ```shell
-$ DESTDIR="~/usr/local"
 $ make static
 ```
 
-will install the static library files and headers to ~/usr/local/lib and ~/usr/local/include respectively.
+libawfmindex.a will be found in   lib/libawfmindex.a, libdivsufsort.a will be found in libdivsufsort/build/libawfmindex.a, and AwFmIndex.h will be found lib/include/AwFmIndex.h
+
 
 
 ## AwFmIndex Quick Start Guide

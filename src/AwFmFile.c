@@ -78,13 +78,6 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     return AwFmFileWriteFail;
   }
 
-  //write the sentinel character position
-  elementsWritten = fwrite(&index->sentinelCharacterPosition, sizeof(uint64_t), 1, index->fileHandle);
-  if(elementsWritten != 1){
-    fclose(index->fileHandle);
-    return AwFmFileWriteFail;
-  }
-
   const size_t numBlockInBwt = awFmNumBlocksFromBwtLength(index->bwtLength);
   const size_t bytesPerBwtBlock = index->metadata.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
@@ -105,16 +98,8 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
 
   //write the kmer seed table
   const size_t numElementsInKmerSeedTable = awFmGetKmerTableLength(index);
-  elementsWritten = fwrite(index->kmerSeedTable.table, sizeof(struct AwFmSearchRange), numElementsInKmerSeedTable, index->fileHandle);
+  elementsWritten = fwrite(index->kmerSeedTable, sizeof(struct AwFmSearchRange), numElementsInKmerSeedTable, index->fileHandle);
   if(elementsWritten != numElementsInKmerSeedTable){
-    fclose(index->fileHandle);
-    return AwFmFileWriteFail;
-  }
-
-  //write the sequence ending
-  const size_t sequenceEndingLength = index->metadata.kmerLengthInSeedTable - 1;
-  elementsWritten = fwrite(index->kmerSeedTable.sequenceEndingKmerEncodings, sizeof(uint64_t), sequenceEndingLength, index->fileHandle);
-  if(elementsWritten != sequenceEndingLength){
     fclose(index->fileHandle);
     return AwFmFileWriteFail;
   }
@@ -212,14 +197,6 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     return AwFmAllocationFailure;
   }
 
-  //read the sentinel character position
-  elementsRead = fread(&indexData->sentinelCharacterPosition, sizeof(uint64_t), 1, fileHandle);
-  if(elementsRead != 1){
-    fclose(fileHandle);
-    awFmDeallocIndex(indexData);
-    return AwFmFileReadFail;
-  }
-
   //read the bwt block list
   const size_t numBlockInBwt = awFmNumBlocksFromBwtLength(indexData->bwtLength);
   const size_t bytesPerBwtBlock = indexData->metadata.alphabetType == AwFmAlphabetNucleotide?
@@ -241,16 +218,8 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
 
   //read the kmer seed table
   const size_t kmerSeedTableLength  = awFmGetKmerTableLength(indexData);
-  elementsRead = fread(indexData->kmerSeedTable.table, sizeof(struct AwFmSearchRange), kmerSeedTableLength, fileHandle);
+  elementsRead = fread(indexData->kmerSeedTable, sizeof(struct AwFmSearchRange), kmerSeedTableLength, fileHandle);
   if(elementsRead != kmerSeedTableLength){
-    fclose(fileHandle);
-    awFmDeallocIndex(indexData);
-    return AwFmFileReadFail;
-  }
-
-  const size_t sequenceEndingLength = indexData->metadata.kmerLengthInSeedTable - 1;
-  elementsRead = fread(indexData->kmerSeedTable.sequenceEndingKmerEncodings, sizeof(uint64_t), sequenceEndingLength, fileHandle);
-  if(elementsRead != sequenceEndingLength){
     fclose(fileHandle);
     awFmDeallocIndex(indexData);
     return AwFmFileReadFail;
@@ -378,16 +347,13 @@ size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index){
   const size_t bytesPerBwtBlock             = index->metadata.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
   const size_t bwtLengthDataLength          = sizeof(uint64_t);
-  const size_t sentinelPositionDataLength   = sizeof(uint64_t);
   const size_t bwtLengthInBytes             = awFmNumBlocksFromBwtLength(index->bwtLength) * bytesPerBwtBlock;
   const size_t prefixSumLengthInBytes       = awFmGetPrefixSumsLength(index->metadata.alphabetType) * sizeof(uint64_t);
   const size_t kmerSeedTableLength          = awFmGetKmerTableLength(index);
-  const size_t endingSequenceLenghtInBytes  = (index->metadata.kmerLengthInSeedTable - 1) * sizeof(uint64_t);
 
   return IndexFileFormatIdHeaderLength + metadataLength +
-    bwtLengthDataLength + sentinelPositionDataLength + bwtLengthInBytes +
-    prefixSumLengthInBytes + (kmerSeedTableLength * sizeof(struct AwFmSearchRange) +
-    endingSequenceLenghtInBytes);
+    bwtLengthDataLength + bwtLengthInBytes + prefixSumLengthInBytes +
+    (kmerSeedTableLength * sizeof(struct AwFmSearchRange));
 }
 
 

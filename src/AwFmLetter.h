@@ -6,116 +6,78 @@
 
 
 /*
- * Function:  awFmAsciiLetterToLetterIndex
- * --------------------
- * Transforms an ascii character into a bit-compressed index representation.
- *  This function acts as a wrapper around calls to the ascii nucleotide to index and ascii amino to index calls.
- *  CAUTION: characters that are not ASCII letters may alias to represent another letter.
- *    Only letters a-z, A-Z should be given.
- *  NOTE: this function resolves ambiguity codes via the rand() function.
- *    As such, srand should be used if true random generation is desired.
- *
- *  Inputs:
- *    asciiLetter: ascii-encoded letter representing an amino acid, nucleotide, or ambiguity code.
- *    alphabet: Alphabet of the characters being represented
- *
- *  Returns:
- *    index value representing the amino acid or nucleotide
- *
- */
-uint8_t awFmLetterToLetterIndex(const uint8_t asciiLetter, const enum AwFmAlphabetType alphabet);
-
-
-/*
  * Function:  awFmAsciiNucleotideToLetterIndex
  * --------------------
- * Transforms a nucleotide's ascii letter into a bit compressed index.
- *  The letter can be either lower case or upper case.
- *
+ * Transforms an ascii nucleotide character into a bit-compressed index representation.
+ * Any non-nucleotide (a,c,g,t,A,C,G, or T) character will be converted to index 4,
+ *  signifying a sentinel character.
  *  Inputs:
- *    asciiLetter: ascii representation of the nucleotide.
+ *    asciiLetter: ascii-encoded letter representing a nucleotide, ambiguity code, or sentinel '$'.
  *
  *  Returns:
- *    Bit compressed index of the nucleotide, between 0 and 3 inclusive.
+ *    index value representing the nucleotide or a sentinel character.
+ *
  */
 uint8_t awFmAsciiNucleotideToLetterIndex(const uint8_t asciiLetter);
 
 
 /*
- * Function:  awFmAsciiAminoAcidToLetterIndex
+ * Function:  awFmAsciiNucleotideLetterSanitize
  * --------------------
- * Transforms an amino acid's ascii letter into a bit compressed index.
- *  The letter can be either lower case or upper case.
- *  Note: Giving this function anything besides amino acid letters or ambiguity characters
- *    will result in undefined behavior.
- *    As such, the sentinel character $ should not be given to this function.
- *
- *    List of valid letters: a,b,c,d,e,f,g,h,i,k,l,m,n,p,q,r,s,t,v,w,x,y,z
- *      j, o, u, and any non-alphabet letter are unsupported.
- *
+ * With a given ascii letter, returns the input letter if it is a valid nucleotide.
+ *  Otherwise, this function returns a sentinel '$' character.
  *  Inputs:
- *    asciiLetter: ascii representation of the amino acid.
+ *    asciiLetter: ascii-encoded letter representing a nucleotide, ambiguity code, or sentinel.
  *
  *  Returns:
- *    Bit compressed index of the amino acid, between 0 and 19 inclusive.
+ *    The input nucleotide letter or a sentinel '$' character.
+ *
+ */
+uint8_t awFmAsciiNucleotideLetterSanitize(const uint8_t asciiLetter);
+
+
+/*
+ * Function:  awFmAsciiAminoAcidToLetterIndex
+ * --------------------
+ * Transforms an ascii amino acid character into a bit-compressed index representation.
+ * Any ambiguity character or sentinel '$' character will be converted into a sentinel index of 20.
+ *  Inputs:
+ *    asciiLetter: ascii-encoded letter representing a nucleotide, ambiguity code, or sentinel '$'.
+ *
+ *  Returns:
+ *    index value representing the amino, or the sentinel index of 20.
+ *
  */
 uint8_t awFmAsciiAminoAcidToLetterIndex(const uint8_t asciiLetter);
 
 
 /*
- * Function:  awFmNucleotideLetterIndexToAscii
+ * Function:  awFmAsciiAminoLetterSanitize
  * --------------------
- * Transforms a nucleotide's letter index into it's ascii character.
+ * With a given ascii letter, returns the input letter if it is a valid amino acid.
+ *  Otherwise, this function returns a sentinel '$' character.
  *  Inputs:
- *    letterIndex: index of the nucleotide.
+ *    asciiLetter: ascii-encoded letter representing an amino acid, ambiguity code, or sentinel.
  *
  *  Returns:
- *    Ascii representation of the nucleotide letter.
+ *    The input amino letter or a sentinel '$' character.
+ *
  */
-uint8_t awFmNucleotideLetterIndexToAscii(const uint8_t letterIndex);
+uint8_t awFmAsciiAminoLetterSanitize(const uint8_t asciiLetter);
 
 
 /*
-* Function:  awFmAminoAcidLetterIndexToAscii
-* --------------------
-* Transforms the letter index of an amino acid letter into it's ascii representation.
-*  Inputs:
-*    letterIndex: Index of the letter.
-*
-*  Returns:
-*    Ascii representation of the letter.
-*
-*/
-uint8_t awFmAminoAcidLetterIndexToAscii(const uint8_t letterIndex);
-
-
-/*
- * Function:  awFmAminoAcidAsciiLetterToCompressedVectorFormat
+ * Function:  awFmAminoAcidLetterIndexToCompressedVector
  * --------------------
- * Transforms an ascii-encoded character into a set of 5 bits that will represent the amino acid in the strided AVX vector.
- *  CAUTION: characters that are not ASCII letters may alias to represent an amino acid. Only letters a-z, A-Z should be given.
+ * Transforms an amino acid's in letter-index form into a compressed vector representation.
+ *
  *  Inputs:
- *    asciiLetter: ascii-encoded letter representing an amino acid, or an amino acid ambiguity character (b, z, or x)
+ *    letterIndex: letter index of the amino or the sentinel '$' index (value 20).
  *
  *  Returns:
- *    Value representing the compressed vector format of the amino acid.
- *
+ *    Compressed vector representation of the amino or sentinel.
  */
-uint8_t awFmAminoAcidAsciiLetterToCompressedVectorFormat(const uint8_t asciiLetter);
-
-
-/*
- * Function:  awFmAminoAcidCompressedVectorToAscii
- * --------------------
- * Transforms a compressed vector representation of an amino acid letter into it's ascii character.
- *  Inputs:
- *    compressedVectorLetter: format that the letter is stored in the AVX vectors.
- *
- *  Returns:
- *    Ascii representation of the letter.
- *
- */
-uint8_t awFmAminoAcidCompressedVectorToAscii(const uint8_t compressedVectorLetter);
+uint8_t awFmAminoAcidLetterIndexToCompressedVector(const uint8_t letterIndex);
 
 
 /*
@@ -129,6 +91,5 @@ uint8_t awFmAminoAcidCompressedVectorToAscii(const uint8_t compressedVectorLette
 *    Index of the amino acid between 0 and 19, or 20  as the sentinel.
 */
 uint8_t awFmAminoAcidCompressedVectorToLetterIndex(const uint8_t compressedVectorLetter);
-
 
 #endif /* end of include guard: AW_FM_LETTER_H */

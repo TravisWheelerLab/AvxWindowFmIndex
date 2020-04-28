@@ -4,9 +4,6 @@
 #include <assert.h>
 
 
-bool awFmNucleotidePopcountIncludesSentinelCharacter(const uint8_t queryLetter,
-  const uint64_t globalSentinelPosition, const uint64_t globalQueryPosition);
-
 void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
   struct AwFmSearchRange *restrict const range, const uint8_t letter){
 
@@ -15,14 +12,9 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
   const uint64_t letterPrefixSum  = index->prefixSums[letter];
   uint64_t blockIndex             = awFmGetBlockIndexFromGlobalPosition(queryPosition);
   uint8_t localQueryPosition      = awFmGetBlockQueryPositionFromGlobalPosition(queryPosition);
-  uint64_t sentinelBlockIndex     = awFmGetBlockIndexFromGlobalPosition(index->sentinelCharacterPosition);
 
   //before needing the bit vectors, we can figure out if they sentinel character will be added.
-  //if the sentinel will be included in our popcount, start the popcount at -1.
   uint64_t newStartPointer = letterPrefixSum;
-  if(__builtin_expect(sentinelBlockIndex == blockIndex, 0)){
-      newStartPointer -= ((letter == 0) && (index->sentinelCharacterPosition <= queryPosition));
-  }
 
   uint64_t baseOccurrence = index->bwtBlockList.asNucleotide[blockIndex].baseOccurrences[letter];
   __m256i occurrenceVector = awFmMakeNucleotideOccurrenceVector(&(index->bwtBlockList.asNucleotide[blockIndex]),
@@ -36,7 +28,7 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
   //prefetch the next start ptr
   uint64_t newStartBlock    = (newStartPointer-1) / AW_FM_POSITIONS_PER_FM_BLOCK;
   uint8_t *newStartBlockPtr = ((uint8_t*)index->bwtBlockList.asNucleotide) + (newStartBlock * sizeof(struct AwFmNucleotideBlock));
-  _mm_prefetch(newStartBlockPtr, AW_FM_PREFETCH_STRATEGY);
+  _mm_prefetch(newStartBlockPtr,      AW_FM_PREFETCH_STRATEGY);
   _mm_prefetch(newStartBlockPtr + 64, AW_FM_PREFETCH_STRATEGY);
 
   //query for the new end pointer
@@ -46,11 +38,7 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
 
   //the -1 is because of the formula u=Cx[a] + Occ(a,u) -1.
   //we can subtract it here to kill time before needing the block from memory
-  //like before, if we would have included the sentinel, subtract 1 once more to deal with it.
   uint64_t newEndPointer = letterPrefixSum - 1;
-  if(__builtin_expect(sentinelBlockIndex == blockIndex, 0)){
-    newEndPointer -= ((letter == 0) && (index->sentinelCharacterPosition <= queryPosition));
-  }
 
   baseOccurrence = index->bwtBlockList.asNucleotide[blockIndex].baseOccurrences[letter];
   occurrenceVector = awFmMakeNucleotideOccurrenceVector(&(index->bwtBlockList.asNucleotide[blockIndex]),
@@ -124,15 +112,9 @@ uint64_t awFmNucleotideBackwardSearchSingle(const struct AwFmIndex *restrict con
   const uint64_t letterPrefixSum = index->prefixSums[letter];
   uint64_t blockIndex = awFmGetBlockIndexFromGlobalPosition(queryPosition);
   uint8_t localQueryPosition = awFmGetBlockQueryPositionFromGlobalPosition(queryPosition);
-  uint64_t sentinelBlockIndex = awFmGetBlockIndexFromGlobalPosition(index->sentinelCharacterPosition);
 
   //before needing the bit vectors, we can figure out if they sentinel character will be added.
-  //if the sentinel will be included in our popcount, start the popcount at -1.
   uint64_t result = letterPrefixSum;
-  if(__builtin_expect(sentinelBlockIndex == blockIndex, 0)){
-    result -= ((letter == 0) && (index->sentinelCharacterPosition <= queryPosition));
-  }
-
 
   uint64_t baseOccurrence = index->bwtBlockList.asNucleotide[blockIndex].baseOccurrences[letter];
   __m256i occurrenceVector = awFmMakeNucleotideOccurrenceVector(&(index->bwtBlockList.asNucleotide[blockIndex]),
@@ -308,10 +290,6 @@ const __m256i occurrenceVector      = awFmMakeNucleotideOccurrenceVector(blockPt
 
 
   uint_fast8_t vectorPopcount = awFmVectorPopcount(occurrenceVector, localQueryPosition);
-  if(awFmNucleotidePopcountIncludesSentinelCharacter(frequencyIndexLetter,
-    index->sentinelCharacterPosition, bwtPosition)){
-    vectorPopcount--;
-  }
   uint64_t backtraceBwtPosition = prefixSums[frequencyIndexLetter] + baseOccurrence + vectorPopcount - 1;
 
   return backtraceBwtPosition;

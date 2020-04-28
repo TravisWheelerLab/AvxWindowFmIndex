@@ -16,19 +16,19 @@ __m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *res
   const uint8_t letter){
   //load the letter bit vectors
   const __m256i *restrict const blockVectorPtr = blockPtr->letterBitVectors;
-  const __m256i bit0Vector = _mm256_load_si256(blockVectorPtr);
-  const __m256i bit1Vector = _mm256_load_si256(blockVectorPtr + 1);
+  const __m256i bit0Vector          = _mm256_load_si256(blockVectorPtr);
+  const __m256i bit1Vector          = _mm256_load_si256(blockVectorPtr + 1);
+  const __m256i sentinelMaskVector  = _mm256_load_si256(blockVectorPtr + 2);
 
   switch(letter){
     case 0: //Nucleotide A
-      return
-        _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, _mm256_set1_epi8((uint8_t)0xFF)));
+      return _mm256_andnot_si256(bit0Vector, _mm256_andnot_si256(bit1Vector, sentinelMaskVector));
     case 1://Nucleotide C
-      return  _mm256_andnot_si256(bit1Vector, bit0Vector);
+      return  _mm256_and_si256(_mm256_andnot_si256(bit1Vector, bit0Vector), sentinelMaskVector);
     case 2://Nucleotide G
-      return  _mm256_andnot_si256(bit0Vector, bit1Vector);
+      return  _mm256_and_si256(_mm256_andnot_si256(bit0Vector, bit1Vector), sentinelMaskVector);
     case 3://Nucletoide T
-      return _mm256_and_si256(bit1Vector, bit0Vector);
+      return _mm256_and_si256(_mm256_and_si256(bit1Vector, bit0Vector), sentinelMaskVector);
     default:
     __builtin_unreachable();
   }
@@ -131,21 +131,18 @@ inline uint16_t awFmVectorPopcount(const __m256i occurrenceVector, const uint8_t
 
 
 inline uint16_t awFmVectorPopcountBuiltin(const __m256i occurrenceVector, const uint8_t localQueryPosition){
-    uint64_t bitmasks[4] = {0};
-  uint8_t   bitmaskedQuadWordIndex  = localQueryPosition / 64;
+  uint64_t bitmasks[4] = {0};
+  uint8_t  bitmaskedQuadWordIndex = localQueryPosition / 64;
 
   for(int8_t i = 0; i < bitmaskedQuadWordIndex; i++){
       bitmasks[i] = ~0UL;
   }
   bitmasks[bitmaskedQuadWordIndex] = ~0UL >> (63 - (localQueryPosition % 64));
-  // printf("LQP%u,  /64 = %u, mod 64 = %u,\n", localQueryPosition, bitmaskedQuadWordIndex, localQueryPosition%64);
 
-  // printf("lqp: %u, bitmasks 0x%.8lx, 0x%.8lx, 0x%.8lx, 0x%.8lx\n",localQueryPosition, bitmasks[0], bitmasks[1], bitmasks[2], bitmasks[3]);
-
-    uint16_t popcount = _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 0) & bitmasks[0]);
-     popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 1) & bitmasks[1]);
-     popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 2) & bitmasks[2]);
-     popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 3) & bitmasks[3]);
+  uint16_t popcount = _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 0) & bitmasks[0]);
+   popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 1) & bitmasks[1]);
+   popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 2) & bitmasks[2]);
+   popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 3) & bitmasks[3]);
 
   return popcount;
 }

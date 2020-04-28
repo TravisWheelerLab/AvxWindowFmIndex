@@ -66,17 +66,12 @@ struct AwFmSearchRange{
   uint64_t endPtr;
 };
 
-struct AwFmKmerSeedTable{
-  struct  AwFmSearchRange *table;
-          uint64_t        *sequenceEndingKmerEncodings;
-};
-
 struct AwFmIndex{
           uint64_t          bwtLength;
           uint64_t          sentinelCharacterPosition;
   union   AwFmBwtBlockList  bwtBlockList;
           uint64_t          *prefixSums;
-  struct  AwFmKmerSeedTable kmerSeedTable;
+  struct  AwFmSearchRange   *table;
           uint64_t          *inMemorySuffixArray;
           FILE              *fileHandle;
   struct  AwFmIndexMetadata metadata;

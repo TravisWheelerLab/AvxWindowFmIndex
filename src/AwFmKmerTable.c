@@ -12,7 +12,7 @@ struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(const struct AwFmInd
     kmerTableIndex = (kmerTableIndex * AW_FM_NUCLEOTIDE_CARDINALITY) + letterIndex;
   }
 
-  return index->kmerSeedTable.table[kmerTableIndex];
+  return index->kmerSeedTable[kmerTableIndex];
 }
 
 
@@ -25,5 +25,5 @@ struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(const struct AwFmIndex *r
     kmerTableIndex = (kmerTableIndex * AW_FM_AMINO_CARDINALITY) + awFmAsciiAminoAcidToLetterIndex(kmer[i]);
   }
 
-  return index->kmerSeedTable.table[kmerTableIndex];
+  return index->kmerSeedTable[kmerTableIndex];
 }

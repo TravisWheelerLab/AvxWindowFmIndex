@@ -70,7 +70,7 @@ struct AwFmIndex{
           uint64_t          bwtLength;
   union   AwFmBwtBlockList  bwtBlockList;
           uint64_t          *prefixSums;
-  struct  AwFmSearchRange   *table;
+  struct  AwFmSearchRange   *kmerSeedTable;
           uint64_t          *inMemorySuffixArray;
           FILE              *fileHandle;
   struct  AwFmIndexMetadata metadata;

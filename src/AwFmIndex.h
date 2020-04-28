@@ -68,7 +68,6 @@ struct AwFmSearchRange{
 
 struct AwFmIndex{
           uint64_t          bwtLength;
-          uint64_t          sentinelCharacterPosition;
   union   AwFmBwtBlockList  bwtBlockList;
           uint64_t          *prefixSums;
   struct  AwFmSearchRange   *table;

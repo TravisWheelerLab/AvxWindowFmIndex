@@ -17,9 +17,6 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
   uint8_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier);
 
 
-void createSequenceEndKmerEncodings(struct AwFmIndex *restrict const index,
-  const uint8_t *restrict const sequence, const uint64_t sequenceLength);
-
 void compressSuffixArrayInPlace(uint64_t *const suffixArray, uint64_t suffixArrayLength, const uint8_t compressionRatio);
 
 
@@ -38,8 +35,27 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   //set the index out arg initally to NULL, if this function fully completes this will get overwritten
   *index = NULL;
 
+  const size_t suffixArrayLength = sequenceLength + 1;
+  //create a sanitized copy of the input sequence
+  uint8_t *sanitizedSequenceCopy = malloc(suffixArrayLength);
+  if(sanitizedSequenceCopy == NULL){
+    return AwFmAllocationFailure;
+  }
+  if(metadata->alphabetType == AwFmAlphabetNucleotide){
+    for(size_t i = 0; i < sequenceLength; i++){
+      sanitizedSequenceCopy[i] = awFmAsciiNucleotideLetterSanitize(sequence[i]);
+    }
+  }
+  else{
+    for(size_t i = 0; i < sequenceLength; i++){
+      sanitizedSequenceCopy[i] = awFmAsciiAminoLetterSanitize(sequence[i]);
+    }
+  }
+  // append the final sentinel character as a terminator.
+  sanitizedSequenceCopy[suffixArrayLength - 1] = '$';
+
   //allocate the index and all internal arrays.
-  struct AwFmIndex *restrict indexData = awFmIndexAlloc(metadata, sequenceLength + 1);
+  struct AwFmIndex *restrict indexData = awFmIndexAlloc(metadata, suffixArrayLength);
   if(indexData == NULL){
     return AwFmAllocationFailure;
   }
@@ -51,33 +67,33 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   indexData->inMemorySuffixArray = NULL;
 
   //set the bwtLength
-  indexData->bwtLength = sequenceLength + 1;
+  indexData->bwtLength = suffixArrayLength;
 
-  uint64_t *suffixArray = malloc((sequenceLength + 1) * sizeof(uint64_t));
-  //hard code in the sentinel character, since it will always be in the first element, we know
-  //the value, and libdivsufsort doesn't add the sentinel to the beginning when it creates
-  //the suffix array.
-  suffixArray[0] = sequenceLength;
+  uint64_t *suffixArray = malloc((suffixArrayLength) * sizeof(uint64_t));
 
   if(suffixArray == NULL){
+    free(sanitizedSequenceCopy);
     awFmDeallocIndex(indexData);
     return AwFmAllocationFailure;
   }
+
   //create the suffix array, storing it starting in the second element of the suffix array we allocated.
   //this doesn't clobber the sentinel we added earlier, and makes for easier bwt creation.
-  int64_t divSufSortReturnCode = divsufsort64(sequence, (int64_t*)(suffixArray + 1), sequenceLength);
+  int64_t divSufSortReturnCode = divsufsort64(sanitizedSequenceCopy, (int64_t*)(suffixArray), suffixArrayLength);
   if(divSufSortReturnCode < 0){
+    free(sanitizedSequenceCopy);
     free(suffixArray);
     awFmDeallocIndex(indexData);
     return AwFmSuffixArrayCreationFailure;
   }
 
   //set the bwt and prefix sums
-  setBwtAndPrefixSums(indexData, indexData->bwtLength, sequence, suffixArray);
+  setBwtAndPrefixSums(indexData, indexData->bwtLength, sanitizedSequenceCopy, suffixArray);
+  //after generating the bwt, the sequence copy is no longer needed.
+  free(sanitizedSequenceCopy);
 
   populateKmerSeedTable(indexData);
 
-  createSequenceEndKmerEncodings(indexData, sequence, sequenceLength);
 
   indexData->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(indexData);
   indexData->sequenceFileOffset    = awFmGetSequenceFileOffset(indexData);
@@ -90,7 +106,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
     if(metadata->keepSuffixArrayInMemory){
       //if the suffix array is uncompressed, we get to skip the compression and realloc
       if(metadata->suffixArrayCompressionRatio != 1){
-        compressSuffixArrayInPlace(suffixArray, sequenceLength+1,indexData->metadata.suffixArrayCompressionRatio);
+        compressSuffixArrayInPlace(suffixArray, suffixArrayLength,indexData->metadata.suffixArrayCompressionRatio);
         uint64_t *compressedSuffixArray = realloc(suffixArray, awFmGetCompressedSuffixArrayLength(indexData) * sizeof(uint64_t));
 
         //check for allocation failure in the realloc
@@ -120,7 +136,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bwtLength,
   const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray){
   if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-    uint64_t baseOccurrences[4] = {0};
+    uint64_t baseOccurrences[5] = {0};
 
     for(uint64_t suffixArrayPosition = 0; suffixArrayPosition < bwtLength; suffixArrayPosition++){
       const size_t  blockIndex      = suffixArrayPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
@@ -137,22 +153,27 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
       }
 
       uint64_t sequencePositionInSuffixArray = suffixArray[suffixArrayPosition];
+      uint8_t letterIndex;
       if(__builtin_expect(sequencePositionInSuffixArray != 0, 1)){
         uint64_t positionInBwt = sequencePositionInSuffixArray - 1;
-        uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(sequence[positionInBwt]);
+        letterIndex = awFmAsciiNucleotideToLetterIndex(sequence[positionInBwt]);
+      }
+      else{
+        letterIndex = AW_FM_NUCLEOTIDE_CARDINALITY;
+      }
         baseOccurrences[letterIndex]++;
 
         letterBitVectorBytes[byteInVector]      = letterBitVectorBytes[byteInVector] | (((letterIndex >> 0) & 0x1) << bitInVectorByte);
         letterBitVectorBytes[byteInVector + 32] = letterBitVectorBytes[byteInVector+ 32] | (((letterIndex >> 1) & 0x1) << bitInVectorByte);
-      }
-      else{
-        index->sentinelCharacterPosition = suffixArrayPosition;
-      }
+        //for the last bit, flip the bit so all nucleotides have a 1, and sentinels have a zero.
+        letterBitVectorBytes[byteInVector + 64] = letterBitVectorBytes[byteInVector+64] | (((letterIndex >>2) ^ 1) & 0x01) << bitInVectorByte;
     }
 
     //set the prefix sums
     uint64_t tempBaseOccurrence;
-    uint64_t prevBaseOccurrence = 1;  //1 is for the sentinel character
+
+    //set the base occurrence to the number of sentinels
+    uint64_t prevBaseOccurrence = baseOccurrences[AW_FM_NUCLEOTIDE_CARDINALITY];
     for(uint8_t i = 0; i < AW_FM_NUCLEOTIDE_CARDINALITY; i++){
       tempBaseOccurrence = baseOccurrences[i];
       baseOccurrences[i] = prevBaseOccurrence;
@@ -162,7 +183,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
     index->prefixSums[AW_FM_NUCLEOTIDE_CARDINALITY] = index->bwtLength;
   }
   else{
-    uint64_t baseOccurrences[20] = {0};
+    uint64_t baseOccurrences[21] = {0};
 
     for(uint64_t suffixArrayPosition = 0; suffixArrayPosition < bwtLength; suffixArrayPosition++){
       const size_t  blockIndex      = suffixArrayPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
@@ -179,25 +200,28 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
       }
 
       uint64_t sequencePositionInSuffixArray = suffixArray[suffixArrayPosition];
+      uint8_t letterIndex;
       if(__builtin_expect(sequencePositionInSuffixArray != 0, 1)){
         uint64_t positionInBwt = sequencePositionInSuffixArray - 1;
-        uint8_t letterIndex = awFmAsciiAminoAcidToLetterIndex(sequence[positionInBwt]);
-        uint8_t letterAsVectorFormat = awFmAminoAcidAsciiLetterToCompressedVectorFormat(sequence[positionInBwt]);
+        letterIndex = awFmAsciiAminoAcidToLetterIndex(sequence[positionInBwt]);
+      }
+      else{
+        letterIndex = AW_FM_AMINO_CARDINALITY;
+      }
+        uint8_t letterAsVectorFormat = awFmAminoAcidLetterIndexToCompressedVector(letterIndex);
         baseOccurrences[letterIndex]++;
         letterBitVectorBytes[byteInVector]        = letterBitVectorBytes[byteInVector]        | (((letterAsVectorFormat >> 0) & 0x1) << bitInVectorByte);
         letterBitVectorBytes[byteInVector + 32]   = letterBitVectorBytes[byteInVector + 32]   | (((letterAsVectorFormat >> 1) & 0x1) << bitInVectorByte);
         letterBitVectorBytes[byteInVector + 64]   = letterBitVectorBytes[byteInVector + 64]   | (((letterAsVectorFormat >> 2) & 0x1) << bitInVectorByte);
         letterBitVectorBytes[byteInVector + 96]   = letterBitVectorBytes[byteInVector + 96]   | (((letterAsVectorFormat >> 3) & 0x1) << bitInVectorByte);
         letterBitVectorBytes[byteInVector + 128]  = letterBitVectorBytes[byteInVector + 128]  | (((letterAsVectorFormat >> 4) & 0x1) << bitInVectorByte);
-      }
-      else{
-        index->sentinelCharacterPosition = suffixArrayPosition;
-      }
+
     }
 
     //set the prefix sums
     uint64_t tempBaseOccurrence;
-    uint64_t prevBaseOccurrence = 1;  //1 is for the sentinel character
+    //set the base occurrence to the number of sentinels
+    uint64_t prevBaseOccurrence = baseOccurrences[AW_FM_AMINO_CARDINALITY];
     for(uint8_t i = 0; i < awFmGetPrefixSumsLength(index->metadata.alphabetType); i++){
       tempBaseOccurrence = baseOccurrences[i];
       baseOccurrences[i] = prevBaseOccurrence;
@@ -229,7 +253,7 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
 
   //base case
   if(kmerLength == currentKmerLength){
-    index->kmerSeedTable.table[currentKmerIndex] = range;
+    index->kmerSeedTable[currentKmerIndex] = range;
     return;
   }
 
@@ -248,33 +272,6 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
   }
 }
 
-
-void createSequenceEndKmerEncodings(struct AwFmIndex *restrict const index,
-  const uint8_t *restrict const sequence, const uint64_t sequenceLength){
-
-  const uint64_t alphabetCardinality = awFmGetAlphabetCardinality(index->metadata.alphabetType);
-  const uint8_t sequenceEndingLength = index->metadata.kmerLengthInSeedTable - 1;
-
-  for(uint8_t kmerPosition = 0; kmerPosition < sequenceEndingLength; kmerPosition++){
-
-    uint64_t kmerIndexEncoding = 0;
-    for(uint8_t letterInKmer = kmerPosition; letterInKmer < sequenceEndingLength; letterInKmer++){
-      uint64_t sequencePosition = (sequenceLength - sequenceEndingLength) + letterInKmer;
-      kmerIndexEncoding  = (kmerIndexEncoding * alphabetCardinality) +
-      (index->metadata.alphabetType == AwFmAlphabetNucleotide?
-        awFmAsciiNucleotideToLetterIndex(sequence[sequencePosition]):
-        awFmAsciiAminoAcidToLetterIndex(sequence[sequencePosition]));
-    }
-
-    //add the implicit 'a' character to the end to extend the kmer to the required length
-    //in order to get the correct index into the kmerTable
-    for(uint8_t appendedLetterIndex = 0; appendedLetterIndex < (kmerPosition+1); appendedLetterIndex++){
-      kmerIndexEncoding *= alphabetCardinality;
-    }
-
-    index->kmerSeedTable.sequenceEndingKmerEncodings[kmerPosition] = kmerIndexEncoding;
-  }
-}
 
 //copies the compressed suffix array over the full suffix array.
 void compressSuffixArrayInPlace(uint64_t *const suffixArray, uint64_t suffixArrayLength, const uint8_t compressionRatio){

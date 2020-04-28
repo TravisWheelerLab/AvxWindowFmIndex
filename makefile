@@ -120,11 +120,12 @@ $(AWFMINDEX_BUILD_HEADER_FILE): $(AWFMINDEX_SRC_HEADER_FILE) $(AWFMINDEX_BUILD_I
 
 #building libdivsufsort
 $(LIBDIVSUFSORT_BUILD_HEADER_FILE): $(LIBDIVSUFSORT_BUILD_DIR)
-	cd $(LIBDIVSUFSORT_BUILD_DIR) &&	cmake -DCMAKE_BUILD_TYPE="Release" -DUSE_OPENMP="ON" -DBUILD_DIVSUFSORT64:BOOL=ON  -DCMAKE_INSTALL_PREFIX="$(PREFIX)" .. && make
+	cd $(LIBDIVSUFSORT_BUILD_DIR) &&	cmake -DCMAKE_BUILD_TYPE="Release" -DUSE_OPENMP="ON" -DBUILD_SHARED_LIBS="ON" -DBUILD_DIVSUFSORT64:BOOL=ON  -DCMAKE_INSTALL_PREFIX="$(PREFIX)" .. && make
 
 #initialize the libdivsufsort project submodule if not already done
 $(LIBDIVSUFSORT_PROJECT_DIR)/.git:
 	echo "git --rescursive not used, automatically initializing submodules..."
+	git submodule init
 	git submodule update
 
 #make the libdivsufsort build directory if not already done
@@ -140,4 +141,5 @@ $(AWFMINDEX_BUILD_INCLUDE_DIR):
 	mkdir -p $(AWFMINDEX_BUILD_INCLUDE_DIR)
 
 $(LIBDIVSUFSORT_STATIC_LIB_BUILD_SRC): $(LIBDIVSUFSORT_BUILD_DIR)
+	echo "making static libdivsufsort"
 	cd $(LIBDIVSUFSORT_BUILD_DIR) && cmake -DCMAKE_BUILD_TYPE="Release" -DUSE_OPENMP="ON" -DBUILD_SHARED_LIBS="OFF" -DBUILD_DIVSUFSORT64:BOOL=ON  -DCMAKE_INSTALL_PREFIX="$(PREFIX)" ..

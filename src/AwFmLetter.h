@@ -11,6 +11,11 @@
  * Transforms an ascii nucleotide character into a bit-compressed index representation.
  * Any non-nucleotide (a,c,g,t,A,C,G, or T) character will be converted to index 4,
  *  signifying a sentinel character.
+ *
+ *  This function should only be given nucleotides or sentinel '$' characters. Passing ambiguity codes
+ *  will result in undefined behavior. To sanitize out any ambiguity codes, use
+ *  the function awFmAsciiNucleotideLetterSanitize().
+ *
  *  Inputs:
  *    asciiLetter: ascii-encoded letter representing a nucleotide, ambiguity code, or sentinel '$'.
  *
@@ -41,6 +46,10 @@ uint8_t awFmAsciiNucleotideLetterSanitize(const uint8_t asciiLetter);
  * --------------------
  * Transforms an ascii amino acid character into a bit-compressed index representation.
  * Any ambiguity character or sentinel '$' character will be converted into a sentinel index of 20.
+ *
+ *  This function should only be given amino acid or sentinel '$' characters. Passing ambiguity codes
+ *  will result in undefined behavior. To sanitize out any ambiguity codes, use
+ *  the function awFmAsciiAminoLetterSanitize().
  *  Inputs:
  *    asciiLetter: ascii-encoded letter representing a nucleotide, ambiguity code, or sentinel '$'.
  *

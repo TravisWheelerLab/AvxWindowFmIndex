@@ -167,5 +167,54 @@ size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict const inde
 bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const char *restrict const kmer,
   const uint16_t kmerLength);
 
+/*
+ * Function:  awFmNucleotideNonSeededSearch
+ * --------------------
+ *  Finds the range in the bwt corresponding to the entire given nucleotide kmer. While this
+ *    function will function on any input kmer, this function explicitly exists
+ *    to query for kmers that are too short to be memoized in the kmerTable.
+ *    If the kmer you are searching for is at least as long as those in the kmerTable,
+ *    do not use this function. Instead, start with the memozied range for the kmer suffix
+ *    and extend from there.
+ *
+ *  Inputs:
+ *    index:        Pointer to the valid AwFmIndex struct.
+ *    kmer:         Pointer to the kmer character string.
+ *      kmer MUST point to valid data, otherwise, undefined behavior may occur, including
+ *      creating potential segfauts.
+ *    kmerLength:   Length of the kmer to be queried. Undefined behavior may occur if
+ *      the function is given a kmerLength of 0.
+ *    range:        Pointer to a search range where the output will be written.
+ *      Since gcc doesn't seem to perform NRVO correctly, this performs slightly better.
+ *
+ */
+void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const index,
+  const uint8_t *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range);
+
+
+/*
+ * Function:  awFmAminoNonSeededSearch
+ * --------------------
+ *  Finds the range in the bwt corresponding to the entire given amino kmer. While this
+ *    function will function on any input kmer, this function explicitly exists
+ *    to query for kmers that are too short to be memoized in the kmerTable.
+ *    If the kmer you are searching for is at least as long as those in the kmerTable,
+ *    do not use this function. Instead, start with the memozied range for the kmer suffix
+ *    and extend from there.
+ *
+ *  Inputs:
+ *    index:        Pointer to the valid AwFmIndex struct.
+ *    kmer:         Pointer to the kmer character string.
+ *      kmer MUST point to valid data, otherwise, undefined behavior may occur, including
+ *      creating potential segfauts.
+ *    kmerLength:   Length of the kmer to be queried. Undefined behavior may occur if
+ *      the function is given a kmerLength of 0.
+ *    range:        Pointer to a search range where the output will be written.
+ *      Since gcc doesn't seem to perform NRVO correctly, this performs slightly better.
+ *
+ */
+void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const index,
+ const uint8_t *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range);
+
 
 #endif /* end of include guard: AW_FM_INDEX_SEARCH_H */

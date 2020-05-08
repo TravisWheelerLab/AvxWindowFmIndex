@@ -312,3 +312,30 @@ inline size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict con
 
   return backtraceBwtPosition;
 }
+
+
+inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const index,
+ const uint8_t *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range){
+
+  uint8_t indexInKmerString = kmerLength-1;
+  uint8_t queryLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[indexInKmerString]);
+  range->startPtr = index->prefixSums[queryLetterIndex];
+  range->endPtr = index->prefixSums[queryLetterIndex+1] - 1;
+
+  while(indexInKmerString-- != 0 && awFmSearchRangeIsValid(range)){
+    awFmNucleotideIterativeStepBackwardSearch(index, range, kmer[queryLetterIndex]);
+  }
+}
+
+inline void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const index,
+ const uint8_t *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range){
+
+  uint8_t indexInKmerString = kmerLength-1;
+  uint8_t queryLetterIndex = awFmAsciiAminoAcidToLetterIndex(kmer[indexInKmerString]);
+  range->startPtr = index->prefixSums[queryLetterIndex],
+  range->endPtr = index->prefixSums[queryLetterIndex+1] - 1;
+
+  while(indexInKmerString-- != 0 && awFmSearchRangeIsValid(range)){
+    awFmNucleotideIterativeStepBackwardSearch(index, range, kmer[queryLetterIndex]);
+  }
+}

@@ -28,9 +28,6 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   if(metadata == NULL){
     return AwFmNullPtrError;
   }
-  if(metadata->suffixArrayCompressionRatio <= 0){
-    return AwFmFileFormatError;
-  }
 
   //set the index out arg initally to NULL, if this function fully completes this will get overwritten
   *index = NULL;
@@ -102,31 +99,31 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   //create the file
   enum AwFmReturnCode returnCode = awFmWriteIndexToFile(indexData, suffixArray, sequence, sequenceLength,
     fileSrc, allowFileOverwrite);
-    //if suffix array was requested to be kept in memory, realloc it to it's compressed shape
-    if(metadata->keepSuffixArrayInMemory){
-      //if the suffix array is uncompressed, we get to skip the compression and realloc
-      if(metadata->suffixArrayCompressionRatio != 1){
-        compressSuffixArrayInPlace(suffixArray, suffixArrayLength,indexData->metadata.suffixArrayCompressionRatio);
-        uint64_t *compressedSuffixArray = realloc(suffixArray, awFmGetCompressedSuffixArrayLength(indexData) * sizeof(uint64_t));
+  //if suffix array was requested to be kept in memory, realloc it to it's compressed shape
+  if(metadata->keepSuffixArrayInMemory){
+    //if the suffix array is uncompressed, we get to skip the compression and realloc
+    if(metadata->suffixArrayCompressionRatio != 1){
+      compressSuffixArrayInPlace(suffixArray, suffixArrayLength,indexData->metadata.suffixArrayCompressionRatio);
+      uint64_t *compressedSuffixArray = realloc(suffixArray, awFmGetCompressedSuffixArrayLength(indexData) * sizeof(uint64_t));
 
-        //check for allocation failure in the realloc
-        if(compressedSuffixArray == NULL){
-          free(suffixArray);
-          awFmDeallocIndex(indexData);
-          return AwFmAllocationFailure;
-        }
-        suffixArray = compressedSuffixArray;
+      //check for allocation failure in the realloc
+      if(compressedSuffixArray == NULL){
+        free(suffixArray);
+        awFmDeallocIndex(indexData);
+        return AwFmAllocationFailure;
       }
+      suffixArray = compressedSuffixArray;
+    }
 
-      indexData->inMemorySuffixArray = suffixArray;
-    }
-    else{
-      //if the suffix array isn't supposed to be kept in memory, free it to free up memory.
-      indexData->inMemorySuffixArray = NULL;
-      free(suffixArray);
-    }
-    //set the index as an out argument.
-    *index = indexData;
+    indexData->inMemorySuffixArray = suffixArray;
+  }
+  else{
+    //if the suffix array isn't supposed to be kept in memory, free it to free up memory.
+    indexData->inMemorySuffixArray = NULL;
+    free(suffixArray);
+  }
+  //set the index as an out argument.
+  *index = indexData;
 
   return returnCode;
 }
@@ -136,7 +133,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bwtLength,
   const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray){
   if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-    uint64_t baseOccurrences[5] = {0};
+    uint64_t baseOccurrences[6] = {0};
 
     for(uint64_t suffixArrayPosition = 0; suffixArrayPosition < bwtLength; suffixArrayPosition++){
       const size_t  blockIndex      = suffixArrayPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
@@ -148,7 +145,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 
       if(__builtin_expect(positionInBlock == 0, 0)){
         //when we start a new block, copy over the base occurrences, and initialize the bit vectors
-        memcpy(nucleotideBlockPtr->baseOccurrences, baseOccurrences, AW_FM_NUCLEOTIDE_CARDINALITY * sizeof(uint64_t));
+        memcpy(nucleotideBlockPtr->baseOccurrences, baseOccurrences, (AW_FM_NUCLEOTIDE_CARDINALITY + 1) * sizeof(uint64_t));
         memset(nucleotideBlockPtr->letterBitVectors, 0, sizeof(__m256i) * AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW);
       }
 
@@ -159,7 +156,8 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         letterIndex = awFmAsciiNucleotideToLetterIndex(sequence[positionInBwt]);
       }
       else{
-        letterIndex = AW_FM_NUCLEOTIDE_CARDINALITY;
+        //set to the sentinel value if we're looking at the letter before the first character.
+        letterIndex = 0;
       }
         baseOccurrences[letterIndex]++;
 
@@ -170,20 +168,15 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
     }
 
     //set the prefix sums
-    uint64_t tempBaseOccurrence;
-
-    //set the base occurrence to the number of sentinels
-    uint64_t prevBaseOccurrence = baseOccurrences[AW_FM_NUCLEOTIDE_CARDINALITY];
-    for(uint8_t i = 0; i < AW_FM_NUCLEOTIDE_CARDINALITY; i++){
-      tempBaseOccurrence = baseOccurrences[i];
-      baseOccurrences[i] = prevBaseOccurrence;
-      prevBaseOccurrence += tempBaseOccurrence;
+    index->prefixSums[0] = 0;
+    for(uint8_t i = 1; i < AW_FM_NUCLEOTIDE_CARDINALITY + 2; i++){
+      index->prefixSums[i] = baseOccurrences[i-1];
+      baseOccurrences[i] += baseOccurrences[i-1];
     }
-    memcpy(index->prefixSums, baseOccurrences, AW_FM_NUCLEOTIDE_CARDINALITY * sizeof(uint64_t));
-    index->prefixSums[AW_FM_NUCLEOTIDE_CARDINALITY] = index->bwtLength;
+
   }
   else{
-    uint64_t baseOccurrences[21] = {0};
+    uint64_t baseOccurrences[22] = {0};
 
     for(uint64_t suffixArrayPosition = 0; suffixArrayPosition < bwtLength; suffixArrayPosition++){
       const size_t  blockIndex      = suffixArrayPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
@@ -195,7 +188,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 
       if(__builtin_expect(positionInBlock == 0, 0)){
         //when we start a new block, copy over the base occurrences, and initialize the bit vectors
-        memcpy(aminoBlockPointer->baseOccurrences, baseOccurrences, AW_FM_AMINO_CARDINALITY * sizeof(uint64_t));
+        memcpy(aminoBlockPointer->baseOccurrences, baseOccurrences, (AW_FM_AMINO_CARDINALITY + 1) * sizeof(uint64_t));
         memset(aminoBlockPointer->letterBitVectors, 0, sizeof(__m256i) * AW_FM_AMINO_VECTORS_PER_WINDOW);
       }
 
@@ -206,7 +199,8 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         letterIndex = awFmAsciiAminoAcidToLetterIndex(sequence[positionInBwt]);
       }
       else{
-        letterIndex = AW_FM_AMINO_CARDINALITY;
+        //set to the sentinel value if we're looking at the letter before the first character.
+        letterIndex = 0;
       }
         uint8_t letterAsVectorFormat = awFmAminoAcidLetterIndexToCompressedVector(letterIndex);
         baseOccurrences[letterIndex]++;
@@ -219,16 +213,11 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
     }
 
     //set the prefix sums
-    uint64_t tempBaseOccurrence;
-    //set the base occurrence to the number of sentinels
-    uint64_t prevBaseOccurrence = baseOccurrences[AW_FM_AMINO_CARDINALITY];
-    for(uint8_t i = 0; i < awFmGetPrefixSumsLength(index->metadata.alphabetType); i++){
-      tempBaseOccurrence = baseOccurrences[i];
-      baseOccurrences[i] = prevBaseOccurrence;
-      prevBaseOccurrence += tempBaseOccurrence;
+    index->prefixSums[0] = 0;
+    for(uint8_t i = 1; i < AW_FM_AMINO_CARDINALITY + 2; i++){
+      index->prefixSums[i] = baseOccurrences[i-1];
+      baseOccurrences[i] += baseOccurrences[i-1];
     }
-    memcpy(index->prefixSums, baseOccurrences, AW_FM_AMINO_CARDINALITY * sizeof(uint64_t));
-    index->prefixSums[AW_FM_AMINO_CARDINALITY] = index->bwtLength;
   }
 }
 
@@ -237,8 +226,8 @@ void populateKmerSeedTable(struct AwFmIndex *restrict const index){
 
   for(uint8_t i = 0; i < alphabetCardinality; i++){
     struct AwFmSearchRange range = {
-      .startPtr= index->prefixSums[i],
-      .endPtr= (i == (alphabetCardinality-1)? index->bwtLength: index->prefixSums[i+1])-1
+      .startPtr=  index->prefixSums[i],
+      .endPtr=    index->prefixSums[i+1] -1
     };
     populateKmerSeedTableRecursive(index, range, 1, i, alphabetCardinality);
   }
@@ -260,11 +249,13 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
   //recursive case
   for(uint8_t extendedLetter = 0; extendedLetter < alphabetSize; extendedLetter++){
     struct AwFmSearchRange newRange = range;
+    //letter index is different from extended letter since the sentinel is 0, but we will never query for the sentinel.
+    uint8_t letterIndex = extendedLetter + 1;
     if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-      awFmNucleotideIterativeStepBackwardSearch(index, &newRange, extendedLetter);
+      awFmNucleotideIterativeStepBackwardSearch(index, &newRange, letterIndex);
     }
     else{
-      awFmAminoIterativeStepBackwardSearch(index, &newRange, extendedLetter);
+      awFmAminoIterativeStepBackwardSearch(index, &newRange, letterIndex);
     }
 
     uint64_t newKmerIndex = currentKmerIndex + (extendedLetter * letterIndexMultiplier);

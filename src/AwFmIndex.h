@@ -37,12 +37,12 @@ enum AwFmBwtType{
 
 struct AwFmAminoBlock{
   __m256i   letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
-  uint64_t  baseOccurrences[AW_FM_AMINO_CARDINALITY];
+  uint64_t  baseOccurrences[AW_FM_AMINO_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding
 };
 
 struct AwFmNucleotideBlock{
   __m256i   letterBitVectors[AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW];
-  uint64_t  baseOccurrences[AW_FM_NUCLEOTIDE_CARDINALITY];
+  uint64_t  baseOccurrences[AW_FM_NUCLEOTIDE_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding
 };
 
 union AwFmBwtBlockList{

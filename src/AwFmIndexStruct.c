@@ -42,17 +42,9 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
 
   const size_t kmerSeedTableSize = awFmGetKmerTableLength(index);
   //allocate the kmerSeedTable
-  index->kmerSeedTable.table = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
+  index->kmerSeedTable = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
     kmerSeedTableSize * sizeof(struct AwFmSearchRange));
-  if(index->kmerSeedTable.table == NULL){
-    awFmDeallocIndex(index);
-    return NULL;
-  }
-
-  //allocate the sequence ending table
-  index->kmerSeedTable.sequenceEndingKmerEncodings = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
-    (metadata->kmerLengthInSeedTable - 1) * sizeof(uint64_t));
-  if(index->kmerSeedTable.sequenceEndingKmerEncodings == NULL){
+  if(index->kmerSeedTable == NULL){
     awFmDeallocIndex(index);
     return NULL;
   }
@@ -66,8 +58,7 @@ void awFmDeallocIndex(struct AwFmIndex *index){
     fclose(index->fileHandle);
     free(index->bwtBlockList.asNucleotide);
     free(index->prefixSums);
-    free(index->kmerSeedTable.table);
-    free(index->kmerSeedTable.sequenceEndingKmerEncodings);
+    free(index->kmerSeedTable);
     free(index->inMemorySuffixArray);
     free(index);
   }
@@ -111,7 +102,7 @@ size_t awFmNumBlocksFromBwtLength(const size_t suffixArrayLength){
 }
 
 uint8_t awFmGetPrefixSumsLength(const enum AwFmAlphabetType alphabet){
-  return  awFmGetAlphabetCardinality(alphabet) +1;
+  return  awFmGetAlphabetCardinality(alphabet) + 2; //1 for sentinel count, 1 for bwt length
 }
 
 bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode){

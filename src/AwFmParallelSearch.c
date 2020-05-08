@@ -133,10 +133,20 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const 
 
     const uint64_t rangesIndex = kmerIndex - threadBlockStartIndex;
     if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-      ranges[rangesIndex] = awFmNucleotideKmerSeedRangeFromTable(index, kmerString, kmerLength);
+      if(kmerLength < index->metadata.kmerLengthInSeedTable){
+        //TODO: create seed from scratch
+      }
+      else{
+        ranges[rangesIndex] = awFmNucleotideKmerSeedRangeFromTable(index, kmerString, kmerLength);
+      }
     }
     else{
-      ranges[rangesIndex] = awFmAminoKmerSeedRangeFromTable(index, kmerString, kmerLength);
+      if(kmerLength < index->metadata.kmerLengthInSeedTable){
+        //TODO: create seed from scratch
+      }
+      else{
+        ranges[rangesIndex] = awFmAminoKmerSeedRangeFromTable(index, kmerString, kmerLength);
+      }
     }
   }
 }
@@ -193,21 +203,13 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
       uint64_t position = ranges[rangesIndex].startPtr + positionInRangeToBacktrace;
       if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
         while(!awFmBwtPositionIsSampled(index, position)){
-          if(__builtin_expect(position == index->sentinelCharacterPosition, 0)){
-            position = 0;
-          }else{
-            position = awFmNucleotideBacktraceBwtPosition(index, position);
-          }
+          position = awFmNucleotideBacktraceBwtPosition(index, position);
           offset++;
         }
       }
       else{
         while(!awFmBwtPositionIsSampled(index, position)){
-          if(__builtin_expect(position == index->sentinelCharacterPosition, 0)){
-            position = 0;
-          }else{
-            position = awFmAminoBacktraceBwtPosition(index, position);
-          }
+          position = awFmAminoBacktraceBwtPosition(index, position);
           offset++;
         }
       }

@@ -8,7 +8,9 @@ struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(const struct AwFmInd
   const uint8_t kmerSeedStartPosition = kmerLength - index->metadata.kmerLengthInSeedTable;
   uint64_t kmerTableIndex = 0;
   for(int_fast16_t i = kmerSeedStartPosition; i < kmerLength; i++){
-    uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(kmer[i]);
+    //-1 is because lowest letter (a) needs offset of zero but
+    //in the letterIndex, sentinel $=0, a=1, etc.
+    uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(kmer[i]) - 1;
     kmerTableIndex = (kmerTableIndex * AW_FM_NUCLEOTIDE_CARDINALITY) + letterIndex;
   }
 
@@ -22,7 +24,7 @@ struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(const struct AwFmIndex *r
   const uint8_t kmerSeedStartPosition = kmerLength - index->metadata.kmerLengthInSeedTable;
   uint64_t kmerTableIndex = 0;
   for(int_fast16_t i = kmerSeedStartPosition; i < kmerLength; i++){
-    kmerTableIndex = (kmerTableIndex * AW_FM_AMINO_CARDINALITY) + awFmAsciiAminoAcidToLetterIndex(kmer[i]);
+    kmerTableIndex = (kmerTableIndex * AW_FM_AMINO_CARDINALITY) + (awFmAsciiAminoAcidToLetterIndex(kmer[i]) - 1);
   }
 
   return index->kmerSeedTable[kmerTableIndex];

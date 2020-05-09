@@ -1,2 +1,6 @@
-letterTest: AwFmLetterTest.c ../../AwFmLetter.c ../../AwFmLetter.h  ../test.h
-	gcc AwFmLetterTest.c ../../AwFmLetter.c   -o letterTest -std=c11 -Wall -march=native -O3
+TEST_SRC	= AwFmLetterTest.c
+SRC 			= $(wildcard ../../src/*.c)
+CFLAGS 	= -std=c11 -Wall -mtune=native -g -fopenmp -ldivsufsort64 -mavx2 -I../../libdivsufsort/build/include
+EXE 		= lettertest.out
+bwtTest: $(SRC)
+	gcc $(TEST_SRC) $(SRC) -o $(EXE) $(CFLAGS)

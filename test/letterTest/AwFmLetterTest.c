@@ -1,4 +1,5 @@
-#include "../../AwFmLetter.h"
+#include "../../src/AwFmIndexStruct.h"
+#include "../../src/AwFmLetter.h"
 #include "../test.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,165 +11,307 @@
 #include <ctype.h>
 
 
-struct ambiguityCode{
-  char code;
-  char *possibleChars;
-};
-
-const uint8_t numEncodingAminos = 20;
-uint8_t encodingAminos[21] = {'a','c','d','e','f',
-                              'g','h','i','k','l',
-                              'm','n','p','q','r',
-                              's','t','v','w','y',0};
-
-uint8_t encodingAminosUpperCase[21] = {'A','C','D','E','F',
-                              'G','H','I','K','L',
-                              'M','N','P','Q','R',
-                              'S','T','V','W','Y',0};
-
 
 char buffer[2048];
 
 void testNucleotideAscii(){
-  testAssert(awFmAsciiNucleotideToLetterIndex('a') == 0);
-  testAssert(awFmAsciiNucleotideToLetterIndex('A') == 0);
-  testAssert(awFmAsciiNucleotideToLetterIndex('c') == 1);
-  testAssert(awFmAsciiNucleotideToLetterIndex('C') == 1);
-  testAssert(awFmAsciiNucleotideToLetterIndex('g') == 2);
-  testAssert(awFmAsciiNucleotideToLetterIndex('G') == 2);
-  testAssert(awFmAsciiNucleotideToLetterIndex('t') == 3);
-  testAssert(awFmAsciiNucleotideToLetterIndex('T') == 3);
-
-
-  testAssert(awFmNucleotideLetterIndexToAscii(0) == 'A');
-  testAssert(awFmNucleotideLetterIndexToAscii(1) == 'C');
-  testAssert(awFmNucleotideLetterIndexToAscii(2) == 'G');
-  testAssert(awFmNucleotideLetterIndexToAscii(3) == 'T');
-}
-
-
-void testNucleotideAmbiguityCodes(){
-
-
-  struct ambiguityCode codes[32] = {
-    {'a', "A"},
-    {'A', "A"},
-    {'c', "C"},
-    {'C', "C"},
-    {'g', "G"},
-    {'G', "G"},
-    {'t', "T"},
-    {'T', "T"},
-    {'y', "CT"},
-    {'Y', "CT"},
-    {'r', "AG"},
-    {'R', "AG"},
-    {'w', "AT"},
-    {'W', "AT"},
-    {'s', "GC"},
-    {'S', "GC"},
-    {'k', "TG"},
-    {'K', "TG"},
-    {'m', "CA"},
-    {'M', "CA"},
-    {'d', "AGT"},
-    {'D', "AGT"},
-    {'v', "AGC"},
-    {'V', "AGC"},
-    {'h', "ACT"},
-    {'H', "ACT"},
-    {'b', "CGT"},
-    {'B', "CGT"},
-    {'x', "ACGT"},
-    {'X', "ACGT"},
-    {'n', "ACGT"},
-    {'N', "ACGT"},
-};
-
-  for(uint8_t i = 0; i < 32; i++){
-    for(uint8_t testNum = 0; testNum < 100; testNum++){
-      uint8_t index = awFmAsciiNucleotideToLetterIndex(codes[i].code);
-      char letterOut = awFmNucleotideLetterIndexToAscii(index);
-      char charBuf[2] = {0,0};
-      charBuf[0] = letterOut;
-      sprintf(buffer, "test fail, %s not found in possible chars %s\n", charBuf, codes[i].possibleChars);
-      testAssertString(strchr(codes[i].possibleChars, letterOut) != NULL, buffer);
+  for(char c = 'a'; c <= 'z'; c++){
+    switch(c){
+      case 'a':
+        testAssert(awFmAsciiNucleotideToLetterIndex(
+          awFmAsciiNucleotideLetterSanitize(c)) == 1);
+        testAssert(awFmAsciiNucleotideToLetterIndex(
+          awFmAsciiNucleotideLetterSanitize(toupper(c))) == 1);
+        break;
+      case 'c':
+        testAssert(awFmAsciiNucleotideToLetterIndex(
+          awFmAsciiNucleotideLetterSanitize(c)) == 2);
+        testAssert(awFmAsciiNucleotideToLetterIndex(
+          awFmAsciiNucleotideLetterSanitize(toupper(c))) == 2);
+        break;
+      case 'g':
+        testAssert(awFmAsciiNucleotideToLetterIndex(
+          awFmAsciiNucleotideLetterSanitize(c)) == 3);
+        testAssert(awFmAsciiNucleotideToLetterIndex(
+          awFmAsciiNucleotideLetterSanitize(toupper(c))) == 3);
+        break;
+      case 't':
+        testAssert(awFmAsciiNucleotideToLetterIndex(
+          awFmAsciiNucleotideLetterSanitize(c)) == 4);
+        testAssert(awFmAsciiNucleotideToLetterIndex(
+          awFmAsciiNucleotideLetterSanitize(toupper(c))) == 4);
+        break;
+      default:
+        testAssert(awFmAsciiNucleotideToLetterIndex(
+          awFmAsciiNucleotideLetterSanitize(c)) == 0);
+        testAssert(awFmAsciiNucleotideToLetterIndex(
+          awFmAsciiNucleotideLetterSanitize(toupper(c))) == 0);
     }
   }
 }
 
 
 void testAminoIndex(){
-  for(uint8_t i = 0; i < 20; i++){
-    char amino = encodingAminos[i];
-    char upperCaseAmino = toupper(amino);
-    uint8_t index = awFmAsciiAminoAcidToLetterIndex(amino);
-    uint8_t upperIndex = awFmAsciiAminoAcidToLetterIndex(upperCaseAmino);
-    sprintf(buffer, "test fail, amino %c expected to generate %d, but generated %d", amino, i, index);
-    testAssertString(index == i, buffer);
-    sprintf(buffer, "test fail, amino %c expected to generate %d, but generated %d", upperCaseAmino, i, upperIndex);
-    testAssertString(index == i, buffer);
-  }
-}
-
-void testAminoAmbiguityCodes(){
-  struct ambiguityCode codes[6] = {
-    {'b', "DN"},
-    {'B', "DN"},
-    {'z', "EQ"},
-    {'Z', "EQ"},
-    {'x', (char*)encodingAminosUpperCase},
-    {'X', (char*)encodingAminosUpperCase}
-  };
-
-  for(uint8_t i = 0; i < 6; i++){
-    for(uint8_t testNum = 0; testNum < 100; testNum++){
-      uint8_t index = awFmAsciiAminoAcidToLetterIndex(codes[i].code);
-      char letterOut = awFmAminoAcidLetterIndexToAscii(index);
-      char charBuf[2] = {0,0};
-      charBuf[0] = letterOut;
-      sprintf(buffer, "test fail, %s not found in possible chars %s\n", charBuf, codes[i].possibleChars);
-      testAssertString(strchr(codes[i].possibleChars, letterOut) != NULL, buffer);
+  for(char c = 'a'; c <= 'z'; c++){
+    switch(c){
+      case 'a':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 1);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 1);
+        break;
+      case 'c':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 2);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 2);
+        break;
+      case 'd':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 3);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 3);
+        break;
+      case 'e':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 4);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 4);
+        break;
+      case 'f':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 5);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 5);
+        break;
+      case 'g':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 6);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 6);
+        break;
+      case 'h':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 7);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 7);
+        break;
+      case 'i':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 8);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 8);
+        break;
+      case 'k':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 9);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 9);
+        break;
+      case 'l':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 10);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 10);
+        break;
+      case 'm':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 11);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 11);
+        break;
+      case 'n':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 12);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 12);
+        break;
+      case 'p':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 13);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 13);
+        break;
+      case 'q':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 14);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 14);
+        break;
+      case 'r':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 15);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 15);
+        break;
+      case 's':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 16);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 16);
+        break;
+      case 't':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 17);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 17);
+        break;
+      case 'v':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 18);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 18);
+        break;
+      case 'w':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 19);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 19);
+        break;
+      case 'y':
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 20);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 20);
+        break;
+      default:
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(c)) == 0);
+        testAssert(awFmAsciiAminoLetterSanitize(
+          awFmAsciiAminoAcidToLetterIndex(toupper(c))) == 0);
     }
   }
 }
 
 void testCompressedAminos(){
-
-  const uint8_t compressedEncodings[20] = {
-    0x0C, 0x17, 0x03, 0x06, 0x1E, 0x1A, 0x1B, 0x19,
-    0x15, 0x1C, 0x1D, 0x08, 0x09, 0x04, 0x13, 0x0A,
-    0x05, 0x16, 0x01, 0x02};
-
-  for(uint8_t i = 0; i < 20; i++){
-    uint8_t asAscii = encodingAminos[i];
-    uint8_t asAsciiUpper = encodingAminosUpperCase[i];
-
-    uint8_t encoding = awFmAminoAcidAsciiLetterToCompressedVectorFormat(asAscii);
-    uint8_t encodingUpper = awFmAminoAcidAsciiLetterToCompressedVectorFormat(asAsciiUpper);
-
-    char charBuf[2] = {0,0};
-    charBuf[0] = asAscii;
-    sprintf(buffer, "test fail, lower case ascii %s should generate encoding 0x%.2X but generated 0x%.8X.\n",
-      charBuf, compressedEncodings[i], encoding);
-    testAssertString(compressedEncodings[i] == encoding, buffer);
-
-    charBuf[0] = asAsciiUpper;
-    sprintf(buffer, "test fail, upper case ascii %s should generate encoding 0x%.2X but generated 0x%.8X.\n",
-      charBuf, compressedEncodings[i], encodingUpper);
-    testAssertString(compressedEncodings[i] == encodingUpper, buffer);
-
-    uint8_t backToIndex = awFmAminoAcidCompressedVectorToLetterIndex(encoding);
-    sprintf(buffer, "test fail, encoding 0x%.2X for letter index %d generated incorrect index %d.\n",
-      encodingUpper, i, backToIndex);
-    testAssertString(backToIndex == i, buffer);
-
-
-    uint8_t backToAscii = awFmAminoAcidCompressedVectorToAscii(encoding);
-    sprintf(buffer, "test fail, encoding 0x%.2X for letter index %d created character %c instead of expected %c.\n",
-      encodingUpper, i, asAsciiUpper, toupper(backToAscii));
-    testAssertString(toupper(backToAscii) == asAsciiUpper, buffer);
-
+  for(char c = 'a'; c <= 'z'; c++){
+    switch(c){
+      case 'a':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 1);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 1);
+        break;
+      case 'c':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 2);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 2);
+        break;
+      case 'd':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 3);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 3);
+        break;
+      case 'e':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 4);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 4);
+        break;
+      case 'f':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 5);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 5);
+        break;
+      case 'g':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 6);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 6);
+        break;
+      case 'h':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 7);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 7);
+        break;
+      case 'i':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 8);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 8);
+        break;
+      case 'k':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 9);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 9);
+        break;
+      case 'l':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 10);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 10);
+        break;
+      case 'm':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 11);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 11);
+        break;
+      case 'n':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 12);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 12);
+        break;
+      case 'p':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 13);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 13);
+        break;
+      case 'q':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 14);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 14);
+        break;
+      case 'r':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 15);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 15);
+        break;
+      case 's':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 16);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 16);
+        break;
+      case 't':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 17);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 17);
+        break;
+      case 'v':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 18);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 18);
+        break;
+      case 'w':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 19);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 19);
+        break;
+      case 'y':
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 20);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 20);
+        break;
+      default:
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(c)) == 0);
+        testAssert(awFmAsciiAminoAcidToLetterIndex(
+          awFmAsciiAminoLetterSanitize(toupper(c))) == 0);
+    }
   }
 }
 
@@ -177,12 +320,8 @@ void testCompressedAminos(){
 int main(int argc, char **argv){
   srand(time(NULL));
   testNucleotideAscii();
-  testNucleotideAmbiguityCodes();
   testAminoIndex();
-  testAminoAmbiguityCodes();
   testCompressedAminos();
   printf("letter tests finished\n");
-
-
 
 }

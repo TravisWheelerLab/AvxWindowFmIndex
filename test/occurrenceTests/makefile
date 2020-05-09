@@ -1,5 +1,6 @@
-SRC    	= occurrenceTests.c ../../AwFmBacktraceVector.c ../../AwFmCreate.c ../../AwFmFile.c ../../AwFmIndex.c ../../AwFmKmerTable.c ../../AwFmLetter.c ../../AwFmOccurrence.c ../../AwFmParallelSearch.c ../../AwFmSearch.c
-CFLAGS 	= -std=c11 -Wall -mtune=native -O0 -fopenmp -ldivsufsort64 -mavx2
-EXE 		= occurrenceTest.out
-letterTest: $(SRC)
-	gcc $(SRC) -o $(EXE) $(CFLAGS)
+TEST_SRC	= occurrenceTests.c
+SRC 			= $(wildcard ../../src/*.c)
+CFLAGS 	= -std=c11 -Wall -mtune=native -g -fopenmp -ldivsufsort64 -mavx2 -I../../libdivsufsort/build/include
+EXE 		= occurrenceTests.out
+bwtTest: $(SRC)
+	gcc $(TEST_SRC) $(SRC) -o $(EXE) $(CFLAGS)

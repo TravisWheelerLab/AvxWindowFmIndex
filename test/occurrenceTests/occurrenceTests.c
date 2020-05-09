@@ -1,5 +1,10 @@
-#include "../../AwFmIndex.h"
-#include "../../AwFmOccurrence.h"
+#include "../../src/AwFmIndexStruct.h"
+#include "../../src/AwFmIndex.h"
+#include "../../src/AwFmOccurrence.h"
+#include "../../src/AwFmCreate.h"
+#include "../../src/AwFmSearch.h"
+#include "../../src/AwFmKmerTable.h"
+#include "../../src/AwFmLetter.h"
 #include "../test.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,16 +12,15 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <time.h>
+#include "divsufsort64.h"
 
 void popcountTestSuite(void);
 
 char buffer[2048];
 
 int main(int argc, char **argv){
-  srand(time(NULL));
+  srand(1101);
   popcountTestSuite();
-
-
   printf("occurrence function testing finished.\n");
 }
 
@@ -47,35 +51,35 @@ void popcountTestSuite(void){
 
   //test all 0s
   __m256i vector = vector = _mm256_set1_epi8(0x00);
-  uint16_t popcount = awFmVectorPopcount(vector);
+  uint16_t popcount = awFmVectorPopcount(vector, 255);
   sprintf(buffer, "vector popcount of all zeros should be zero, returned %d.", popcount);
   testAssertString(popcount == 0, buffer);
 
   //test all 1s
   setVectorBytes(vectorBytes, 0xFF);
   vector = _mm256_set1_epi8(0xff);
-  popcount = awFmVectorPopcount(vector);
+  popcount = awFmVectorPopcount(vector, 255);
   sprintf(buffer, "vector popcount of all zeros should be all ones (256), returned %d.", popcount);
   testAssertString(popcount == 256, buffer);
 
   //test all 0x7fs
   setVectorBytes(vectorBytes, 0x7f);
   vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-  popcount = awFmVectorPopcount(vector);
+  popcount = awFmVectorPopcount(vector,255);
   sprintf(buffer, "vector popcount of all 0x7f should be (224), returned %d.", popcount);
   testAssertString(popcount == 224, buffer);
 
   //test all 0xf7
   setVectorBytes(vectorBytes, 0xf7);
   vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-  popcount = awFmVectorPopcount(vector);
+  popcount = awFmVectorPopcount(vector,255);
   sprintf(buffer, "vector popcount of all 0xf7 should be (224), returned %d.", popcount);
   testAssertString(popcount == 224, buffer);
 
   //test all 77s
   setVectorBytes(vectorBytes, 0x77);
   vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-  popcount = awFmVectorPopcount(vector);
+  popcount = awFmVectorPopcount(vector,255);
   sprintf(buffer, "vector popcount of all 0x77 should be (192), returned %d.", popcount);
   testAssertString(popcount == 192, buffer);
 
@@ -84,14 +88,14 @@ void popcountTestSuite(void){
 //test all 77s
 setVectorBytes(vectorBytes, 0x0f);
 vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-popcount = awFmVectorPopcount(vector);
+popcount = awFmVectorPopcount(vector, 255);
 sprintf(buffer, "vector popcount of all 0x0f should be (128), returned %d.", popcount);
 testAssertString(popcount == 128, buffer);
 
 //test all 77s
 setVectorBytes(vectorBytes, 0xf0);
 vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-popcount = awFmVectorPopcount(vector);
+popcount = awFmVectorPopcount(vector, 255);
 sprintf(buffer, "vector popcount of all 0x0f should be (128), returned %d.", popcount);
 testAssertString(popcount == 128, buffer);
 
@@ -100,7 +104,7 @@ testAssertString(popcount == 128, buffer);
   for(uint16_t testNum = 0; testNum < numRandTests; testNum++){
     uint16_t bitsSet = setVectorRandBits(vectorBytes);
     vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-    popcount = awFmVectorPopcount(vector);
+    popcount = awFmVectorPopcount(vector, 255);
     sprintf(buffer, "vector popcount of all zeros should be %d, returned %d.", bitsSet, popcount);
     testAssertString(popcount == bitsSet, buffer);
   }
@@ -108,4 +112,23 @@ testAssertString(popcount == 128, buffer);
   size_t timeTaken = endTime - startTime;
   printf("time: %zu\n", timeTaken);
 
+}
+
+
+void randomizeSequenceBlock(char *sequence){
+  const char *nucleotides = "AGCT";
+  for(size_t i = 0; i < 256; i++){
+    sequence[i] = nucleotides[rand()%4];
+  }
+}
+
+void setBlockFromSequence(char *sequence, struct AwFmNucleotideBlock *block){
+  uint8_t *lettersBytes = (uint8_t*)block->letterBitVectors;
+  for(size_t i = 0; i < 256; i++){
+    uint8_t byte = i / 8;
+    uint8_t bitInByte = i%8;
+    uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(sequence[i]);
+    lettersBytes[byte] |= (letterIndex & 1) << bitInByte;
+    lettersBytes[byte + 32] |= ((letterIndex>>1) & 1) << bitInByte;
+  }
 }

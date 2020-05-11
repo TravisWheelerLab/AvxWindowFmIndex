@@ -163,13 +163,11 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         letterIndex = 0;
       }
         baseOccurrences[letterIndex]++;
-
-        letterBitVectorBytes[byteInVector]      = letterBitVectorBytes[byteInVector] | (((letterIndex >> 0) & 0x1) << bitInVectorByte);
+        letterBitVectorBytes[byteInVector]      = letterBitVectorBytes[byteInVector] | ((letterIndex & 0x1) << bitInVectorByte);
         letterBitVectorBytes[byteInVector + 32] = letterBitVectorBytes[byteInVector+ 32] | (((letterIndex >> 1) & 0x1) << bitInVectorByte);
-        //for the last bit, flip the bit so all nucleotides have a 1, and sentinels have a zero.
-        letterBitVectorBytes[byteInVector + 64] = letterBitVectorBytes[byteInVector+64] | (((letterIndex >>2) ^ 1) & 0x01) << bitInVectorByte;
-    }
+        letterBitVectorBytes[byteInVector + 64] = letterBitVectorBytes[byteInVector+64] | ((letterIndex >>2) & 0x01) << bitInVectorByte;
 
+    }
     //set the prefix sums
     index->prefixSums[0] = 0;
     for(uint8_t i = 1; i < AW_FM_NUCLEOTIDE_CARDINALITY + 2; i++){

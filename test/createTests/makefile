@@ -1,2 +1,6 @@
-AwFmCreation: ../../AwFmApi.c ../../AwFmApi.h ../../AwFmCreate.c ../../AwFmCreate.h ../../AwFmFile.c ../../AwFmFile.h ../../AwFmGlobals.h ../../AwFmIndex.c ../../AwFmIndex.h ../../AwFmLetter.c ../../AwFmLetter.h ../../AwFmOccupancy.c ../../AwFmOccupancy.h ../../AwFmSearch.c ../../AwFmSearch.h AwFmCreationTest.c
-	gcc  AwFmCreationTest.c ../../AwFmCreate.c ../../AwFmIndex.c ../../AwFmLetter.c ../../AwFmOccupancy.c  -o creationTest -std=c11 -Wall -march=native -O3 -ldivsufsort64
+TEST_SRC	= AwFmCreationTest.c
+SRC 			= $(wildcard ../../src/*.c)
+CFLAGS 	= -std=c11 -Wall -mtune=native -g -fopenmp -ldivsufsort64 -mavx2
+EXE 		= createTest.out
+bwtTest: $(SRC)
+	gcc $(TEST_SRC) $(SRC) -o $(EXE) $(CFLAGS)

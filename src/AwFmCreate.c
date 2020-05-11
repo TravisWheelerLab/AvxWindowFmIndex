@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "divsufsort64.h"
+#include <assert.h>
 
 void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t sequenceLength,
   const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray);
@@ -133,7 +134,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bwtLength,
   const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray){
   if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-    uint64_t baseOccurrences[6] = {0};
+    uint64_t baseOccurrences[8] = {0};
 
     for(uint64_t suffixArrayPosition = 0; suffixArrayPosition < bwtLength; suffixArrayPosition++){
       const size_t  blockIndex      = suffixArrayPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
@@ -145,7 +146,9 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 
       if(__builtin_expect(positionInBlock == 0, 0)){
         //when we start a new block, copy over the base occurrences, and initialize the bit vectors
-        memcpy(nucleotideBlockPtr->baseOccurrences, baseOccurrences, (AW_FM_NUCLEOTIDE_CARDINALITY + 1) * sizeof(uint64_t));
+        //while we only use 5 elements, copy over all 8 (to preserve padding and so valgrind
+        //doesn't complain about invalid writes)
+        memcpy(nucleotideBlockPtr->baseOccurrences, baseOccurrences, 8 * sizeof(uint64_t));
         memset(nucleotideBlockPtr->letterBitVectors, 0, sizeof(__m256i) * AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW);
       }
 
@@ -176,7 +179,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 
   }
   else{
-    uint64_t baseOccurrences[22] = {0};
+    uint64_t baseOccurrences[24] = {0};
 
     for(uint64_t suffixArrayPosition = 0; suffixArrayPosition < bwtLength; suffixArrayPosition++){
       const size_t  blockIndex      = suffixArrayPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
@@ -188,7 +191,9 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 
       if(__builtin_expect(positionInBlock == 0, 0)){
         //when we start a new block, copy over the base occurrences, and initialize the bit vectors
-        memcpy(aminoBlockPointer->baseOccurrences, baseOccurrences, (AW_FM_AMINO_CARDINALITY + 1) * sizeof(uint64_t));
+        //while we only use 21 elements, copy over all 24 (to preserve padding and so valgrind
+        //doesn't complain about invalid writes)
+        memcpy(aminoBlockPointer->baseOccurrences, baseOccurrences, 24 * sizeof(uint64_t));
         memset(aminoBlockPointer->letterBitVectors, 0, sizeof(__m256i) * AW_FM_AMINO_VECTORS_PER_WINDOW);
       }
 
@@ -223,11 +228,10 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 
 void populateKmerSeedTable(struct AwFmIndex *restrict const index){
   const uint8_t alphabetCardinality = awFmGetAlphabetCardinality(index->metadata.alphabetType);
-
   for(uint8_t i = 0; i < alphabetCardinality; i++){
     struct AwFmSearchRange range = {
-      .startPtr=  index->prefixSums[i],
-      .endPtr=    index->prefixSums[i+1] -1
+      .startPtr=  index->prefixSums[i+1],
+      .endPtr=    index->prefixSums[i+2] -1
     };
     populateKmerSeedTableRecursive(index, range, 1, i, alphabetCardinality);
   }
@@ -242,6 +246,7 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
 
   //base case
   if(kmerLength == currentKmerLength){
+  // printf("kmer recursion write index %zu, [%zu,%zu]\n", currentKmerIndex, range.startPtr, range.endPtr);
     index->kmerSeedTable[currentKmerIndex] = range;
     return;
   }
@@ -256,13 +261,15 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
     }
     else{
       awFmAminoIterativeStepBackwardSearch(index, &newRange, letterIndex);
+
+      assert(range.startPtr != ~0ULL);
+      assert(range.endPtr != ~0ULL);
     }
 
     uint64_t newKmerIndex = currentKmerIndex + (extendedLetter * letterIndexMultiplier);
     populateKmerSeedTableRecursive(index, newRange, currentKmerLength + 1, newKmerIndex, letterIndexMultiplier * alphabetSize);
   }
 }
-
 
 //copies the compressed suffix array over the full suffix array.
 void compressSuffixArrayInPlace(uint64_t *const suffixArray, uint64_t suffixArrayLength, const uint8_t compressionRatio){

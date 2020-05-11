@@ -104,8 +104,12 @@ __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict 
     return _mm256_andnot_si256(_mm256_or_si256(bit3Vector, bit2Vector), _mm256_andnot_si256(bit1Vector, bit0Vector));
     case 20:  /*Y (Tyrosine) encoding 0b00010*/
       return _mm256_andnot_si256(_mm256_or_si256(bit0Vector, bit2Vector), _mm256_andnot_si256(bit3Vector, bit1Vector));
-    case 0:   //sentinel seperator 0b10000 (this is last so BTB doesn't predict it)
-      return _mm256_andnot_si256(_mm256_or_si256(bit0Vector, bit1Vector), _mm256_andnot_si256(_mm256_or_si256(bit2Vector, bit3Vector), bit4Vector));
+    case 0:   //sentinel seperator 0b00000 (this is last so BTB doesn't predict it)
+      return _mm256_andnot_si256(
+        _mm256_or_si256(
+          _mm256_or_si256(bit4Vector, bit3Vector), _mm256_or_si256(bit2Vector, bit1Vector)
+        ), _mm256_andnot_si256(bit0Vector, _mm256_set1_epi8(0xFF)));
+
     default: __builtin_unreachable();   //GCC respects this, doesn't check for letters that aren't valid
   }
 }

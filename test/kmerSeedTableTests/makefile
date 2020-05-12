@@ -1,5 +1,6 @@
-SRC    	= kmerSeedTableTests.c ../../AwFmBacktraceVector.c ../../AwFmCreate.c ../../AwFmFile.c ../../AwFmIndex.c ../../AwFmKmerTable.c ../../AwFmLetter.c ../../AwFmOccurrence.c ../../AwFmParallelSearch.c ../../AwFmSearch.c
-CFLAGS 	= -std=c11 -Wall -mtune=native -O3 -fopenmp -ldivsufsort64 -mavx2
+TEST_SRC	= kmerSeedTableTests.c
+SRC 			= $(wildcard ../../src/*.c)
+CFLAGS 	= -std=c11 -Wall -mtune=native -g -fopenmp -ldivsufsort64 -mavx2 -I../../libdivsufsort/build/include
 EXE 		= kmerTableTests.out
-letterTest: $(SRC)
-	gcc $(SRC) -o $(EXE) $(CFLAGS)
+bwtTest: $(SRC)
+	gcc $(TEST_SRC) $(SRC) -o $(EXE) $(CFLAGS)

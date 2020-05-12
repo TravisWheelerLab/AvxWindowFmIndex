@@ -89,7 +89,7 @@ void testNucletotideBwtGeneration(void){
     // printf("\n");
 
     struct AwFmIndex *index;
-    struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio=240, .kmerLengthInSeedTable=2, .alphabetType = AwFmAlphabetNucleotide};
+    struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio=240, .kmerLengthInSeedTable=2, .alphabetType = AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=false};
     awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
 
     for(size_t i = 0; i <= sequenceLength; i++){
@@ -172,7 +172,7 @@ void testAminoBwtGeneration(void){
     // printf("\n");
 
     struct AwFmIndex *index;
-    struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio=240, .kmerLengthInSeedTable=4, .alphabetType = AwFmAlphabetAmino};
+    struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio=240, .kmerLengthInSeedTable=4, .alphabetType = AwFmAlphabetAmino, .keepSuffixArrayInMemory=false};
     awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
 
 

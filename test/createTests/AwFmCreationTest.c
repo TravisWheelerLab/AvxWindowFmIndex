@@ -109,6 +109,7 @@ struct AwFmIndex *testCreateNucleotideIndex(const uint8_t *sequence, const size_
   metadata.suffixArrayCompressionRatio = 1;
   metadata.kmerLengthInSeedTable = 4;
   metadata.alphabetType = AwFmAlphabetNucleotide;
+  metadata.keepSuffixArrayInMemory=false;
 
   struct AwFmIndex *restrict index;
   enum AwFmReturnCode returnCode = awFmCreateIndex(&index, &metadata, sequence, sequenceLength, fileSrc, true);
@@ -216,7 +217,7 @@ void testCreateAminoIndex(void){
 
 
   struct AwFmIndexMetadata metadata = {.versionNumber = 1, .suffixArrayCompressionRatio = 100,
-    .kmerLengthInSeedTable = 3, .alphabetType = AwFmAlphabetAmino};
+    .kmerLengthInSeedTable = 3, .alphabetType = AwFmAlphabetAmino, .keepSuffixArrayInMemory=false};
   struct AwFmIndex *index;
   awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
 

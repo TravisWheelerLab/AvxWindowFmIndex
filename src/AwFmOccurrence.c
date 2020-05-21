@@ -30,7 +30,7 @@ __m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *res
     case 4://Nucletoide T 0b100
       return  bit2Vector;
     case 0: //sentinel seperator 0b000 (this is last so BTB doesn't predict it)
-      return _mm256_andnot_si256(_mm256_or_si256(bit2Vector, bit1Vector), _mm256_andnot_si256(bit0Vector, _mm256_set1_epi8(0xff) ));
+      return _mm256_andnot_si256(_mm256_or_si256(bit2Vector, bit1Vector), _mm256_andnot_si256(bit0Vector, _mm256_set1_epi8(0xff)));
     default:
     __builtin_unreachable();
   }
@@ -225,7 +225,8 @@ uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *b
 
   const uint8_t *restrict const letterBytePointer = &((uint8_t*) &blockPtr->letterBitVectors)[byteInBlock];
   return  ((letterBytePointer[0]  >> bitInBlockByte) & 1) |
-          ((letterBytePointer[32] >> bitInBlockByte) & 1) << 1;
+          ((letterBytePointer[32] >> bitInBlockByte) & 1) << 1 |
+          ((letterBytePointer[64] >> bitInBlockByte) & 1) << 2;
   }
 
 /*

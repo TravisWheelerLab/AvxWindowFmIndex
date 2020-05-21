@@ -15,7 +15,6 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
 
   //before needing the bit vectors, we can figure out if they sentinel character will be added.
   uint64_t newStartPointer = letterPrefixSum;
-
   uint64_t baseOccurrence = index->bwtBlockList.asNucleotide[blockIndex].baseOccurrences[letter];
   __m256i occurrenceVector = awFmMakeNucleotideOccurrenceVector(&(index->bwtBlockList.asNucleotide[blockIndex]),
     letter);
@@ -67,7 +66,6 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
 
   uint64_t blockIndex             = awFmGetBlockIndexFromGlobalPosition(queryPosition);
   uint8_t localQueryPosition      = awFmGetBlockQueryPositionFromGlobalPosition(queryPosition);
-
   uint64_t baseOccurrence         = index->bwtBlockList.asAmino[blockIndex].baseOccurrences[letter];
   __m256i occurrenceVector        = awFmMakeAminoAcidOccurrenceVector(&(index->bwtBlockList.asAmino[blockIndex]), letter);
   uint_fast8_t  vectorPopcount    = awFmVectorPopcount(occurrenceVector, localQueryPosition);
@@ -231,9 +229,11 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
 }
 
 
+//This function is deprecated, and will throw an assert failure.
 struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint16_t kmerLength){
     //todo: use kmer lookup table
+    printf("awFmDatabaseSingleKmerExactMatch is deprecated");
     assert(false);  //todo: implement
 
   uint_fast16_t kmerQueryPosition = kmerLength - 1;

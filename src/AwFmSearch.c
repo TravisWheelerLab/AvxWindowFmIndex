@@ -229,43 +229,44 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
 }
 
 
-//This function is deprecated, and will throw an assert failure.
 struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint16_t kmerLength){
-    //todo: use kmer lookup table
-    printf("awFmDatabaseSingleKmerExactMatch is deprecated");
-    assert(false);  //todo: implement
 
-  uint_fast16_t kmerQueryPosition = kmerLength - 1;
-
-  //set the initial range from the prefixSums
-  const uint8_t firstSuffixLetter = kmer[kmerQueryPosition];
-  struct AwFmSearchRange searchRange = {index->prefixSums[firstSuffixLetter], index->prefixSums[firstSuffixLetter + 1] - 1};
-
-  const uint_fast16_t blockWidth = (index->metadata.alphabetType == AwFmAlphabetNucleotide)?
-    sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
-
-  //request the data be prefetched for each occurance call.
-  awFmBlockPrefetch((uint8_t*)index->bwtBlockList.asAmino, blockWidth, searchRange.startPtr - 1);
-  awFmBlockPrefetch((uint8_t*)index->bwtBlockList.asAmino, blockWidth, searchRange.endPtr);
+  int8_t kmerLetterPosition = kmerLength-1;
+  uint16_t bwtBlockWidth;
+  uint8_t kmerLetterIndex;
 
   if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-    while(__builtin_expect(awFmSearchRangeIsValid(&searchRange) && kmerQueryPosition, 1)){
-      kmerQueryPosition--;
-      const uint8_t letter = kmer[kmerQueryPosition];
-      awFmNucleotideIterativeStepBackwardSearch(index, &searchRange, letter);
-    }
+    bwtBlockWidth = sizeof(struct AwFmNucleotideBlock);
+    kmerLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[kmerLetterPosition]);
   }
   else{
-    while(__builtin_expect(awFmSearchRangeIsValid(&searchRange) && kmerQueryPosition, 1)){
-      kmerQueryPosition--;
-      const uint8_t letter = kmer[kmerQueryPosition];
-      awFmAminoIterativeStepBackwardSearch(index, &searchRange, letter);
+    bwtBlockWidth = sizeof(struct AwFmAminoBlock);
+    kmerLetterIndex = awFmAsciiAminoAcidToLetterIndex(kmer[kmerLetterPosition]);
+  }
+
+  //create the inital range from the first suffix letter.
+  struct AwFmSearchRange range = {.startPtr=index->prefixSums[kmerLetterIndex],
+                                  .endPtr=index->prefixSums[kmerLetterIndex+1]-1};
+
+  //start by prefetching the endptr
+  awFmBlockPrefetch(index->bwtBlockList.asNucleotide, bwtBlockWidth, range.endPtr);
+  if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+    while(__builtin_expect(awFmSearchRangeIsValid(&range) && (kmerLetterPosition--), 1)){
+        kmerLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[kmerLetterPosition]);
+        awFmNucleotideIterativeStepBackwardSearch(index, &range, kmerLetterIndex);
+      }
+    }
+  else{
+    while(__builtin_expect(awFmSearchRangeIsValid(&range) && (kmerLetterPosition--), 1)){
+      kmerLetterIndex = awFmAsciiAminoAcidToLetterIndex(kmer[kmerLetterPosition]);
+      awFmAminoIterativeStepBackwardSearch(index, &range, kmerLetterIndex);
     }
   }
 
-  return searchRange;
+  return range;
 }
+
 
 
 bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const char *restrict const kmer,

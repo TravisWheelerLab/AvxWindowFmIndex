@@ -177,26 +177,5 @@ void testRangeForCorrectness(const struct AwFmSearchRange *range, const uint8_t 
 
 struct AwFmSearchRange findRangeForKmer(const struct AwFmIndex *restrict const index,
   const char *kmer, const uint64_t kmerLength){
-
-  char firstSuffixLetter = kmer[kmerLength-1];
-  uint8_t firstSuffixLetterIndex = index->metadata.alphabetType == AwFmAlphabetNucleotide?
-    awFmAsciiNucleotideToLetterIndex(firstSuffixLetter):
-    awFmAsciiAminoAcidToLetterIndex(firstSuffixLetter);
-  struct AwFmSearchRange range = {.startPtr=index->prefixSums[firstSuffixLetterIndex],
-    .endPtr=index->prefixSums[firstSuffixLetterIndex+1]-1};
-  int8_t kmerSuffixPosition = kmerLength - 2;
-  // bool rangeValid =
-  while(awFmSearchRangeIsValid(&range) && kmerSuffixPosition >= 0){
-    if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-      uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(kmer[kmerSuffixPosition]);
-      awFmNucleotideIterativeStepBackwardSearch(index, &range, letterIndex);
-    }
-    else{
-      uint8_t letterIndex = awFmAsciiAminoAcidToLetterIndex(kmer[kmerSuffixPosition]);
-      awFmAminoIterativeStepBackwardSearch(index, &range, letterIndex);
-    }
-    kmerSuffixPosition--;
-  }
-  
-  return range;
+  return awFmDatabaseSingleKmerExactMatch(index, kmer, kmerLength);
 }

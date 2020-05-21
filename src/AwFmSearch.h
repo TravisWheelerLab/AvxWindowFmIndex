@@ -114,7 +114,6 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *
   const char *restrict const kmer, const uint16_t kmerLength);
 
 
-
 /*
  * Function:  awFmBacktraceBwtPosition
  * --------------------

@@ -26,8 +26,8 @@ char buffer[2048];
 uint8_t aminoLookup[21]  = {'a','c','d','e','f',
                             'g','h','i','k','l',
                             'm','n','p','q','r',
-                            's','t','v','w','y','$'};
-uint8_t nucleotideLookup[5] = {'a','c','g','t', '$'};
+                            's','t','v','w','y','x'};
+uint8_t nucleotideLookup[5] = {'a','c','g','t', 'x'};
 
 
 void generateRandomIndex(struct AwFmIndex  **index, uint8_t **sequence,
@@ -51,12 +51,12 @@ int main(int argc, char **argv){
   uint64_t *suffixArray = NULL;
   uint8_t *sequence = NULL;
 
-  for(uint64_t numIndicesToTest = 0; numIndicesToTest< 10; numIndicesToTest++){
+  for(uint64_t numIndicesToTest = 0; numIndicesToTest< 25; numIndicesToTest++){
 
-    uint64_t sequenceLength = 200 + rand() % 10000;
+    uint64_t sequenceLength = 2000 + rand() % 4000;
     printf("testing index %zu, sequence length %zu.\n", numIndicesToTest, sequenceLength);
     generateRandomIndex(&index, &sequence, sequenceLength, &suffixArray);
-    testSearchForRandomKmers(index, 10000, sequence, sequenceLength, suffixArray);
+    testSearchForRandomKmers(index, 1000, sequence, sequenceLength, suffixArray);
 
     awFmDeallocIndex(index);
   }
@@ -76,8 +76,8 @@ void generateRandomIndex(struct AwFmIndex  **index, uint8_t **sequence, size_t s
     .kmerLengthInSeedTable = 4, .alphabetType = alphabetType, .keepSuffixArrayInMemory=rand()&1};
 
   //allocate sequence and suffix array
-  *sequence = realloc(*sequence, (sequenceLength+100) * sizeof(uint8_t)); //+11 is added for padding when using strcmp
-  *suffixArray = realloc(*suffixArray, (sequenceLength + 1) * sizeof(uint64_t));
+  *sequence = realloc((*sequence), (sequenceLength+100) * sizeof(uint8_t)); //+11 is added for padding when using strcmp
+  *suffixArray = realloc((*suffixArray), (sequenceLength + 1) * sizeof(uint64_t));
 
   if(sequence == NULL){
     printf("critical failure: could not allocate sequence in unit test.");
@@ -91,16 +91,16 @@ void generateRandomIndex(struct AwFmIndex  **index, uint8_t **sequence, size_t s
   uint8_t *characterLookupTable = alphabetType == AwFmAlphabetNucleotide? nucleotideLookup: aminoLookup;
   uint8_t alphabetCardinalty = awFmGetAlphabetCardinality(alphabetType);
   for(size_t i = 0; i < sequenceLength; i++){
-    uint8_t characterIndex = rand()%(alphabetCardinalty + 1); //+1 is for sentinel
+    uint8_t characterIndex = rand()%(alphabetCardinalty + 1); //+1 is for ambiguity character
     (*sequence)[i] = characterLookupTable[characterIndex];
   }
-  (*sequence)[sequenceLength] = '$'; //set the terminator sentinel
-  int64_t divSufSortReturnCode = divsufsort64(*sequence, (int64_t*)(*suffixArray), sequenceLength+1);
+  (*sequence)[sequenceLength] = '$';
+
+  int64_t divSufSortReturnCode = divsufsort64((*sequence), (int64_t*)(*suffixArray), sequenceLength+1);
   if(divSufSortReturnCode < 0){
     printf("critical failure: divsufsort returned error code %li\n", divSufSortReturnCode);
     exit(-3);
   }
-  printf("calling awFmCreateIndex\n");
   enum AwFmReturnCode awFmReturnCode = awFmCreateIndex(index, &metadata, *sequence, sequenceLength, "testIndex.awfmi", true);
   if(awFmReturnCode < 0){
     printf("critical failure: create index returned error code %i\n", awFmReturnCode);

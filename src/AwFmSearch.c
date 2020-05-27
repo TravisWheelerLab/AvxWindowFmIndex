@@ -10,6 +10,7 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
   //query for the start pointer
   uint64_t queryPosition          = range->startPtr - 1;
   const uint64_t letterPrefixSum  = index->prefixSums[letter];
+
   uint64_t blockIndex             = awFmGetBlockIndexFromGlobalPosition(queryPosition);
   uint8_t localQueryPosition      = awFmGetBlockQueryPositionFromGlobalPosition(queryPosition);
 
@@ -20,8 +21,8 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
     letter);
 
   uint_fast8_t vectorPopcount = awFmVectorPopcount(occurrenceVector, localQueryPosition);
-
   newStartPointer += vectorPopcount + baseOccurrence;
+
   range->startPtr = newStartPointer;
 
   //prefetch the next start ptr
@@ -231,7 +232,6 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
 
 struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint16_t kmerLength){
-
   int8_t kmerLetterPosition = kmerLength-1;
   uint16_t bwtBlockWidth;
   uint8_t kmerLetterIndex;
@@ -253,6 +253,7 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *
   awFmBlockPrefetch(index->bwtBlockList.asNucleotide, bwtBlockWidth, range.endPtr);
   if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
     while(__builtin_expect(awFmSearchRangeIsValid(&range) && (kmerLetterPosition--), 1)){
+      // printf("in loop with letter pos %u\n", kmerLetterPosition);
         kmerLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[kmerLetterPosition]);
         awFmNucleotideIterativeStepBackwardSearch(index, &range, kmerLetterIndex);
       }
@@ -263,7 +264,6 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *
       awFmAminoIterativeStepBackwardSearch(index, &range, kmerLetterIndex);
     }
   }
-
   return range;
 }
 
@@ -283,14 +283,21 @@ inline size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *restric
   const uint8_t localQueryPosition         = awFmGetBlockQueryPositionFromGlobalPosition(bwtPosition);
 
   const struct AwFmNucleotideBlock *restrict const blockPtr = &index->bwtBlockList.asNucleotide[blockIndex];
-  const uint8_t frequencyIndexLetter  = awFmGetNucleotideLetterAtBwtPosition(blockPtr, localQueryPosition);
-  const uint64_t baseOccurrence       = blockPtr->baseOccurrences[frequencyIndexLetter];
-  const __m256i occurrenceVector      = awFmMakeNucleotideOccurrenceVector(blockPtr, frequencyIndexLetter);
+  const uint8_t letterIndex  = awFmGetNucleotideLetterAtBwtPosition(blockPtr, localQueryPosition);
+
+  //if we encountered the sentinel, we know the position and can stop backtracing
+  if(__builtin_expect(letterIndex == 5, 0)){
+    return 0;
+  }
+
+  const uint64_t baseOccurrence       = blockPtr->baseOccurrences[letterIndex];
+  const __m256i occurrenceVector      = awFmMakeNucleotideOccurrenceVector(blockPtr, letterIndex);
 
 
-  uint_fast8_t vectorPopcount = awFmVectorPopcount(occurrenceVector, localQueryPosition);
-  uint64_t backtraceBwtPosition = prefixSums[frequencyIndexLetter] + baseOccurrence + vectorPopcount - 1;
-
+  uint8_t vectorPopcount = awFmVectorPopcount(occurrenceVector, localQueryPosition);
+  uint64_t backtraceBwtPosition = prefixSums[letterIndex] + baseOccurrence + vectorPopcount - 1;
+  printf("lqp: %u, blockind %zu,  found freq ind letter %u, base occ %zu, popcnt %u\n",
+  localQueryPosition,blockIndex,  letterIndex, baseOccurrence, vectorPopcount);
   return backtraceBwtPosition;
 }
 
@@ -301,15 +308,18 @@ inline size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict con
   const uint8_t   localQueryPosition  = awFmGetBlockQueryPositionFromGlobalPosition(bwtPosition);
 
   const struct AwFmAminoBlock *restrict const blockPtr = &index->bwtBlockList.asAmino[blockIndex];
-  uint8_t compressedLetter      = awFmGetAminoLetterAtBwtPosition(blockPtr, localQueryPosition);
-  uint8_t frequencyIndexLetter  = awFmAminoAcidCompressedVectorToLetterIndex(compressedLetter);
-  __m256i occurrenceVector      = awFmMakeAminoAcidOccurrenceVector(blockPtr,
-    frequencyIndexLetter);
+  uint8_t letterIndex      = awFmGetAminoLetterAtBwtPosition(blockPtr, localQueryPosition);
 
-  const uint64_t baseOccurrence = blockPtr->baseOccurrences[frequencyIndexLetter];
+  //if we encountered the sentinel, we know the position and can stop backtracing
+  if(__builtin_expect(letterIndex == 21, 0)){
+    return 0;
+  }
+
+  __m256i occurrenceVector      = awFmMakeAminoAcidOccurrenceVector(blockPtr, letterIndex);
+  const uint64_t baseOccurrence = blockPtr->baseOccurrences[letterIndex];
 
   const uint_fast8_t vectorPopcount   = awFmVectorPopcount(occurrenceVector, localQueryPosition);
-  const uint64_t backtraceBwtPosition = prefixSums[frequencyIndexLetter] + baseOccurrence + vectorPopcount - 1;
+  const uint64_t backtraceBwtPosition = prefixSums[letterIndex] + baseOccurrence + vectorPopcount - 1;
 
   return backtraceBwtPosition;
 }
@@ -320,11 +330,12 @@ inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const
 
   uint8_t indexInKmerString = kmerLength-1;
   uint8_t queryLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[indexInKmerString]);
+  printf("letter index %u \n", queryLetterIndex);
   range->startPtr = index->prefixSums[queryLetterIndex];
   range->endPtr = index->prefixSums[queryLetterIndex+1] - 1;
 
   while(indexInKmerString-- != 0 && awFmSearchRangeIsValid(range)){
-    awFmNucleotideIterativeStepBackwardSearch(index, range, kmer[queryLetterIndex]);
+    awFmNucleotideIterativeStepBackwardSearch(index, range, awFmAsciiNucleotideToLetterIndex(kmer[queryLetterIndex]));
   }
 }
 
@@ -337,6 +348,6 @@ inline void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const inde
   range->endPtr = index->prefixSums[queryLetterIndex+1] - 1;
 
   while(indexInKmerString-- != 0 && awFmSearchRangeIsValid(range)){
-    awFmNucleotideIterativeStepBackwardSearch(index, range, kmer[queryLetterIndex]);
+    awFmNucleotideIterativeStepBackwardSearch(index, range, awFmAsciiAminoAcidToLetterIndex(kmer[queryLetterIndex]));
   }
 }

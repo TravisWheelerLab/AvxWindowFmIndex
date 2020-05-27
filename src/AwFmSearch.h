@@ -126,7 +126,8 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *
  *    bwtPosition: Position of the character to be returned.
  *
  *  Returns:
- *    letter at the bwtPosition in the specified blockList.
+ *    Position in the suffix array of the character in the sequence immediately preceeding the one
+ *      found at the given bwtPosition.
  */
 size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
 
@@ -142,7 +143,8 @@ size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *restrict const
  *    bwtPosition: Position of the character to be returned.
  *
  *  Returns:
- *    letter at the bwtPosition in the specified blockList.
+ *    Position in the suffix array of the character in the sequence immediately preceeding the one
+ *      found at the given bwtPosition. 
  */
 size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
 

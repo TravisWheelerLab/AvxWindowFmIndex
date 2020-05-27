@@ -160,16 +160,19 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
       }
       else{
         //set to the sentinel value if we're looking at the letter before the first character.
-        letterIndex = 0;
+        letterIndex = 5;
       }
-        baseOccurrences[letterIndex]++;
-        letterBitVectorBytes[byteInVector]      = letterBitVectorBytes[byteInVector] | ((letterIndex & 0x1) << bitInVectorByte);
-        letterBitVectorBytes[byteInVector + 32] = letterBitVectorBytes[byteInVector+ 32] | (((letterIndex >> 1) & 0x1) << bitInVectorByte);
-        letterBitVectorBytes[byteInVector + 64] = letterBitVectorBytes[byteInVector+64] | ((letterIndex >>2) & 0x01) << bitInVectorByte;
 
+      uint8_t letterAsCompressedVector = awFmNucleotideLetterIndexToCompressedVector(letterIndex);
+      baseOccurrences[letterIndex]++;
+      letterBitVectorBytes[byteInVector]      = letterBitVectorBytes[byteInVector] | ((letterAsCompressedVector & 0x1) << bitInVectorByte);
+      letterBitVectorBytes[byteInVector + 32] = letterBitVectorBytes[byteInVector+ 32] | (((letterAsCompressedVector >> 1) & 0x1) << bitInVectorByte);
+      letterBitVectorBytes[byteInVector + 64] = letterBitVectorBytes[byteInVector+64] | ((letterAsCompressedVector >>2) & 0x01) << bitInVectorByte;
     }
+
     //set the prefix sums
-    index->prefixSums[0] = 0;
+    index->prefixSums[0] = 1;   //1 is for the sentinel
+    baseOccurrences[0]++;  //add the sentinel to the count of a's
     for(uint8_t i = 1; i < AW_FM_NUCLEOTIDE_CARDINALITY + 2; i++){
       index->prefixSums[i] = baseOccurrences[i-1];
       baseOccurrences[i] += baseOccurrences[i-1];
@@ -203,7 +206,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
       }
       else{
         //set to the sentinel value if we're looking at the letter before the first character.
-        letterIndex = 0;
+        letterIndex = 21;
       }
         uint8_t letterAsVectorFormat = awFmAminoAcidLetterIndexToCompressedVector(letterIndex);
         baseOccurrences[letterIndex]++;
@@ -214,9 +217,9 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         letterBitVectorBytes[byteInVector + 128]  = letterBitVectorBytes[byteInVector + 128]  | (((letterAsVectorFormat >> 4) & 0x1) << bitInVectorByte);
 
     }
-
     //set the prefix sums
-    index->prefixSums[0] = 0;
+    index->prefixSums[0] = 1;
+    baseOccurrences[0]++;   //add the sentinel into the count of a's
     for(uint8_t i = 1; i < AW_FM_AMINO_CARDINALITY + 2; i++){
       index->prefixSums[i] = baseOccurrences[i-1];
       baseOccurrences[i] += baseOccurrences[i-1];
@@ -224,12 +227,12 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
   }
 }
 
-void populateKmerSeedTable(struct AwFmIndex *restrict const index){
+void populateKmerSeedTable( struct AwFmIndex *restrict const index){
   const uint8_t alphabetCardinality = awFmGetAlphabetCardinality(index->metadata.alphabetType);
   for(uint8_t i = 0; i < alphabetCardinality; i++){
     struct AwFmSearchRange range = {
-      .startPtr=  index->prefixSums[i+1],
-      .endPtr=    index->prefixSums[i+2] -1
+      .startPtr=  index->prefixSums[i],
+      .endPtr=    index->prefixSums[i+1] -1
     };
     populateKmerSeedTableRecursive(index, range, 1, i, alphabetCardinality);
   }
@@ -244,7 +247,6 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
 
   //base case
   if(kmerLength == currentKmerLength){
-  // printf("kmer recursion write index %zu, [%zu,%zu]\n", currentKmerIndex, range.startPtr, range.endPtr);
     index->kmerSeedTable[currentKmerIndex] = range;
     return;
   }

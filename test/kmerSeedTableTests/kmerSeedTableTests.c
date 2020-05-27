@@ -115,7 +115,7 @@ void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequen
     }
     for(uint64_t i = 0; i < sequenceLength; i++){
       sequence[i] = (metadata->alphabetType == AwFmAlphabetNucleotide?
-        nucleotideLookup[rand()%5]: aminoLookup[rand()%21]);
+        nucleotideLookup[rand()%4]: aminoLookup[rand()%20]);
     }
     //null terminate the sequence
     sequence[sequenceLength] = 0;
@@ -156,7 +156,12 @@ void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequen
 
     struct AwFmSearchRange range = {0,0};
     uint8_t *kmer2 = (uint8_t*)"agaaa";
-    awFmNucleotideNonSeededSearch(index, kmer2, 5, &range);
+    if(metadata->alphabetType == AwFmAlphabetNucleotide){
+      awFmNucleotideNonSeededSearch(index, kmer2, 5, &range);
+    }
+    else{
+      awFmAminoNonSeededSearch(index, kmer2, 5, &range);
+    }
     printf("range for agaaa: %zu, %zu\n", range.startPtr, range.endPtr);
     printf("index generated.\n");
     // printf("prefix sums: ");
@@ -185,15 +190,14 @@ void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequen
       size_t kmerIndexCopy = kmerIndex;
       for(uint8_t letterInKmer = 0; letterInKmer < kmerLength; letterInKmer++){
         if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-          kmer[letterInKmer] = nucleotideLookup[(kmerIndexCopy%4) + 1];
+          kmer[letterInKmer] = nucleotideLookup[(kmerIndexCopy%4)];
           kmerIndexCopy /= 4;
         }
         else{
-          kmer[letterInKmer] = aminoLookup[(kmerIndexCopy%20) + 1];
+          kmer[letterInKmer] = aminoLookup[(kmerIndexCopy%20)];
           kmerIndexCopy /= 20;
         }
       }
-      printf("querying for kmer %.*s\n", kmerLength, kmer);
       struct AwFmSearchRange kmerRange = metadata->alphabetType == AwFmAlphabetNucleotide?
         awFmNucleotideKmerSeedRangeFromTable(index, kmer, kmerLength):
         awFmAminoKmerSeedRangeFromTable(index, kmer, kmerLength);

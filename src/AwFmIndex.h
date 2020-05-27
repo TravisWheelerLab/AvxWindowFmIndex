@@ -256,6 +256,12 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
  *    4. To query for additional kmers, reuse the searchList struct, starting with step (2).
  *    5. Deallocate the searchData with awFmDeallocKmerSearchList when finished.
  *
+ *  IMPORTANT NOTE:
+ *    The locate and count functions cannot search for ambiguity characters, and
+ *      providing ambiguity characteres in the kmers will result in undefined behavior.
+ *      ensure that the query kmers contain only nucleotide or amino acid characters,
+ *      depending on the alphabet being used.
+ *
  *  Inputs:
  *    index:        pointer to the index to search.
  *    searchList:   pointer to the searchList struct loaded with kmers to search for.
@@ -279,6 +285,12 @@ void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
  *      will be loaded into the AwFmKmerSearchData's count member variable.
  *    4. To query for additional kmers, reuse the searchList struct, starting with step (2).
  *    5. Deallocate the searchData with awFmDeallocKmerSearchList when finished.
+ *
+ *  IMPORTANT NOTE:
+ *    The locate and count functions cannot search for ambiguity characters, and
+ *      providing ambiguity characteres in the kmers will result in undefined behavior.
+ *      ensure that the query kmers contain only nucleotide or amino acid characters,
+ *      depending on the alphabet being used.
  *
  *  Inputs:
  *    index:        pointer to the index to search.

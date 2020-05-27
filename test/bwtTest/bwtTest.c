@@ -16,11 +16,11 @@
 #include <ctype.h>
 
 char buffer[4096];
-const char nucleotideLookup[5]  = {"$ACGT"};
-const uint8_t aminoLookup[21]   = {'$','a','c','d','e','f',
-                                  'g','h','i','k','l',
-                                  'm','n','p','q','r',
-                                  's','t','v','w','y'};
+const char nucleotideLookup[5]  = {"XACGT"};
+const uint8_t aminoLookup[21]   = {'a','c','d','e','f',
+                                   'g','h','i','k','l',
+                                   'm','n','p','q','r',
+                                   's','t','v','w','x','y'};
 
 void testNucletotideBwtGeneration(void);
 void testAminoBwtGeneration(void);
@@ -88,6 +88,7 @@ void testNucletotideBwtGeneration(void){
     // }
     // printf("\n");
 
+
     struct AwFmIndex *index;
     struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio=240, .kmerLengthInSeedTable=2, .alphabetType = AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=false};
     awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
@@ -107,10 +108,11 @@ void testNucletotideBwtGeneration(void){
       uint8_t letterIndexInAwFm = ((letterBitVectorsAsBytes[byteInBlock]>> bitInByte) & 1) |
                                   ((letterBitVectorsAsBytes[byteInBlock+32]>>bitInByte) & 1) << 1 |
                                   ((letterBitVectorsAsBytes[byteInBlock+64]>>bitInByte) & 1) << 2;
+      uint8_t letterAsIndex = awFmNucleotideCompressedVectorToLetterIndex(letterIndexInAwFm);
       // printf("index %zu, letter %u, expected %u\n", i, letterIndexInAwFm, letterIndex);
       sprintf(buffer, "at SA position %zu, bwt letter index %u did not match the index stored in AwFm (%d)", i, letterIndex, letterIndexInAwFm);
-      testAssertString(letterIndex == letterIndexInAwFm, buffer);
-      if(letterIndex != letterIndexInAwFm){
+      testAssertString(letterIndex == letterAsIndex, buffer);
+      if(letterIndex != letterAsIndex){
         exit(-04);
       }
     }
@@ -125,7 +127,7 @@ void testAminoBwtGeneration(void){
   printf("beginning amino bwt test\n");
   for(size_t testNum = 0; testNum < 20; testNum++){
     printf("testnum = %zu\n", testNum);
-    const uint64_t sequenceLength = 3000 + rand()%5000;
+    const uint64_t sequenceLength = 3000 + rand()%500;
     uint8_t *sequence = malloc((sequenceLength+1) * sizeof(uint8_t));
     uint64_t *suffixArray = malloc((sequenceLength + 1) * sizeof(uint64_t));
 
@@ -137,6 +139,7 @@ void testAminoBwtGeneration(void){
     suffixArray[0] = sequenceLength;
     sequence[sequenceLength] = 0;
 
+    //optionally print sequence, suffix array, and bwt for debugging
     // printf("sequence:");
     // for(size_t i = 0; i < sequenceLength+1; i++){
     //   if((i) % 10 == 0){
@@ -184,19 +187,14 @@ void testAminoBwtGeneration(void){
       //grab the letter from the AwFmIndex bwt
       size_t blockIndex = i / 256;
       uint8_t positionInBlock = i%256;
-      // uint8_t byteInBlock = (i/8) % 32;
-      // uint8_t bitInByte = i % 8;
-      //
-      // uint8_t *letterBitVectorsAsBytes = (uint8_t*)index->bwtBlockList.asNucleotide[blockIndex].letterBitVectors;
-
       uint8_t encodedLetterInAwFm = awFmGetAminoLetterAtBwtPosition(&index->bwtBlockList.asAmino[blockIndex], positionInBlock);
-      uint8_t letterIndexInAwFm   = awFmAminoAcidCompressedVectorToLetterIndex(encodedLetterInAwFm);
 
-      sprintf(buffer, "at SA position %zu, bwt letter index %u did not match the index stored in AwFm (%d)", i, letterIndex, letterIndexInAwFm);
+      sprintf(buffer, "at SA position %zu, bwt letter index %u did not match the index stored in AwFm (%d)", i, letterIndex, encodedLetterInAwFm);
 
-      bool lettersMatch = (letterIndex == letterIndexInAwFm) || (encodedLetterInAwFm == 0 && letterAtBwt == '$');
+      bool lettersMatch = (letterIndex == encodedLetterInAwFm) || (encodedLetterInAwFm == 0 && letterAtBwt == '$');
       testAssertString(lettersMatch, buffer);
     }
+
     free(sequence);
     free(suffixArray);
     awFmDeallocIndex(index);

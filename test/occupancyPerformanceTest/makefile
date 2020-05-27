@@ -1,2 +1,6 @@
-occSpeedTest: ../../AwFmApi.c ../../AwFmApi.h ../../AwFmCreate.c ../../AwFmCreate.h ../../AwFmFile.c ../../AwFmFile.h ../../AwFmGlobals.h ../../AwFmIndex.c ../../AwFmIndex.h ../../AwFmLetter.c ../../AwFmLetter.h ../../AwFmOccupancy.c ../../AwFmOccupancy.h ../../AwFmSearch.c ../../AwFmSearch.h occSpeedTest.c
-	gcc ../../AwFmIndex.c ../../AwFmLetter.c ../../AwFmOccupancy.c occSpeedTest.c -o occSpeedTest -std=c11 -Wall -march=native -O3
+TEST_SRC	= occSpeedTest.c
+SRC 			= $(wildcard ../../src/*.c)
+CFLAGS 	= -std=c11 -Wall -mtune=native -g -fopenmp -ldivsufsort64 -mavx2 -I../../libdivsufsort/build/include
+EXE 		= occSpeedTest.out
+bwtTest: $(SRC)
+	gcc $(TEST_SRC) $(SRC) -o $(EXE) $(CFLAGS)

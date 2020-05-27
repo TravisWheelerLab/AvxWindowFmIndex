@@ -1,6 +1,6 @@
 TEST_SRC	= inMemorySaTest.c
 SRC 			= $(wildcard ../../src/*.c)
-CFLAGS 	= -std=c11 -Wall -mtune=native -g -fopenmp -ldivsufsort64 -mavx2
+CFLAGS 	= -std=c11 -fsanitize=address -Wall -mtune=native -g -fopenmp -ldivsufsort64 -mavx2
 EXE 		= saInMemTest.out
 bwtTest: $(SRC)
 	gcc $(TEST_SRC) $(SRC) -o $(EXE) $(CFLAGS)

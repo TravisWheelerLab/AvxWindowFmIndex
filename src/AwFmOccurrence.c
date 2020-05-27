@@ -103,10 +103,10 @@ __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict 
       return _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
     case 18:  /*W (Tryptophan) encoding 0b00001*/
       return _mm256_andnot_si256(_mm256_or_si256(bit3Vector, bit2Vector), _mm256_andnot_si256(bit1Vector, bit0Vector));
-    case 19: /*ambiguity character Z 0b11111 */
-      return _mm256_and_si256(_mm256_and_si256(bit4Vector, bit3Vector),_mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector)));
-    case 20:  /*Y (Tyrosine) encoding 0b00010*/
+    case 19:  /*Y (Tyrosine) encoding 0b00010*/
       return _mm256_andnot_si256(_mm256_or_si256(bit0Vector, bit2Vector), _mm256_andnot_si256(bit3Vector, bit1Vector));
+    case 20: /*ambiguity character Z 0b11111 */
+      return _mm256_and_si256(_mm256_and_si256(bit4Vector, bit3Vector),_mm256_and_si256(bit2Vector, _mm256_and_si256(bit1Vector, bit0Vector)));
     //0b00000 is sentinel, but since you can't search for sentinels, it is not included here.
     default: __builtin_unreachable();   //GCC respects this, doesn't check for letters that aren't valid
   }
@@ -252,7 +252,7 @@ uint8_t awFmGetAminoLetterAtBwtPosition(const struct AwFmAminoBlock *blockPtr, c
     ((letterBytePointer[64]     >> bitInBlockByte) & 1) << 2  |
     ((letterBytePointer[96]     >> bitInBlockByte) & 1) << 3  |
     ((letterBytePointer[128]    >> bitInBlockByte) & 1) << 4;
-    
+
   return awFmAminoAcidCompressedVectorToLetterIndex(letterAsCompressedVector);
 }
 

@@ -20,7 +20,7 @@ const char nucleotideLookup[5]  = {"XACGT"};
 const uint8_t aminoLookup[21]   = {'a','c','d','e','f',
                                    'g','h','i','k','l',
                                    'm','n','p','q','r',
-                                   's','t','v','w','x','y'};
+                                   's','t','v','w','y','z'};
 
 void testNucletotideBwtGeneration(void);
 void testAminoBwtGeneration(void);

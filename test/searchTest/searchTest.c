@@ -26,7 +26,7 @@ char buffer[2048];
 uint8_t aminoLookup[21]  = {'a','c','d','e','f',
                             'g','h','i','k','l',
                             'm','n','p','q','r',
-                            's','t','v','w','y','x'};
+                            's','t','v','w','y','z'};
 uint8_t nucleotideLookup[5] = {'a','c','g','t', 'x'};
 
 

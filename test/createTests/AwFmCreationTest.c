@@ -15,11 +15,11 @@
 #include <ctype.h>
 
 char buffer[4096];
-const char nucleotideLookup[5]  = {"xACGT"};
-const uint8_t aminoLookup[21]   = {'x','a','c','d','e','f',
+const char nucleotideLookup[5]  = {"XACGT"};
+const uint8_t aminoLookup[21]   = {'a','c','d','e','f',
                                   'g','h','i','k','l',
                                   'm','n','p','q','r',
-                                  's','t','v','w','y'};
+                                  's','t','v','w','y','z'};
 
 
 

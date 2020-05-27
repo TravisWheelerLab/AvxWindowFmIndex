@@ -3,6 +3,7 @@
 #include "../../src/AwFmCreate.h"
 #include "../../src/AwFmKmerTable.h"
 #include "../../src/AwFmLetter.h"
+#include "../../src/AwFmSearch.h"
 #include "../test.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,11 +16,11 @@
 #include "divsufsort64.h"
 
 char buffer[2048];
-uint8_t aminoLookup[21]     = {'$','a','c','d','e','f',
+uint8_t aminoLookup[21]     = {'a','c','d','e','f',
                               'g','h','i','k','l',
                               'm','n','p','q','r',
-                              's','t','v','w','y'};
-uint8_t nucleotideLookup[5] = {'$','a','g','c','t'};
+                              's','t','v','w','y','z'};
+uint8_t nucleotideLookup[5] = {'a','g','c','t','x'};
 
 void checkRangeForCorrectness(const struct AwFmSearchRange *restrict const range,
   const uint64_t *restrict const suffixArray, const char *kmer, const uint8_t kmerLength,
@@ -28,7 +29,7 @@ bool rangeCompare(struct AwFmSearchRange range1, struct AwFmSearchRange range2);
 void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequenceLength);
 
 int main(int argc, char **argv){
-  srand(time(NULL));
+  srand(0);
   printf("main\n");
 
   struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = 240, .kmerLengthInSeedTable = 5, .alphabetType =AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=false};
@@ -55,6 +56,8 @@ void checkRangeForCorrectness(const struct AwFmSearchRange *restrict const range
 
   for(uint64_t position = 0; position <= sequenceLength - kmerLength; position++){
     bool kmerFoundAtPosition = strncmp(kmer, (char*)sequence + position, kmerLength) == 0;
+
+    // printf("kmer %.*s at pos %zu, matches kmer %.*s\n", kmerLength, sequence+position, position, kmerLength, kmer);
     bool positionFoundInRange = false;
 
     for(uint64_t suffixArrayPosition = range->startPtr; suffixArrayPosition <= range->endPtr; suffixArrayPosition++){
@@ -86,9 +89,9 @@ void checkRangeForCorrectness(const struct AwFmSearchRange *restrict const range
       printf("\n");
       for(uint64_t ptr = range->startPtr; ptr <= range->endPtr;ptr++){
         printf(" %zu, ", suffixArray[ptr]);
-
       }
       printf("\n");
+
       exit(-3);
     }
   }
@@ -150,6 +153,11 @@ void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequen
     // printf("\n");
 
     awFmCreateIndex(&index, metadata, sequence, sequenceLength, "testIndex.awfmi", true);
+
+    struct AwFmSearchRange range = {0,0};
+    uint8_t *kmer2 = (uint8_t*)"agaaa";
+    awFmNucleotideNonSeededSearch(index, kmer2, 5, &range);
+    printf("range for agaaa: %zu, %zu\n", range.startPtr, range.endPtr);
     printf("index generated.\n");
     // printf("prefix sums: ");
     // for(uint8_t i = 0; i <20; i++){
@@ -164,8 +172,8 @@ void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequen
     //   printf("%zu: [%zu, %zu]\n", i, index->kmerSeedTable.table[i].startPtr, index->kmerSeedTable.table[i].endPtr);
     // }
 
-    clock_t startTime = clock();
     printf("created index\n");
+    clock_t startTime = clock();
 
     size_t tableLength = awFmGetKmerTableLength(index);
     char kmer[kmerLength];
@@ -185,7 +193,7 @@ void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequen
           kmerIndexCopy /= 20;
         }
       }
-
+      printf("querying for kmer %.*s\n", kmerLength, kmer);
       struct AwFmSearchRange kmerRange = metadata->alphabetType == AwFmAlphabetNucleotide?
         awFmNucleotideKmerSeedRangeFromTable(index, kmer, kmerLength):
         awFmAminoKmerSeedRangeFromTable(index, kmer, kmerLength);

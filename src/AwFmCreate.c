@@ -254,16 +254,11 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
   //recursive case
   for(uint8_t extendedLetter = 0; extendedLetter < alphabetSize; extendedLetter++){
     struct AwFmSearchRange newRange = range;
-    //letter index is different from extended letter since the sentinel is 0, but we will never query for the sentinel.
-    uint8_t letterIndex = extendedLetter + 1;
     if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-      awFmNucleotideIterativeStepBackwardSearch(index, &newRange, letterIndex);
+      awFmNucleotideIterativeStepBackwardSearch(index, &newRange, extendedLetter);
     }
     else{
-      awFmAminoIterativeStepBackwardSearch(index, &newRange, letterIndex);
-
-      assert(range.startPtr != ~0ULL);
-      assert(range.endPtr != ~0ULL);
+      awFmAminoIterativeStepBackwardSearch(index, &newRange, extendedLetter);
     }
 
     uint64_t newKmerIndex = currentKmerIndex + (extendedLetter * letterIndexMultiplier);

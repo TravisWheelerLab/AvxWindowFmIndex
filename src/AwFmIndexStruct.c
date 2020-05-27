@@ -3,13 +3,13 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define AW_FM_BWT_BYTE_ALIGNMENT 32
 
 struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const metadata,
   const size_t bwtLength){
 
   //allocate the index
-  struct AwFmIndex *index = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
-    sizeof(struct AwFmIndex));
+  struct AwFmIndex *index = malloc(sizeof(struct AwFmIndex));
   if(index == NULL){
     return NULL;
   }
@@ -20,8 +20,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
 
   //allocate the prefixSums
   size_t prefixSumsLength = awFmGetPrefixSumsLength(metadata->alphabetType);
-  index->prefixSums = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
-    prefixSumsLength * sizeof(uint64_t));
+  index->prefixSums = malloc(prefixSumsLength * sizeof(uint64_t));
   if(index->prefixSums == NULL){
     awFmDeallocIndex(index);
     return NULL;
@@ -33,7 +32,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
 
   //alloc the backward bwt
-  index->bwtBlockList.asNucleotide = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
+  index->bwtBlockList.asNucleotide = aligned_alloc(AW_FM_BWT_BYTE_ALIGNMENT,
     numBlocksInBwt * sizeOfBwtBlock);
   if(index->bwtBlockList.asNucleotide == NULL){
     awFmDeallocIndex(index);
@@ -42,8 +41,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
 
   const size_t kmerSeedTableSize = awFmGetKmerTableLength(index);
   //allocate the kmerSeedTable
-  index->kmerSeedTable = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
-    kmerSeedTableSize * sizeof(struct AwFmSearchRange));
+  index->kmerSeedTable = malloc(kmerSeedTableSize * sizeof(struct AwFmSearchRange));
   if(index->kmerSeedTable == NULL){
     awFmDeallocIndex(index);
     return NULL;

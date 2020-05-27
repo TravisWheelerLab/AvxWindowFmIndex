@@ -326,7 +326,7 @@ inline size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict con
 
 
 inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const index,
- const uint8_t *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range){
+ const char *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range){
 
   uint8_t indexInKmerString = kmerLength-1;
   uint8_t queryLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[indexInKmerString]);
@@ -340,7 +340,7 @@ inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const
 }
 
 inline void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const index,
- const uint8_t *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range){
+ const char *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range){
 
   uint8_t indexInKmerString = kmerLength-1;
   uint8_t queryLetterIndex = awFmAsciiAminoAcidToLetterIndex(kmer[indexInKmerString]);

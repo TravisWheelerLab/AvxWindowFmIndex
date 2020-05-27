@@ -144,7 +144,7 @@ size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *restrict const
  *
  *  Returns:
  *    Position in the suffix array of the character in the sequence immediately preceeding the one
- *      found at the given bwtPosition. 
+ *      found at the given bwtPosition.
  */
 size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
 
@@ -190,7 +190,7 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
  *
  */
 void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const index,
-  const uint8_t *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range);
+  const char *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range);
 
 
 /*
@@ -215,7 +215,7 @@ void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const index,
  *
  */
 void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const index,
- const uint8_t *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range);
+ const char *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range);
 
 
 #endif /* end of include guard: AW_FM_INDEX_SEARCH_H */

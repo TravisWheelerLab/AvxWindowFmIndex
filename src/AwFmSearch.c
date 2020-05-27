@@ -348,6 +348,6 @@ inline void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const inde
   range->endPtr = index->prefixSums[queryLetterIndex+1] - 1;
 
   while(indexInKmerString-- != 0 && awFmSearchRangeIsValid(range)){
-    awFmNucleotideIterativeStepBackwardSearch(index, range, awFmAsciiAminoAcidToLetterIndex(kmer[queryLetterIndex]));
+    awFmAminoIterativeStepBackwardSearch(index, range, awFmAsciiAminoAcidToLetterIndex(kmer[queryLetterIndex]));
   }
 }

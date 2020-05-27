@@ -7,11 +7,12 @@
 uint8_t awFmAsciiNucleotideToLetterIndex(const uint8_t asciiLetter){
   uint8_t toLowerCase = asciiLetter | 0x20;
   switch(toLowerCase){
-    case 'a': return 1;
-    case 'c': return 2;
-    case 'g': return 3;
-    case 't': return 4;
-    default:  return 0;
+    case 'a': return 0;
+    case 'c': return 1;
+    case 'g': return 2;
+    case 't': return 3;
+    case '$': return 5;
+    default:  return 4;
   }
 }
 
@@ -22,21 +23,32 @@ uint8_t awFmAsciiNucleotideLetterSanitize(const uint8_t asciiLetter){
     case 'c': return 'c';
     case 'g': return 'g';
     case 't': return 't';
-    default:  return '$';
+    case '$': return '$'; //sentinel character
+    default:  return 'x'; //ambiguity character
   }
+}
+
+uint8_t awFmNucleotideLetterIndexToCompressedVector(const uint8_t asciiLetter){
+  uint8_t vectorFormats[6] = {6, 5, 3, 1, 2, 4};
+  return vectorFormats[asciiLetter];
+}
+
+uint8_t awFmNucleotideCompressedVectorToLetterIndex(const uint8_t compressedVectorLetter){
+  uint8_t letterIndices[7] = {5, 3, 4, 2, 5, 1, 0};
+  return letterIndices[compressedVectorLetter]; 
 }
 
 
 uint8_t awFmAsciiAminoAcidToLetterIndex(const uint8_t asciiLetter){
-  if(__builtin_expect(asciiLetter < 'A', 0)){
-    return 0;
+  if(__builtin_expect(asciiLetter == '$', 0)){
+    return 21;
   }
   else{
     static const uint8_t letterEncodings[32] = {
-      0, 1, 0, 2, 3, 4, 5, 6,
-      7, 8, 0, 9, 10,11,12,0,
-      13,14,15,16,17, 0,18,19,
-      0, 20, 0, 0, 0, 0, 0, 0};
+      19, 0,19, 1, 2, 3, 4, 5,
+      6 , 7,19, 8, 9,10,11,19,
+      12,13,14,15,16,19,17,18,
+      19,20,19,19,19,19,19,19};
       //find the index and mod (to prevent array out of bounds for weird ascii inputs)
       const uint8_t lookupIndex = (asciiLetter & 0x1F);
       return letterEncodings[lookupIndex];
@@ -49,11 +61,10 @@ uint8_t awFmAsciiAminoLetterSanitize(const uint8_t asciiLetter){
   uint8_t letterAsLowerCase = asciiLetter | 0x20;
   bool letterIsAmbiguityChar =
     letterAsLowerCase == 'b' ||
-    letterAsLowerCase == 'z' ||
-    letterAsLowerCase == 'x';
+    letterAsLowerCase == 'z';
 
   if(__builtin_expect(letterIsAmbiguityChar, 0)){
-    return '$';
+    return 'x';
   }
   else{
     return asciiLetter;
@@ -62,21 +73,23 @@ uint8_t awFmAsciiAminoLetterSanitize(const uint8_t asciiLetter){
 
 
 uint8_t awFmAminoAcidLetterIndexToCompressedVector(const uint8_t letterIndex){
-  static const uint8_t compressedVectorLookup[21] = {
-    0x00, 0x0C, 0x17, 0x03, 0x06, 0x1E, 0x1A,
-    0x1B, 0x19, 0x15, 0x1C, 0x1D, 0x08, 0x09,
-    0x04, 0x13, 0x0A, 0x05, 0x16, 0x01, 0x02};
+  static const uint8_t compressedVectorLookup[22] = {
+    0x0C, 0x17, 0x03, 0x06, 0x1E,
+    0x1A, 0x1B, 0x19, 0x15, 0x1C,
+    0x1D, 0x08, 0x09, 0x04, 0x13,
+    0x0A, 0x05, 0x16, 0x01, 0x1F,
+    0x02, 0x00};
 
   return compressedVectorLookup[letterIndex];
 }
 
 
 uint8_t awFmAminoAcidCompressedVectorToLetterIndex(const uint8_t compressedVectorLetter){
-  static const uint8_t letterLookup[31] = {
-    0, 19,20, 3,14,17, 4, 0,
-    12,13,16, 0, 1, 0, 0, 0,
-    0,  0, 0,15, 0, 9,18, 2,
-    0,  8, 6, 7,10,11, 5};
+  static const uint8_t letterLookup[32] = {
+    21, 18,20, 2,13,16, 3, 20,
+    11,12,15, 19, 0, 19, 19, 19,
+    19, 19, 19,14, 19, 8,17, 1,
+    19,  7, 5, 6,9,10, 4, 19};
 
-  return letterLookup[compressedVectorLetter];
+  return  letterLookup[compressedVectorLetter];
 }

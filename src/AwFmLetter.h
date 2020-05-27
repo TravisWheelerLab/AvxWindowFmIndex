@@ -42,6 +42,38 @@ uint8_t awFmAsciiNucleotideLetterSanitize(const uint8_t asciiLetter);
 
 
 /*
+ * Function:  awNucleotideLetterIndexToCompressedVector
+ * --------------------
+ * Transforms an nucleotide's letter-index form into a compressed vector representation.
+ *
+ *  Inputs:
+ *    letterIndex: letter index of the nucleotide.
+ *
+ *  Returns:
+ *    Compressed vector representation of the nucleotide.
+ */
+uint8_t awFmNucleotideLetterIndexToCompressedVector(const uint8_t asciiLetter){
+  uint8_t vectorFormats[6] = {6, 5, 3, 1, 2, 4};
+  return vectorFormats[asciiLetter];
+}
+
+
+/*
+* Function:  awFmNucleotideCompressedVectorToLetterIndex
+* --------------------
+* Transforms a compressed vector representation of a nucleotide letter into its letter index.
+*  Inputs:
+*    compressedVectorLetter: format that the letter is stored in the AVX vectors.
+*
+*  Returns:
+*    Letter index of the nucleotide.
+*/
+uint8_t awFmNucleotideCompressedVectorToLetterIndex(const uint8_t compressedVectorLetter){
+  uint8_t letterIndices[7] = {5, 3, 4, 2, 5, 1, 0};
+  return letterIndices[compressedVectorLetter];
+}
+
+/*
  * Function:  awFmAsciiAminoAcidToLetterIndex
  * --------------------
  * Transforms an ascii amino acid character into a bit-compressed index representation.

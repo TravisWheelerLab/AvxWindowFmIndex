@@ -19,7 +19,7 @@ void popcountTestSuite(void);
 char buffer[2048];
 
 int main(int argc, char **argv){
-  srand(1101);
+  srand(time(NULL));
   popcountTestSuite();
   printf("occurrence function testing finished.\n");
 }

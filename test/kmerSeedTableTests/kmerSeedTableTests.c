@@ -29,7 +29,7 @@ bool rangeCompare(struct AwFmSearchRange range1, struct AwFmSearchRange range2);
 void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequenceLength);
 
 int main(int argc, char **argv){
-  srand(0);
+  srand(time(NULL));
   printf("main\n");
 
   struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = 240, .kmerLengthInSeedTable = 5, .alphabetType =AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=false};

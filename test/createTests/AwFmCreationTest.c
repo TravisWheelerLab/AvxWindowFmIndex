@@ -63,7 +63,7 @@ void testCreateAminoIndex();
 void testPrefixSums(const struct AwFmIndex *restrict const index, const uint8_t *sequence, const size_t sequenceLength);
 
 int main (int argc, char **argv){
-  srand(8);
+  srand(time(NULL));
 
   testCreateAminoIndex();
   exit(1);

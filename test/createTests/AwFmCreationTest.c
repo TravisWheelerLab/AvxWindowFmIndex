@@ -66,7 +66,6 @@ int main (int argc, char **argv){
   srand(time(NULL));
 
   testCreateAminoIndex();
-  exit(1);
   // testSufSort();
 
   //create the sequence to test
@@ -141,7 +140,7 @@ struct AwFmIndex *testCreateNucleotideIndex(const uint8_t *sequence, const size_
 
 void testPrefixSums(const struct AwFmIndex *restrict const index, const uint8_t *sequence, const size_t sequenceLength){
   const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->metadata.alphabetType);
-  size_t *letterCounts = malloc(alphabetSize * sizeof(size_t));
+  size_t *letterCounts = malloc((alphabetSize+2) * sizeof(size_t));
   memset(letterCounts, 0, alphabetSize * sizeof(size_t));
 
   printf("prefix sums: ");
@@ -154,13 +153,12 @@ void testPrefixSums(const struct AwFmIndex *restrict const index, const uint8_t 
     uint8_t letterAsIndex = index->metadata.alphabetType == AwFmAlphabetNucleotide?
       awFmAsciiNucleotideToLetterIndex(sequence[seqPos]):
       awFmAsciiAminoAcidToLetterIndex(sequence[seqPos]);
-
     letterCounts[letterAsIndex]++;
   }
 
 
-  for(uint8_t i = 0; i < alphabetSize + 2; i++){
-    size_t prefixSum = 0;
+  for(uint8_t i = 0; i < alphabetSize + 1; i++){
+    size_t prefixSum = 1;
     for(uint8_t j = 0; j < i; j++){
       prefixSum += letterCounts[j];
     }
@@ -179,6 +177,15 @@ void testKmerTableLengths(const struct AwFmIndex *restrict const index, const ui
     const uint8_t *kmerPtr1 = &sequence[sequencePosition];
     size_t kmerCount = 0;
 
+    //if this kmer contains an ambiguity character, skip it.
+    bool kmerContainsSentinel = false;
+    for(size_t i = 0; i < kmerLength; i++){
+      kmerContainsSentinel |= kmerPtr1[i] == 'z' || kmerPtr1[i] == 'X';
+    }
+    if(kmerContainsSentinel){
+      continue;
+    }
+
     for(size_t seqPos2 = 0; seqPos2 <= sequenceLength - kmerLength; seqPos2++){
       const uint8_t *kmerPtr2 = &sequence[seqPos2];
       if(strncmp((char*)kmerPtr1, (char*)kmerPtr2, kmerLength) == 0){
@@ -186,15 +193,15 @@ void testKmerTableLengths(const struct AwFmIndex *restrict const index, const ui
       }
     }
 
-    printf("for kmer %.*s, found %zu.\n", kmerLength, kmerPtr1, kmerCount);
+    // printf("for kmer %.*s, found %zu.\n", kmerLength, kmerPtr1, kmerCount);
     const struct AwFmSearchRange rangeInTable = index->metadata.alphabetType == AwFmAlphabetNucleotide?
       awFmNucleotideKmerSeedRangeFromTable(index, (char*)kmerPtr1, kmerLength):
       awFmAminoKmerSeedRangeFromTable(index,      (char*)kmerPtr1, kmerLength);
 
-    const size_t numInRange = rangeInTable.endPtr - rangeInTable.startPtr;
+    const size_t numInRange = rangeInTable.endPtr - rangeInTable.startPtr + 1;
 
-    printf("range start: %zu, range end: %zu\n", rangeInTable.startPtr, rangeInTable.endPtr);
-    sprintf(buffer, "for kmer %.*s, found %zu occurrences, but table stored %zu.\n", kmerLength, kmerPtr1, kmerCount, numInRange);
+    // printf("range start: %zu, range end: %zu\n", rangeInTable.startPtr, rangeInTable.endPtr);
+    sprintf(buffer, "for kmer %.*s, found %zu occurrences, but table stored %zu. (range %zu-%zu)\n", kmerLength, kmerPtr1, kmerCount, numInRange, rangeInTable.startPtr, rangeInTable.endPtr);
     testAssertString(kmerCount == numInRange, buffer);
   }
 }

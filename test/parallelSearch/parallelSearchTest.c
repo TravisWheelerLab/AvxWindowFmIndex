@@ -18,11 +18,11 @@
 // #include "divsufsort64.h"
 
 char buffer[2048];
-uint8_t aminoLookup[20]     = {'a','c','d','e','f',
+uint8_t aminoLookup[21]     = {'a','c','d','e','f',
                               'g','h','i','k','l',
                               'm','n','p','q','r',
-                              's','t','v','w','y'};
-uint8_t nucleotideLookup[4] = {'a','g','c','t'};
+                              's','t','v','w','y','z'};
+uint8_t nucleotideLookup[5] = {'a','g','c','t','x'};
 
 void testParallelSearchNucleotide();
 void testParallelSearchAmino();
@@ -30,7 +30,7 @@ void testParallelCount();
 
 int main(int argc, char **argv){
   size_t seedTime = time(NULL);
-  // size_t debugTimeSeed = 1582842257;
+  // size_t seedTime = 1582842257;
   // printf("seed time: %zu\n", seedTime);
   srand(seedTime);
   testParallelSearchNucleotide();
@@ -55,7 +55,7 @@ void testParallelSearchAmino(void){
     }
 
     for(uint64_t i=0; i < sequenceLength; i++){
-      sequence[i] = aminoLookup[rand()%4];
+      sequence[i] = aminoLookup[rand()%21];
     }
     //null terminate the sequence for easy printing
     sequence[sequenceLength] = 0;
@@ -185,7 +185,7 @@ void testParallelSearchNucleotide(){
   struct AwFmIndexMetadata metadata = {.versionNumber = 1, .suffixArrayCompressionRatio = 8,
     .kmerLengthInSeedTable = 9, .alphabetType = AwFmAlphabetNucleotide};
 
-  const uint64_t sequenceLength = 1000 + rand()%50000;
+  const uint64_t sequenceLength = 5000 + rand()%5000;
   printf("creating nucleotide sequence of length %zu.\n", sequenceLength);
   uint8_t *sequence = malloc((sequenceLength+11) * sizeof(uint8_t));
   if(sequence == NULL){
@@ -194,7 +194,7 @@ void testParallelSearchNucleotide(){
   }
 
   for(uint64_t i=0; i < sequenceLength; i++){
-    sequence[i] = nucleotideLookup[rand()%4];
+    sequence[i] = nucleotideLookup[rand()%5];
   }
   //null terminate the sequence for easy printing
   sequence[sequenceLength] = 0;
@@ -243,9 +243,6 @@ void testParallelSearchNucleotide(){
 
     sprintf(buffer, "backtrace vector's capacity was lower than it's count!\n");
     testAssertString(searchData->capacity >= searchData->count, buffer);
-    // if(positionList->count != 0){
-    //   printf("kmer index %zu contains %zu matches\n", kmerIndex, positionList->count);
-    // }
 
 
     //search the sequence, and at each position, ensure:

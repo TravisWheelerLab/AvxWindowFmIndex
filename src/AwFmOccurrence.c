@@ -215,7 +215,7 @@ inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const
  *    bwtPosition: Position of the character to be returned, relative to the start of the block to query.
  *
  *  Returns:
- *    letter at the bwtPosition in the specified blockList.
+ *    Letter index of the character at the bwtPosition in the specified blockList.
  */
 uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *blockPtr, const uint8_t localPosition){
   const uint8_t byteInBlock    = localPosition / 8;
@@ -240,7 +240,7 @@ uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *b
  *    bwtPosition: Position of the character to be returned, relative to the start of the block to query.
  *
  *  Returns:
- *    letter at the bwtPosition in the specified blockList.
+ *    Letter index of the character at the bwtPosition in the specified blockList.
  */
 uint8_t awFmGetAminoLetterAtBwtPosition(const struct AwFmAminoBlock *blockPtr, const uint8_t localPosition){
   const uint8_t byteInBlock    = localPosition / 8;

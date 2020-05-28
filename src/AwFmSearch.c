@@ -1,8 +1,6 @@
 #include "AwFmSearch.h"
 #include "AwFmOccurrence.h"
 #include "AwFmLetter.h"
-#include <assert.h>
-
 
 void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
   struct AwFmSearchRange *restrict const range, const uint8_t letter){
@@ -296,8 +294,7 @@ inline size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *restric
 
   uint8_t vectorPopcount = awFmVectorPopcount(occurrenceVector, localQueryPosition);
   uint64_t backtraceBwtPosition = prefixSums[letterIndex] + baseOccurrence + vectorPopcount - 1;
-  printf("lqp: %u, blockind %zu,  found freq ind letter %u, base occ %zu, popcnt %u\n",
-  localQueryPosition,blockIndex,  letterIndex, baseOccurrence, vectorPopcount);
+
   return backtraceBwtPosition;
 }
 
@@ -326,16 +323,15 @@ inline size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict con
 
 
 inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const index,
- const char *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range){
+  const char *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range){
 
   uint8_t indexInKmerString = kmerLength-1;
   uint8_t queryLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[indexInKmerString]);
-  printf("letter index %u \n", queryLetterIndex);
   range->startPtr = index->prefixSums[queryLetterIndex];
   range->endPtr = index->prefixSums[queryLetterIndex+1] - 1;
 
   while(indexInKmerString-- != 0 && awFmSearchRangeIsValid(range)){
-    awFmNucleotideIterativeStepBackwardSearch(index, range, awFmAsciiNucleotideToLetterIndex(kmer[queryLetterIndex]));
+    awFmNucleotideIterativeStepBackwardSearch(index, range, awFmAsciiNucleotideToLetterIndex(kmer[indexInKmerString]));
   }
 }
 
@@ -348,6 +344,6 @@ inline void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const inde
   range->endPtr = index->prefixSums[queryLetterIndex+1] - 1;
 
   while(indexInKmerString-- != 0 && awFmSearchRangeIsValid(range)){
-    awFmAminoIterativeStepBackwardSearch(index, range, awFmAsciiAminoAcidToLetterIndex(kmer[queryLetterIndex]));
+    awFmAminoIterativeStepBackwardSearch(index, range, awFmAsciiAminoAcidToLetterIndex(kmer[indexInKmerString]));
   }
 }

@@ -31,8 +31,9 @@ bool setPositionListCount(struct AwFmKmerSearchData *restrict const searchData, 
 
 
 struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity){
-  struct AwFmKmerSearchList *searchList = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
-    sizeof(struct AwFmKmerSearchList));
+  // struct AwFmKmerSearchList *searchList = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
+  //   sizeof(struct AwFmKmerSearchList));
+  struct AwFmKmerSearchList *searchList = malloc(sizeof(struct AwFmKmerSearchList));
     if(searchList == NULL){
       return NULL;
     }
@@ -40,8 +41,9 @@ struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity){
     searchList->capacity = capacity;
     searchList->count = 0;
 
-    searchList->kmerSearchData = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
-      capacity * sizeof(struct AwFmKmerSearchData));
+    // searchList->kmerSearchData = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES,
+    //   capacity * sizeof(struct AwFmKmerSearchData));
+    searchList->kmerSearchData = malloc(capacity * sizeof(struct AwFmKmerSearchData));
 
     if(searchList->kmerSearchData == NULL){
       free(searchList);
@@ -54,8 +56,10 @@ struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity){
       searchList->kmerSearchData[i].kmerLength            = 0;
       searchList->kmerSearchData[i].capacity              = DEFAULT_POSITION_LIST_CAPACITY;
       searchList->kmerSearchData[i].count                 = 0;
-      searchList->kmerSearchData[i].positionBacktraceList = aligned_alloc(
-        AW_FM_CACHE_LINE_SIZE_IN_BYTES,
+      // searchList->kmerSearchData[i].positionBacktraceList = aligned_alloc(
+      //   AW_FM_CACHE_LINE_SIZE_IN_BYTES,
+      //   DEFAULT_POSITION_LIST_CAPACITY * sizeof(struct AwFmBacktrace));
+      searchList->kmerSearchData[i].positionBacktraceList = malloc(
         DEFAULT_POSITION_LIST_CAPACITY * sizeof(struct AwFmBacktrace));
 
       //check for an allocation failure
@@ -87,7 +91,6 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
 
 void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
   struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads){
-
   #pragma omp parallel for num_threads(numThreads)
   for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchList->count; threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES){
 
@@ -133,16 +136,19 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const 
 
     const uint64_t rangesIndex = kmerIndex - threadBlockStartIndex;
     if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+      //TODO: reimplement partial seeded search
       if(kmerLength < index->metadata.kmerLengthInSeedTable){
-        //TODO: create seed from scratch
+        awFmNucleotideNonSeededSearch(index, kmerString, kmerLength, &ranges[rangesIndex]);
       }
       else{
+        // printf("searching for seed (length %u) for kmer %.*s\n", index->metadata.kmerLengthInSeedTable, index->metadata.kmerLengthInSeedTable, kmerString);
         ranges[rangesIndex] = awFmNucleotideKmerSeedRangeFromTable(index, kmerString, kmerLength);
       }
     }
     else{
       if(kmerLength < index->metadata.kmerLengthInSeedTable){
-        //TODO: create seed from scratch
+        awFmAminoNonSeededSearch(index, kmerString, kmerLength, &ranges[rangesIndex]);
+
       }
       else{
         ranges[rangesIndex] = awFmAminoKmerSeedRangeFromTable(index, kmerString, kmerLength);
@@ -246,6 +252,7 @@ bool setPositionListCount(struct AwFmKmerSearchData *restrict const searchData, 
       const size_t oldLengthInBytes = searchData->capacity * sizeof(uint64_t);
       const size_t newCapacity = newCount * 2;
       const size_t newLengthInBytes = newCapacity * sizeof(uint64_t);
+      printf("new length in bytes: %zu\n",newLengthInBytes);
       void *tmpPtr = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, newLengthInBytes);
       if(__builtin_expect(tmpPtr == 0, 0)){
         return false;

@@ -115,7 +115,7 @@ void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequen
     }
     for(uint64_t i = 0; i < sequenceLength; i++){
       sequence[i] = (metadata->alphabetType == AwFmAlphabetNucleotide?
-        nucleotideLookup[rand()%4]: aminoLookup[rand()%20]);
+        nucleotideLookup[rand()%5]: aminoLookup[rand()%21]);
     }
     //null terminate the sequence
     sequence[sequenceLength] = 0;
@@ -155,7 +155,7 @@ void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequen
     awFmCreateIndex(&index, metadata, sequence, sequenceLength, "testIndex.awfmi", true);
 
     struct AwFmSearchRange range = {0,0};
-    uint8_t *kmer2 = (uint8_t*)"agaaa";
+    char *kmer2 = "agaaa";
     if(metadata->alphabetType == AwFmAlphabetNucleotide){
       awFmNucleotideNonSeededSearch(index, kmer2, 5, &range);
     }

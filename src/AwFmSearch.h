@@ -40,14 +40,6 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
   struct AwFmSearchRange *restrict const range, const uint8_t letter);
 
 
-uint64_t awFmNucleotideBackwardSearchSingle(const struct AwFmIndex *restrict const index,
-  uint64_t queryPosition, const uint8_t letter);
-
-
-uint64_t awFmAminoBackwardSearchSingle(const struct AwFmIndex *restrict const index,
-  uint64_t queryPosition, const uint8_t letter);
-
-
 /*
  * Function:  awFmFindDatabaseHitPositions
  * --------------------

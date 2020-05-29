@@ -1,49 +1,163 @@
 Project: AvxWindowFmIndex library
 
+TODO: this doc file is currently out of date, and should be updated shortly.
+
+todo: reimplement kmer ending (check git repo)
+
+todo: use prefetch function in AwFmSearch.c
+todo: update or remove occupancyPerformanceTest dir.
+
+push fix for newlines in tuning example.
+
+
+add flag to generate static lib
+
+
+There is another way to do this which is a little simpler, however. If you pass --recurse-submodules to the git clone command, it will automatically initialize and update each submodule in the repository, including nested submodules if any of the submodules in the repository have submodules themselves.
 
 
 
-A 0b01100: 2/4 |0
-C 0b10111: 4/8 |1
-D 0b00011: 2/6 |2
-E 0b00110: 2/5 |3
-F 0b11110: 4/7 |4
-G 0b11010: 2/5 |5
-H 0b11011: 4/8 |6
-I 0b11001: 2/6 |7
-K 0b10101: 2/6 |8
-L 0b11100: 2/4 |9
-M 0b11101: 4/8 |10
-N 0b01000: 4/5 |11
-P 0b01001: 2/6 |12
-Q 0b00100: 4/6 |13
-R 0b10011: 2/6 |14
-S 0b01010: 2/5 |15
-T 0b00101: 2/6 |16
-V 0b10110: 2/5 |17
-W 0b00001: 4/8 |18
-Y 0b00010: 4/7 |19
+todo: change awFmGetBlockQueryPositionFromGlobalPosition to awFmGetLocalQueryPositionFromGlobalPosition
+todo: checks on valid options for metadata on creation
 
-'l',0b11100: 2/4
-'a',0b01100: 2/4
-'g',0b11010: 2/5
-'v', 0b10110: 2/5
-'e',0b00110: 2/5
-'s',0b01010: 2/5
-'i',0b11001: 2/6
-'k',0b10101: 2/6
-'r',0b10011: 2/6
-'d',0b00011: 2/6
-'t',0b00101: 2/6
-'p',0b01001: 2/6
-'n',0b01000: 4/5
-'q',0b00100: 4/6
-'f',0b11110: 4/7
-'y',0b00010: 4/7
-'m',0b11101: 4/8
-'h',0b11011: 4/8
-'c',0b10111: 4/8
-'w' 0b00001: 4/8
+
+Nucleotide:
+sentinel 0b000: 0
+A 0b001:        1
+C 0b010:        2
+G 0b011:        3
+T 0b100:        4
+
+Amino:
+sentinel 0b00000 |0     0x00
+A 0b01100: 2/4 |1       0x0C
+C 0b10111: 4/8 |2       0x17
+D 0b00011: 2/6 |3       0x03
+E 0b00110: 2/5 |4       0x06
+F 0b11110: 4/7 |5       0x1E
+G 0b11010: 2/5 |6       0x1A
+H 0b11011: 4/8 |7       0x1B
+I 0b11001: 2/6 |8       0x19
+K 0b10101: 2/6 |9       0x15
+L 0b11100: 2/4 |10       0x1C
+M 0b11101: 4/8 |11      0x1D
+N 0b01000: 4/5 |12      0x08
+P 0b01001: 2/6 |13      0x09
+Q 0b00100: 4/6 |14      0x04
+R 0b10011: 2/6 |15      0x13
+S 0b01010: 2/5 |16      0x0A
+T 0b00101: 2/6 |17      0x05
+V 0b10110: 2/5 |18      0x16
+W 0b00001: 4/8 |19      0x01
+Y 0b00010: 4/7 |20      0x02
+
+
+//this is the only encoding currently supported. I can optimize for bi-dir if needed,
+//but I'm not gonna write this shit if it's never gonna get used.
+// encoding strategy for backward only index
+// using backward only, the vector encoding does not matter, no need to reorder for SA creation.
+Index 0:  'a',0b00011: 2
+Index 1:  'c',0b00001: 4
+Index 2:  'd',0b00101: 2
+Index 3:  'e',0b00110: 2
+Index 4:  'f',0b00010: 4
+Index 5:  'g',0b01001: 2
+Index 6:  'h',0b00100: 4
+Index 7:  'i',0b01010: 2
+Index 8:  'k',0b01100: 2
+Index 9:  'l',0b10011: 2
+Index 10: 'm',0b01000: 4
+Index 11: 'n',0b10111: 4
+Index 12: 'p',0b10101: 2
+Index 13: 'q',0b11011: 4
+Index 14: 'r',0b10110: 2
+Index 15: 's',0b11001: 2
+Index 16: 't',0b11010: 2
+Index 17: 'v',0b11100: 2
+Index 18: 'w' 0b11110: 4
+Index 19: 'y',0b11101: 4
+
+
+
+//encoding strategy for bidirectional, optimized for speeding up the summing of the base occurrences
+//this strategy is not currently supported. fuck this nonsense, I'm not wasting time on a version
+//that's slower and is never gonna get used.
+Index 0:  'l' 0b11110: 4/8
+Index 1:  'a',0b11101: 4/7
+Index 2:  'g',0b11100: 2/6
+Index 3:  'v',0b11011: 4/6
+Index 4:  'e',0b11010: 2/6
+Index 5:  's',0b11001: 2/5
+Index 6:  'i',0b10111: 4/5
+Index 7:  'k',0b10110: 2/6
+Index 8:  'r',0b10101: 2/5
+Index 9:  'd',0b10011: 2/4
+Index 10: 't',0b01100: 2/6
+Index 11: 'p',0b01010: 2/6
+Index 12: 'n',0b01001: 2/5
+Index 13: 'q',0b01000: 4/8
+Index 14: 'f',0b00110: 2/6
+Index 15: 'y',0b00101: 2/5
+Index 16: 'm',0b00100: 4/8
+Index 17: 'h',0b00011: 2/4
+Index 18: 'c',0b00010: 4/8
+Index 19: 'w',0b00001: 4/7
+
+letter sort mapping:
+a->c
+c->w
+d->l
+e->f
+f->r
+g->d
+h->v
+i->h
+k->i
+l->a
+m->t
+n->p
+p->n
+q->q
+r->k
+s->g
+t->m
+v->e
+w->y
+y->s
+letter resort map array
+{'?','c','?','w','l','f','r','d',
+'v','h','?','i','a','t','p','?',
+'n','q','k','g', 'm','?','e','y',
+'?','s','?','?','?','?','?','?',}
+
+letter unsort mapping:
+a->l
+c->a
+d->g
+e->v
+f->e
+g->s
+h->i
+i->k
+k->r
+l->d
+m->t
+n->p
+p->n
+q->q
+r->f
+s->y
+t->m
+v->h
+w->c
+y->w
+
+
+letter unsort map array
+{'?','l','?','a','g','v','e','s',
+'i','k','?','r','d','t','p','?',
+'n','q','f','y','m','?','h','c',
+'?','w','?','?','?','?','?','?',}
 
 
 

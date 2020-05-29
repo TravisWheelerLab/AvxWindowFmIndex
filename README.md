@@ -1,5 +1,5 @@
 # AvxWindowFmIndex (BETA)
-A fast, AVX2 accelerated FM index library that utilizes windows of AVX2 vectors to quickly locate exact match Kmers in genetic data. This FM-index is highly optimized for both nucleotide and amino sequences.
+A fast, AVX2 accelerated FM-index library that utilizes windows of SIMD registers to quickly locate exact match kmers in genetic data. This FM-index is highly optimized for both nucleotide and amino sequences, but is unsuitable for general text.
 
 This library is currently in beta release, so some bugs are expected. Please report any issues on the git project page.
 
@@ -61,7 +61,7 @@ To create an .awfmi index, use the awFmCreateIndex() function. This function wil
 
 ``` c
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
-  const struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence,
+  struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence,
   const size_t sequenceLength, const char *restrict const fileSrc, const bool allowFileOverwrite);
 ```
 
@@ -76,7 +76,7 @@ struct AwFmIndexMetadata{
 };
 ```
 
-* version number represents the version of .awfmi file to create. At the moment, there is only one version, so a versionNumber of 1 should always be given.
+* version number represents the version of .awfmi file to create. At the moment, there is only one version, so a versionNumber of 1 should always be given. If an unsupported version number is given, an error message will be generated, and a valid default version number will be used instead.
 * suffixArrayCompressionRatio represents how much to compress the suffix array to reduce the size of the .awfmi file on drive. As an example, a value of 8 will tell AwFmIndex to build a suffix array where 1/8th of the suffix array is sampled, and on average, each hit will take 8 additional backtrace operations to find the actual database sequence position. As the suffix array is never kept in memory queries, it will have no affect on memory usage during index searches.
 * kmerLengthInSeedTable represents how long of kmers to memoize in a lookup table to speed up queries. Higher values will speed up searches, but will take exponentially more memory. A value of 12 (268MB lookup table) is recommended for nucleotide indices, and a value of 5 (51MB) is recommended for protein indices. increasing this value by one will result in 4x table size for nucleotide indices, and a 20x table size for protein indices.
 * alphabetType allows the user to set the type of index to make. Options are AwFmAlphabetNucleotide and AwFmAlphabetAmino
@@ -104,7 +104,7 @@ struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity);
 
 * capacity is the number of kmers the search data struct can hold.
 
-Once the AwFmKmerSearchList struct had been allocated and initialized with the above function, load the kmer strings you wish to query for.
+Once the AwFmKmerSearchList struct had been allocated and initialized with the above function, load the kmer strings you wish to query for. Example code to do this is given below.
 ``` c
 struct AwFmKmerSearchList *loadKmers(char **kmerStrings, uint32_t *kmerStringLengths, uint32_t numKmers){
   struct AwFmKmerSearchList * searchList = awFmCreateKmerSearchList(numKmers);
@@ -149,12 +149,14 @@ void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
   struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
 ```
 
-After querying for the count, the number of occurences of each kmer is located in the 'count' member variable of the corresponding AwFmKmerSearchData.
-
+After querying for the count, the number of occurences of each kmer is located in the 'count' member variable of the corresponding AwFmKmerSearchData. Example code is found below.
 ``` c
-void printKmerHitCount(struct AwFmKmerSearchList *searchList, size_t kmerIndex)
-  const uint32_t kmerCount = searchList->kmerSearchData[kmerIndex].count;
-  printf("kmer at position %zu has %u occurrences.\n", kmerIndex, kmerCount);
+void printAllKmerCounts(struct AwFmKmerSearchList *searchList){
+  const size_t numKmers = searchList->count;
+  for(size_t i = 0; i < numKmers; i++){
+    uint32_t thisLmerCount = searchList->kmerSearchData[i].count;
+    printf("kmer at index %zu has %u counts\n");
+  }
 }
 ```
 

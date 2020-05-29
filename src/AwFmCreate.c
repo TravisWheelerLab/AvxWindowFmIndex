@@ -6,21 +6,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include "divsufsort64.h"
-#include <assert.h>
 
+/*private function prototypes*/
 void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t sequenceLength,
   const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray);
-
 
 void populateKmerSeedTable(struct AwFmIndex *restrict const index);
 
 void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, struct AwFmSearchRange range,
   uint8_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier);
 
-
 void compressSuffixArrayInPlace(uint64_t *const suffixArray, uint64_t suffixArrayLength, const uint8_t compressionRatio);
 
+void fullSequenceSanitize(const uint8_t *restrict const sequence, uint8_t *restrict const sanitizedSequenceCopy,
+  const size_t sequenceLength, const enum AwFmAlphabetType alphabetType);
 
+
+
+/*function implementations*/
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   const struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
   const char *restrict const fileSrc, const bool allowFileOverwrite){
@@ -39,16 +42,11 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   if(sanitizedSequenceCopy == NULL){
     return AwFmAllocationFailure;
   }
-  if(metadata->alphabetType == AwFmAlphabetNucleotide){
-    for(size_t i = 0; i < sequenceLength; i++){
-      sanitizedSequenceCopy[i] = awFmAsciiNucleotideLetterSanitize(sequence[i]);
-    }
-  }
-  else{
-    for(size_t i = 0; i < sequenceLength; i++){
-      sanitizedSequenceCopy[i] = awFmAsciiAminoLetterSanitize(sequence[i]);
-    }
-  }
+
+  //sanitize the sequence, turning ambiguity characters into the singular ambiguity character
+  //character (x for nucleotide, z for amino)
+  fullSequenceSanitize(sequence, sanitizedSequenceCopy, sequenceLength, metadata->alphabetType);
+
   // append the final sentinel character as a terminator.
   sanitizedSequenceCopy[suffixArrayLength - 1] = '$';
 
@@ -113,13 +111,14 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
         awFmDeallocIndex(indexData);
         return AwFmAllocationFailure;
       }
+
       suffixArray = compressedSuffixArray;
     }
 
     indexData->inMemorySuffixArray = suffixArray;
   }
   else{
-    //if the suffix array isn't supposed to be kept in memory, free it to free up memory.
+    //if the suffix array isn't supposed to be kept in memory, there's no need to keep it, so it gets freed here.
     indexData->inMemorySuffixArray = NULL;
     free(suffixArray);
   }
@@ -135,6 +134,8 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
   const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray){
   if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
     uint64_t baseOccurrences[8] = {0};
+    //baseOccurrences is length 8 because that's how long the signpost baseOccurrences in
+    //each window need to be to keep alignment to 32B AVX2 boundries.
 
     for(uint64_t suffixArrayPosition = 0; suffixArrayPosition < bwtLength; suffixArrayPosition++){
       const size_t  blockIndex      = suffixArrayPosition / AW_FM_POSITIONS_PER_FM_BLOCK;
@@ -154,20 +155,20 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 
       uint64_t sequencePositionInSuffixArray = suffixArray[suffixArrayPosition];
       uint8_t letterIndex;
-      if(__builtin_expect(sequencePositionInSuffixArray != 0, 1)){
-        uint64_t positionInBwt = sequencePositionInSuffixArray - 1;
-        letterIndex = awFmAsciiNucleotideToLetterIndex(sequence[positionInBwt]);
+      if(__builtin_expect(sequencePositionInSuffixArray == 0, 0)){
+        //set to the sentinel value (index 5) if we're looking at the letter before the first character.
+        letterIndex = 5;
       }
       else{
-        //set to the sentinel value if we're looking at the letter before the first character.
-        letterIndex = 5;
+        uint64_t positionInBwt = sequencePositionInSuffixArray - 1;
+        letterIndex = awFmAsciiNucleotideToLetterIndex(sequence[positionInBwt]);
       }
 
       uint8_t letterAsCompressedVector = awFmNucleotideLetterIndexToCompressedVector(letterIndex);
       baseOccurrences[letterIndex]++;
-      letterBitVectorBytes[byteInVector]      = letterBitVectorBytes[byteInVector] | ((letterAsCompressedVector & 0x1) << bitInVectorByte);
-      letterBitVectorBytes[byteInVector + 32] = letterBitVectorBytes[byteInVector+ 32] | (((letterAsCompressedVector >> 1) & 0x1) << bitInVectorByte);
-      letterBitVectorBytes[byteInVector + 64] = letterBitVectorBytes[byteInVector+64] | ((letterAsCompressedVector >>2) & 0x01) << bitInVectorByte;
+      letterBitVectorBytes[byteInVector]      |= ((letterAsCompressedVector >> 0) & 0x1) << bitInVectorByte;
+      letterBitVectorBytes[byteInVector + 32] |= ((letterAsCompressedVector >> 1) & 0x1) << bitInVectorByte;
+      letterBitVectorBytes[byteInVector + 64] |= ((letterAsCompressedVector >> 2) & 0x1) << bitInVectorByte;
     }
 
     //set the prefix sums
@@ -175,7 +176,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
     baseOccurrences[0]++;  //add the sentinel to the count of a's
     for(uint8_t i = 1; i < AW_FM_NUCLEOTIDE_CARDINALITY + 2; i++){
       index->prefixSums[i] = baseOccurrences[i-1];
-      baseOccurrences[i] += baseOccurrences[i-1];
+      baseOccurrences[i]  += baseOccurrences[i-1];
     }
 
   }
@@ -205,16 +206,16 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         letterIndex = awFmAsciiAminoAcidToLetterIndex(sequence[positionInBwt]);
       }
       else{
-        //set to the sentinel value if we're looking at the letter before the first character.
+        //set to the sentinel value (index 21) if we're looking at the letter before the first character.
         letterIndex = 21;
       }
         uint8_t letterAsVectorFormat = awFmAminoAcidLetterIndexToCompressedVector(letterIndex);
         baseOccurrences[letterIndex]++;
-        letterBitVectorBytes[byteInVector]        = letterBitVectorBytes[byteInVector]        | (((letterAsVectorFormat >> 0) & 0x1) << bitInVectorByte);
-        letterBitVectorBytes[byteInVector + 32]   = letterBitVectorBytes[byteInVector + 32]   | (((letterAsVectorFormat >> 1) & 0x1) << bitInVectorByte);
-        letterBitVectorBytes[byteInVector + 64]   = letterBitVectorBytes[byteInVector + 64]   | (((letterAsVectorFormat >> 2) & 0x1) << bitInVectorByte);
-        letterBitVectorBytes[byteInVector + 96]   = letterBitVectorBytes[byteInVector + 96]   | (((letterAsVectorFormat >> 3) & 0x1) << bitInVectorByte);
-        letterBitVectorBytes[byteInVector + 128]  = letterBitVectorBytes[byteInVector + 128]  | (((letterAsVectorFormat >> 4) & 0x1) << bitInVectorByte);
+        letterBitVectorBytes[byteInVector]       |= (((letterAsVectorFormat >> 0) & 0x1) << bitInVectorByte);
+        letterBitVectorBytes[byteInVector + 32]  |= (((letterAsVectorFormat >> 1) & 0x1) << bitInVectorByte);
+        letterBitVectorBytes[byteInVector + 64]  |= (((letterAsVectorFormat >> 2) & 0x1) << bitInVectorByte);
+        letterBitVectorBytes[byteInVector + 96]  |= (((letterAsVectorFormat >> 3) & 0x1) << bitInVectorByte);
+        letterBitVectorBytes[byteInVector + 128] |= (((letterAsVectorFormat >> 4) & 0x1) << bitInVectorByte);
 
     }
     //set the prefix sums
@@ -222,7 +223,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
     baseOccurrences[0]++;   //add the sentinel into the count of a's
     for(uint8_t i = 1; i < AW_FM_AMINO_CARDINALITY + 2; i++){
       index->prefixSums[i] = baseOccurrences[i-1];
-      baseOccurrences[i] += baseOccurrences[i-1];
+      baseOccurrences[i]  += baseOccurrences[i-1];
     }
   }
 }
@@ -270,5 +271,20 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
 void compressSuffixArrayInPlace(uint64_t *const suffixArray, uint64_t suffixArrayLength, const uint8_t compressionRatio){
   for(size_t i = 1; i * compressionRatio < suffixArrayLength; i++){
     suffixArray[i] = suffixArray[i*compressionRatio];
+  }
+}
+
+inline void fullSequenceSanitize(const uint8_t *restrict const sequence, uint8_t *restrict const sanitizedSequenceCopy,
+  const size_t sequenceLength, const enum AwFmAlphabetType alphabetType){
+
+  if(alphabetType == AwFmAlphabetNucleotide){
+    for(size_t i = 0; i < sequenceLength; i++){
+      sanitizedSequenceCopy[i] = awFmAsciiNucleotideLetterSanitize(sequence[i]);
+    }
+  }
+  else{
+    for(size_t i = 0; i < sequenceLength; i++){
+      sanitizedSequenceCopy[i] = awFmAsciiAminoLetterSanitize(sequence[i]);
+    }
   }
 }

@@ -8,6 +8,9 @@
 #include <string.h>
 #include "divsufsort64.h"
 
+#define AW_FM_VERSION_NUMBER_DEFAULT 1
+
+
 /*private function prototypes*/
 void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t sequenceLength,
   const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray);
@@ -22,11 +25,11 @@ void compressSuffixArrayInPlace(uint64_t *const suffixArray, uint64_t suffixArra
 void fullSequenceSanitize(const uint8_t *restrict const sequence, uint8_t *restrict const sanitizedSequenceCopy,
   const size_t sequenceLength, const enum AwFmAlphabetType alphabetType);
 
-
+bool isVersionNumberValid(const uint16_t versionNumber);
 
 /*function implementations*/
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
-  const struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
+  struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
   const char *restrict const fileSrc, const bool allowFileOverwrite){
 
   //first, do a sanity check on inputs
@@ -34,6 +37,11 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
     return AwFmNullPtrError;
   }
 
+
+  if(!isVersionNumberValid(metadata->versionNumber)){
+    printf("setting AwFmIndex version number to default value %u.\n", AW_FM_VERSION_NUMBER_DEFAULT);
+    metadata->versionNumber = AW_FM_VERSION_NUMBER_DEFAULT;
+  }
   //set the index out arg initally to NULL, if this function fully completes this will get overwritten
   *index = NULL;
 
@@ -287,5 +295,16 @@ inline void fullSequenceSanitize(const uint8_t *restrict const sequence, uint8_t
     for(size_t i = 0; i < sequenceLength; i++){
       sanitizedSequenceCopy[i] = awFmAsciiAminoLetterSanitize(sequence[i]);
     }
+  }
+}
+
+
+bool isVersionNumberValid(const uint16_t versionNumber){
+  if (versionNumber != 1){
+    printf("Warning: currently, the only version number supported is 1, but %u was given.\n", versionNumber);
+    return false;
+  }
+  else{
+    return true;
   }
 }

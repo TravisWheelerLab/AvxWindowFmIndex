@@ -135,7 +135,7 @@ enum AwFmReturnCode{
  *      AwFmFileWriteFail if a file write failed.
  */
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
-  const struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
+  struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
   const char *restrict const fileSrc, const bool allowFileOverwrite);
 
 

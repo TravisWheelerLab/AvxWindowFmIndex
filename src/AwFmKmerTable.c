@@ -34,12 +34,60 @@ struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(const struct AwFmIndex *r
 // definition check for an intentionally undefined variable so this code doesn't
 // get implemented, get used, or throw
 #ifdef AW_FM_PARTIAL_SEED_CODE_IMPLEMENTATION_PROVIDED
+
+/*
+
+  This code is a snippit of code that may be used in future releases to search for kmers
+  smaller than what are memoized in the kmerSeedTable.
+
+  The main gist is that if your seed table memoizes length 4 kmers, and you have a query "gc",
+  you can use the memoized ranges for "gcaa" and "gctt" and stitch them together to make the range for
+  the smaller query kmer.
+
+  This gets more complicated, since the sentinel at the end can result in some smaller kmers at the very
+  end of the sequence, for instance if the sequence ends with "gc", it'll be after the endPtr for
+  the "gctt" range. You can keep track of some representation of the last k-1 letters in the sequence, where k
+  is the lengh of kmers memoized, and just check in there. This could be a char * string, and use strncmp, but
+  a more efficient option is likely to just create the table index of the last letters, and bit shift it to
+  remove letters to check.
+
+  This all gets harder when ambiguity characters are added, but not memoized. All of a sudden, kmers that end
+  with the greatest nucleotide ('t') or amino ("y"), can't easily tell where "gttt" ends and "gxaaa" begins.
+
+  This problem was hard, and a better solution than "just ignore all that don't end in "t" or "y" was just
+  too hacky to implement in the first official open beta release.
+
+
+Ideas as to how to fix this and get it working:
+
+  So, if the query kmer ends with the largest valid letter ('t' or 'y'), this current technique
+  will fail. This is because it's impossible to separate out the endPtr for these kmers, since we're
+  not storing the ranges for things that include ambiguity characters.
+
+  One suggested solution is to make the kmer seed table bigger by also memoizing kmers that contain ambiguity characters
+
+  The size of the tables will increase, and as a result, the size of the seeds will likely have to be 1 smaller in practice.
+  instead of 4^n * 16 bytes for a nucleotide table with length n, the new size would be
+  5^n * 16.  However, at that point, searching for the smaller kmers becomes much easier.
+
+  For Aminos, the same thing would happen (21^k * 16, instead of 20).
+
+
+
+  Another future update: reverse the direction that the kmerSeedTable index is generated.
+  instead of having the left-most character contribute the largest bits, the right-most
+  have the largest bits. I think this would result in more contiguous memory writes during
+  index creation, but might also help with the indexing for ideas listed above. 
+
+*/
 static inline struct AwFmSearchRange awFmNucleotidePartialKmerSeedRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength){
 
   assert(false, "this function is unfinished, untested, and left only to be finished for future releases");
   struct AwFmSearchRange range = {0,0};
 
+  //this check is only for the current assumption that the kmers can't end with the last letter
+  //(due to being unable to tell) where the partial kmer range ends and the range containing ambig. chararacters begins.
   if(__builtin_expect((kmer[kmerLength-1] | 0x20) == 't', 0)){
     //lookup kmer from scratch
     awFmNucleotideNonSeededSearch(index, kmer, kmerLength, &range);

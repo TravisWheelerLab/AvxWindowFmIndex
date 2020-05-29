@@ -8,8 +8,6 @@
 
 #define BYTES_PER_AVX2_REGISTER         32
 
-/*Private Function Prototypes*/
-// __m256i createQueryPositionBitmask(const uint8_t localQueryPosition);
 
 
 __m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *restrict const blockPtr,
@@ -228,6 +226,7 @@ uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *b
 
   return awFmNucleotideCompressedVectorToLetterIndex(letterAsCompressedVector);
   }
+
 
 /*
  * Function:  awFmGetLetterAtBwtPosition

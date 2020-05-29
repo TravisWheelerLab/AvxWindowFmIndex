@@ -16,6 +16,7 @@ uint8_t awFmAsciiNucleotideToLetterIndex(const uint8_t asciiLetter){
   }
 }
 
+
 uint8_t awFmAsciiNucleotideLetterSanitize(const uint8_t asciiLetter){
   uint8_t toLowerCase = asciiLetter | 0x20;
   switch(toLowerCase){
@@ -28,10 +29,12 @@ uint8_t awFmAsciiNucleotideLetterSanitize(const uint8_t asciiLetter){
   }
 }
 
+
 uint8_t awFmNucleotideLetterIndexToCompressedVector(const uint8_t asciiLetter){
   uint8_t vectorFormats[6] = {6, 5, 3, 1, 2, 4};
   return vectorFormats[asciiLetter];
 }
+
 
 uint8_t awFmNucleotideCompressedVectorToLetterIndex(const uint8_t compressedVectorLetter){
   uint8_t letterIndices[7] = {5, 3, 4, 2, 5, 1, 0};

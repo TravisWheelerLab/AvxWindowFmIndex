@@ -37,7 +37,7 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
  *  Returns:
  *    Cardinality of the alphabet.
  */
-uint_fast8_t  awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
+uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
 
 
 /*
@@ -53,7 +53,7 @@ uint_fast8_t  awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
  *  Returns:
  *    Number of AwFmSearchRange structs in the table.
  */
-size_t        awFmGetKmerTableLength(const struct AwFmIndex *restrict index);
+size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict index);
 
 
 /*
@@ -68,11 +68,24 @@ size_t        awFmGetKmerTableLength(const struct AwFmIndex *restrict index);
  *  Returns:
  *    Number of blocks required to store the BWT.
  */
-size_t        awFmNumBlocksFromBwtLength(const size_t suffixArrayLength);
+size_t awFmNumBlocksFromBwtLength(const size_t suffixArrayLength);
 
 
-
+/*
+ * Function:  awFmGetPrefixSumsLength
+ * --------------------
+ * Computes the length of the prefix sums array for the AwFmIndex struct.
+ *  The length is based on the alphabet type. Nucleotide indices have a length
+ *  of 5, and amino indices have length 21.
+ *
+ *  Inputs:
+ *    alphabet: The alphabet of the index.
+ *
+ *  Returns:
+ *    Number of uint64_t elements in the prefixSums array.
+ */
 uint8_t awFmGetPrefixSumsLength(const enum AwFmAlphabetType alphabet);
+
 
 /*
  * Function:  awFmBwtPositionIsSampled
@@ -86,7 +99,7 @@ uint8_t awFmGetPrefixSumsLength(const enum AwFmAlphabetType alphabet);
  *  Returns:
  *    True if the given position is sampled in the suffix array, false otherwise.
  */
-bool          awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
+bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
 
 
 /*
@@ -100,7 +113,7 @@ bool          awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const in
  *  Returns:
  *    Number of positions in the compressed suffix array.
  */
-uint64_t      awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
+uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
 
 
 /*
@@ -116,7 +129,7 @@ uint64_t      awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restric
  *  Returns:
  *    True if the search range represents a valid range of positions, or false if it represents no elements.
  */
-bool          awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
+bool awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
 
 
 /*
@@ -131,7 +144,7 @@ bool          awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict cons
  *  Returns:
  *    True if the return code represents a successful action, otherwise returns false.
  */
-bool          awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode);
+bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode);
 
 
 /*

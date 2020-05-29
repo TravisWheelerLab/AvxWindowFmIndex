@@ -2,6 +2,7 @@
 #include "AwFmOccurrence.h"
 #include "AwFmLetter.h"
 
+
 void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
   struct AwFmSearchRange *restrict const range, const uint8_t letter){
 
@@ -53,7 +54,6 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
 
   range->endPtr = newEndPointer;
 }
-
 
 
 void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
@@ -266,7 +266,6 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *
 }
 
 
-
 bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const char *restrict const kmer,
   const uint16_t kmerLength){
 
@@ -334,6 +333,7 @@ inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const
     awFmNucleotideIterativeStepBackwardSearch(index, range, awFmAsciiNucleotideToLetterIndex(kmer[indexInKmerString]));
   }
 }
+
 
 inline void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const index,
  const char *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range){

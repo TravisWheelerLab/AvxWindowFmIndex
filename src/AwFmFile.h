@@ -2,13 +2,9 @@
 #define AW_FM_INDEX_FILE_H
 
 #include "AwFmIndexStruct.h"
-#include "AwFmBacktraceVector.h"
 
 #include <stdbool.h>
 #include <stdint.h>
-
-#define AW_FM_INDEX_FILE_EXTENSION      "awfmi"
-
 
 
 /*

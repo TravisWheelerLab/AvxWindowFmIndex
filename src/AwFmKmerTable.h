@@ -4,8 +4,6 @@
 #include "AwFmIndexStruct.h"
 #include <stdint.h>
 
-//TODO: change kmer table to return a pointer (with prefetch!), not a value.
-
 
 /*
  * Function:  awFmNucleotideKmerSeedRangeFromTable

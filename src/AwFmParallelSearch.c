@@ -1,10 +1,13 @@
+#include "AwFmIndex.h"
+#include "AwFmIndexStruct.h"
 #include "AwFmParallelSearch.h"
 #include "AwFmSearch.h"
 #include "AwFmKmerTable.h"
-#include "AwFmBacktraceVector.h"
 #include "AwFmFile.h"
 #include "AwFmLetter.h"
-
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
 

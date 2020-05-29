@@ -225,7 +225,6 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     return AwFmFileReadFail;
   }
 
-
   //handle the in memory suffix array, if requested.
   indexData->metadata.keepSuffixArrayInMemory = keepSuffixArrayInMemory;
   indexData->inMemorySuffixArray = NULL;  //probably unnecessary, but here for safety.
@@ -313,14 +312,15 @@ enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *
   struct AwFmBacktrace *restrict const backtracePtr){
     struct AwFmBacktrace backtraceCopy;
     memcpy(&backtraceCopy, backtracePtr, sizeof(struct AwFmBacktrace));
+
   if(index->metadata.keepSuffixArrayInMemory){
     uint64_t suffixArrayPosition = backtracePtr->position / index->metadata.suffixArrayCompressionRatio;
 
     backtracePtr->position = index->inMemorySuffixArray[suffixArrayPosition] + backtracePtr->_offset;
     backtracePtr->position %= index->bwtLength; //handles the edge case of wrapping around the end of the suffix array.
 
-
     return AwFmSuccess;
+
   }
   else{
     uint64_t suffixArrayPosition = backtracePtr->position / index->metadata.suffixArrayCompressionRatio;
@@ -333,7 +333,7 @@ enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *
       return AwFmFileReadOkay;
     }
     else{
-      printf("\n\n\n\n\n CRITICAL FAILURE: on reading the suffix array, num bytes read = %zu, should equal %zu\n", numBytesRead, sizeof(uint64_t));
+      printf("\n\n CRITICAL FAILURE: on reading the suffix array, num bytes read = %zu, should equal %zu\n", numBytesRead, sizeof(uint64_t));
       printf("original backtrace was %zu, %zu\n", backtraceCopy.position, backtraceCopy._offset);
       backtracePtr->position = -1ULL;
       return AwFmFileReadFail;

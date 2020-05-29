@@ -6,7 +6,6 @@
 #include "../../src/AwFmKmerTable.h"
 #include "../../src/AwFmLetter.h"
 #include "../../src/AwFmParallelSearch.h"
-#include "../../src/AwFmBacktraceVector.h"
 #include "../test.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,9 +30,9 @@ void inMemorySaCompressedTest(void);
 void inMemoryFromFileTest(void);
 
 int main (int argc, char **argv){
-  srand(0);
-    inMemorySaUncompressedTest();
-    inMemorySaCompressedTest();
+  srand(time(NULL));
+  inMemorySaUncompressedTest();
+  inMemorySaCompressedTest();
   inMemoryFromFileTest();
 
 }
@@ -61,42 +60,43 @@ void inMemorySaUncompressedTest(void){
     }
     size_t numKmers = 100;
     uint8_t kmerLength = 8;
-    struct AwFmParallelSearchData *searchData = awFmCreateParallelSearchData(numKmers, 8);
-    searchData->count = numKmers;
+    struct AwFmKmerSearchList *searchList = awFmCreateKmerSearchList(numKmers);
+    searchList->count = numKmers;
     for(size_t i = 0; i < numKmers; i++){
-      searchData->kmerList[i].length = kmerLength;
-      searchData->kmerList[i].string = (char*)&sequence[i];
+      searchList->kmerSearchData[i].kmerLength = kmerLength;
+      searchList->kmerSearchData[i].kmerString = (char*)&sequence[i];
     }
-
-    awFmParallelSearch(index, searchData);
+    awFmParallelSearchLocate(index, searchList, 4);
 
     for(size_t kmerIndex = 0; kmerIndex < numKmers; kmerIndex++){
-      struct AwFmBacktraceVector *backtraceVector = &searchData->sequencePositionLists[kmerIndex];
+      struct AwFmBacktrace *backtraceList = searchList->kmerSearchData[kmerIndex].positionBacktraceList;
 
       for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++){
-        bool kmerFoundAtPosition = strncmp(searchData->kmerList[kmerIndex].string, (char*)&sequence[sequencePosition], kmerLength) == 0;
-        bool positionInBacktraceVector = false;
-        for(size_t backtraceIndex = 0; backtraceIndex < backtraceVector->count; backtraceIndex++){
-          if(backtraceVector->backtraceArray[backtraceIndex].position == sequencePosition){
-            positionInBacktraceVector = true;
+        bool kmerFoundAtPosition = strncmp(searchList->kmerSearchData[kmerIndex].kmerString, (char*)&sequence[sequencePosition], kmerLength) == 0;
+        bool positionInBacktraceList = false;
+        for(size_t backtraceIndex = 0; backtraceIndex < searchList->kmerSearchData[kmerIndex].count; backtraceIndex++){
+          if(backtraceList[backtraceIndex].position == sequencePosition){
+            positionInBacktraceList = true;
           }
         }
+
         sprintf(buffer, "kmer index %zu  (%.*s) at position %zu  (%.*s) found? %i. in backtraceVector? %i.",
           kmerIndex, kmerLength, &sequence[sequencePosition], sequencePosition,
-          kmerLength, searchData->kmerList[kmerIndex].string, kmerFoundAtPosition, positionInBacktraceVector);
-          if(kmerFoundAtPosition != positionInBacktraceVector){
-            printf("not matched: position %zu,  backtrace count %zu, backtrace vector:\n", sequencePosition, backtraceVector->count);
-            for(size_t i = 0; i < backtraceVector->count; i++){
-              printf("[%zu, (%zu)], ", backtraceVector->backtraceArray[i].position, backtraceVector->backtraceArray[i].offset);
+          kmerLength, searchList->kmerSearchData[kmerIndex].kmerString, kmerFoundAtPosition, positionInBacktraceList);
+          if(kmerFoundAtPosition != positionInBacktraceList){
+            printf("not matched: position %zu,  backtrace count %u, backtrace vector:\n",
+              sequencePosition, searchList->kmerSearchData[kmerIndex].count);
+            for(size_t i = 0; i < searchList->kmerSearchData[kmerIndex].count; i++){
+              printf("[%zu, (%zu)], ", backtraceList[i].position, backtraceList[i]._offset);
 
             }
             printf("\n");
           }
-        testAssertString(kmerFoundAtPosition == positionInBacktraceVector, buffer);
+        testAssertString(kmerFoundAtPosition == positionInBacktraceList, buffer);
       }
     }
     free(sequence);
-    awFmDeallocParallelSearchData(searchData);
+    awFmDeallocKmerSearchList(searchList);
     awFmDeallocIndex(index);
   }
 }
@@ -123,42 +123,45 @@ void inMemorySaCompressedTest(void){
     awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
     size_t numKmers = 100;
     uint8_t kmerLength = 8;
-    struct AwFmParallelSearchData *searchData = awFmCreateParallelSearchData(numKmers, 8);
-    searchData->count = numKmers;
+    struct AwFmKmerSearchList *searchList = awFmCreateKmerSearchList(numKmers);
+    searchList->count = numKmers;
     for(size_t i = 0; i < numKmers; i++){
-      searchData->kmerList[i].length = kmerLength;
-      searchData->kmerList[i].string = (char*)&sequence[i];
+      searchList->kmerSearchData[i].kmerLength = kmerLength;
+      searchList->kmerSearchData[i].kmerString = (char*)&sequence[i];
     }
 
-    awFmParallelSearch(index, searchData);
+    awFmParallelSearchLocate(index, searchList, 4);
 
     for(size_t kmerIndex = 0; kmerIndex < numKmers; kmerIndex++){
-      struct AwFmBacktraceVector *backtraceVector = &searchData->sequencePositionLists[kmerIndex];
+      struct AwFmBacktrace *backtraceList = searchList->kmerSearchData[kmerIndex].positionBacktraceList;
 
       for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++){
-        bool kmerFoundAtPosition = strncmp(searchData->kmerList[kmerIndex].string, (char*)&sequence[sequencePosition], kmerLength) == 0;
-        bool positionInBacktraceVector = false;
-        for(size_t backtraceIndex = 0; backtraceIndex < backtraceVector->count; backtraceIndex++){
-          if(backtraceVector->backtraceArray[backtraceIndex].position == sequencePosition){
-            positionInBacktraceVector = true;
+        bool kmerFoundAtPosition = strncmp(searchList->kmerSearchData[kmerIndex].kmerString, (char*)&sequence[sequencePosition], kmerLength) == 0;
+        bool positionInBacktraceList = false;
+        for(size_t backtraceIndex = 0; backtraceIndex < searchList->kmerSearchData[kmerIndex].count; backtraceIndex++){
+          if(backtraceList[backtraceIndex].position == sequencePosition){
+            positionInBacktraceList = true;
           }
         }
+
         sprintf(buffer, "kmer index %zu  (%.*s) at position %zu  (%.*s) found? %i. in backtraceVector? %i.",
           kmerIndex, kmerLength, &sequence[sequencePosition], sequencePosition,
-          kmerLength, searchData->kmerList[kmerIndex].string, kmerFoundAtPosition, positionInBacktraceVector);
-          if(kmerFoundAtPosition != positionInBacktraceVector){
-            printf("not matched: position %zu,  backtrace count %zu, backtrace vector:\n", sequencePosition, backtraceVector->count);
-            for(size_t i = 0; i < backtraceVector->count; i++){
-              printf("[%zu, (%zu)], ", backtraceVector->backtraceArray[i].position, backtraceVector->backtraceArray[i].offset);
+          kmerLength, searchList->kmerSearchData[kmerIndex].kmerString, kmerFoundAtPosition, positionInBacktraceList);
 
-            }
-            printf("\n");
+        if(kmerFoundAtPosition != positionInBacktraceList){
+          printf("not matched: position %zu,  backtrace count %u, backtrace vector:\n",
+            sequencePosition, searchList->kmerSearchData[kmerIndex].count);
+          for(size_t i = 0; i < searchList->kmerSearchData[kmerIndex].count; i++){
+            printf("[%zu, (%zu)], ", backtraceList[i].position, backtraceList[i]._offset);
           }
-        testAssertString(kmerFoundAtPosition == positionInBacktraceVector, buffer);
+          printf("\n");
+        }
+
+        testAssertString(kmerFoundAtPosition == positionInBacktraceList, buffer);
       }
     }
     free(sequence);
-    awFmDeallocParallelSearchData(searchData);
+    awFmDeallocKmerSearchList(searchList);
     awFmDeallocIndex(index);
   }
 }
@@ -186,42 +189,44 @@ void inMemoryFromFileTest(void){
 
     size_t numKmers = 100;
     uint8_t kmerLength = 8;
-    struct AwFmParallelSearchData *searchData = awFmCreateParallelSearchData(numKmers, 8);
-    searchData->count = numKmers;
+    struct AwFmKmerSearchList *searchList = awFmCreateKmerSearchList(numKmers);
+    searchList->count = numKmers;
     for(size_t i = 0; i < numKmers; i++){
-      searchData->kmerList[i].length = kmerLength;
-      searchData->kmerList[i].string = (char*)&sequence[i];
+      searchList->kmerSearchData[i].kmerLength = kmerLength;
+      searchList->kmerSearchData[i].kmerString = (char*)&sequence[i];
     }
 
-    awFmParallelSearch(index, searchData);
+    awFmParallelSearchLocate(index, searchList, 4);
 
     for(size_t kmerIndex = 0; kmerIndex < numKmers; kmerIndex++){
-      struct AwFmBacktraceVector *backtraceVector = &searchData->sequencePositionLists[kmerIndex];
+      struct AwFmBacktrace *backtraceList = searchList->kmerSearchData[kmerIndex].positionBacktraceList;
 
       for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++){
-        bool kmerFoundAtPosition = strncmp(searchData->kmerList[kmerIndex].string, (char*)&sequence[sequencePosition], kmerLength) == 0;
-        bool positionInBacktraceVector = false;
-        for(size_t backtraceIndex = 0; backtraceIndex < backtraceVector->count; backtraceIndex++){
-          if(backtraceVector->backtraceArray[backtraceIndex].position == sequencePosition){
-            positionInBacktraceVector = true;
+        bool kmerFoundAtPosition = strncmp(searchList->kmerSearchData[kmerIndex].kmerString, (char*)&sequence[sequencePosition], kmerLength) == 0;
+        bool positionInBacktraceList = false;
+        for(size_t backtraceIndex = 0; backtraceIndex < searchList->kmerSearchData[kmerIndex].count; backtraceIndex++){
+          if(backtraceList[backtraceIndex].position == sequencePosition){
+            positionInBacktraceList = true;
           }
         }
+
         sprintf(buffer, "kmer index %zu  (%.*s) at position %zu  (%.*s) found? %i. in backtraceVector? %i.",
           kmerIndex, kmerLength, &sequence[sequencePosition], sequencePosition,
-          kmerLength, searchData->kmerList[kmerIndex].string, kmerFoundAtPosition, positionInBacktraceVector);
-          if(kmerFoundAtPosition != positionInBacktraceVector){
-            printf("not matched: position %zu,  backtrace count %zu, backtrace vector:\n", sequencePosition, backtraceVector->count);
-            for(size_t i = 0; i < backtraceVector->count; i++){
-              printf("[%zu, (%zu)], ", backtraceVector->backtraceArray[i].position, backtraceVector->backtraceArray[i].offset);
+          kmerLength, searchList->kmerSearchData[kmerIndex].kmerString, kmerFoundAtPosition, positionInBacktraceList);
+          if(kmerFoundAtPosition != positionInBacktraceList){
+            printf("not matched: position %zu,  backtrace count %u, backtrace vector:\n",
+              sequencePosition, searchList->kmerSearchData[kmerIndex].count);
+            for(size_t i = 0; i < searchList->kmerSearchData[kmerIndex].count; i++){
+              printf("[%zu, (%zu)], ", backtraceList[i].position, backtraceList[i]._offset);
 
             }
             printf("\n");
           }
-        testAssertString(kmerFoundAtPosition == positionInBacktraceVector, buffer);
+        testAssertString(kmerFoundAtPosition == positionInBacktraceList, buffer);
       }
     }
     free(sequence);
-    awFmDeallocParallelSearchData(searchData);
+    awFmDeallocKmerSearchList(searchList);
     awFmDeallocIndex(index);
   }
 }

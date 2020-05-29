@@ -6,7 +6,6 @@
 #include "../../src/AwFmKmerTable.h"
 #include "../../src/AwFmLetter.h"
 #include "../../src/AwFmParallelSearch.h"
-#include "../../src/AwFmBacktraceVector.h"
 #include "../test.h"
 #include <stdio.h>
 #include <stdlib.h>

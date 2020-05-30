@@ -178,6 +178,6 @@ where
 * index is the AwFmIndex to query
 * sequencePosition is the position to return a window around.
 * priorFlankLength and postFlankLength are the number of characters to include before and after the sequencePosition, respectively
-* sequenceBuffer is a preallocated buffer large enough to fit the window described by the flank lengths.
+* sequenceBuffer is a preallocated buffer large enough to fit the window described by the flank lengths. The length must be equal or greater to the sum of the priorFlankLength and postFlankLength.
 
 If the flank lengths would force the window to start before the start of the database sequence, or end after, the window is trimmed to stay within the bounds of the database sequence. Regardless, the sequenceBuffer will be null-terminated.

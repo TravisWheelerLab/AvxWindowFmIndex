@@ -6,12 +6,12 @@
 #include <immintrin.h>
 #include <stdio.h>
 
-//optimization macros
+//optimization macros, T0 has been slightly more preferrable in practice
 #ifndef AW_FM_PREFETCH_STRATEGY
-  #define AW_FM_PREFETCH_STRATEGY _MM_HINT_T2
+  #define AW_FM_PREFETCH_STRATEGY _MM_HINT_T0
+  //#define AW_FM_PREFETCH_STRATEGY _MM_HINT_T2
   //#define AW_FM_PREFETCH_STRATEGY _MM_HINT_T1
-  // #define AW_FM_PREFETCH_STRATEGY _MM_HINT_T0
-  // #define AW_FM_PREFETCH_STRATEGY _MM_HINT_NTA
+  //#define AW_FM_PREFETCH_STRATEGY _MM_HINT_NTA
 #endif
 
 #ifndef AW_FM_NUM_CONCURRENT_QUERIES

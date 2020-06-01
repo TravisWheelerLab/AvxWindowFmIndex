@@ -144,7 +144,6 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const 
         awFmNucleotideNonSeededSearch(index, kmerString, kmerLength, &ranges[rangesIndex]);
       }
       else{
-        // printf("searching for seed (length %u) for kmer %.*s\n", index->metadata.kmerLengthInSeedTable, index->metadata.kmerLengthInSeedTable, kmerString);
         ranges[rangesIndex] = awFmNucleotideKmerSeedRangeFromTable(index, kmerString, kmerLength);
       }
     }
@@ -255,7 +254,6 @@ bool setPositionListCount(struct AwFmKmerSearchData *restrict const searchData, 
       const size_t oldLengthInBytes = searchData->capacity * sizeof(uint64_t);
       const size_t newCapacity = newCount * 2;
       const size_t newLengthInBytes = newCapacity * sizeof(uint64_t);
-      printf("new length in bytes: %zu\n",newLengthInBytes);
       void *tmpPtr = aligned_alloc(AW_FM_CACHE_LINE_SIZE_IN_BYTES, newLengthInBytes);
       if(__builtin_expect(tmpPtr == 0, 0)){
         return false;

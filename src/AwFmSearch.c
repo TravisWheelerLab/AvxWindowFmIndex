@@ -194,7 +194,6 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *
   awFmBlockPrefetch(index->bwtBlockList.asNucleotide, bwtBlockWidth, range.endPtr);
   if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
     while(__builtin_expect(awFmSearchRangeIsValid(&range) && (kmerLetterPosition--), 1)){
-      // printf("in loop with letter pos %u\n", kmerLetterPosition);
         kmerLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[kmerLetterPosition]);
         awFmNucleotideIterativeStepBackwardSearch(index, &range, kmerLetterIndex);
       }

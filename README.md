@@ -44,13 +44,7 @@ To build a static library,
 ```shell
 $ make static
 ```
-This will generate two static libraries, libawfmindex.a and libdivsufsort64.a.
-```shell
-$ make static
-```
-
-libawfmindex.a will be found in   lib/libawfmindex.a, libdivsufsort.a will be found in libdivsufsort/build/libawfmindex.a, and AwFmIndex.h will be found lib/include/AwFmIndex.h
-
+This will generate two static libraries, libawfmindex.a and libdivsufsort64.a, plus the associated header files in the build/ directory.
 
 
 ## AwFmIndex Quick Start Guide

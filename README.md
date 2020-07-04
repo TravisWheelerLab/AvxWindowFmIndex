@@ -25,11 +25,10 @@ $ sudo make install
 ```
 
 ### Building to non-default location
-Sometimes you may need to install the library to a non-default location, for example, if you do not have sudo privileges to write to /usr/local. To install the shared library into a non-default location, such as ~/usr/local:
+Sometimes you may need to install the library to a non-default location, for example, if you do not have sudo privileges to write to /usr/local. To install the shared library into a non-default location, such as ~/usr/local, change the PREFIX argument in the install step.
 ```shell
-$ DESTDIR="~/usr/local"
 $ make
-$ make install
+$ make install PREFIX=~/usr/local
 ```
 
 If AwFmIndex is installed to a non-default location, you may need to set environmental variables to allow your software to find the project .so and .h files at runtime.

@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 static const uint8_t IndexFileFormatIdHeaderLength  = 10;
-static const char    IndexFileFormatIdHeader[10]    = "AwFmIndex\n";
+static const char    IndexFileFormatIdHeader[11]    = "AwFmIndex\n\0";
 
 
 enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,

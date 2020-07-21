@@ -13,6 +13,7 @@ The following is required to build and use this software
 
 The first time the project is built, it will attempt to clone the LibDivSufSort library into the project directory. As such, an internet connection is required during the initial call to make. This can be performed manually, if needed, but this is almost always unnecessary.
 ```shell
+$ git clone https://github.com/TravisWheelerLab/AvxWindowFmIndex.git
 $ git submodule init
 $ git submodule update
 ```

@@ -12,7 +12,7 @@
 
 
 #define NUM_CONCURRENT_QUERIES          32
-#define DEFAULT_POSITION_LIST_CAPACITY  256
+#define DEFAULT_POSITION_LIST_CAPACITY  4
 
 
 void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const index,

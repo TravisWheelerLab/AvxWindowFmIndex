@@ -3,6 +3,25 @@
 #include "AwFmLetter.h"
 
 
+struct AwFmSearchRange awFmCreateInitialQueryRange(const struct AwFmIndex *restrict const index,
+  const char *restrict const query, const uint8_t queryLength){
+
+  uint8_t finalLetterIndexInQuery;
+  if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+    finalLetterIndexInQuery = awFmAsciiNucleotideToLetterIndex(query[queryLength - 1]);
+  }
+  else{
+    finalLetterIndexInQuery = awFmAsciiAminoAcidToLetterIndex(query[queryLength - 1]);
+  }
+
+  struct AwFmSearchRange searchRange;
+  searchRange.startPtr = index->prefixSums[finalLetterIndexInQuery],
+  searchRange.endPtr   = index->prefixSums[finalLetterIndexInQuery+1] - 1;
+
+  return searchRange;
+}
+
+
 void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
   struct AwFmSearchRange *restrict const range, const uint8_t letter){
 

@@ -93,8 +93,6 @@ struct AwFmKmerSearchList{
 };
 
 
-
-
 //todo: remove unused return codes
 enum AwFmReturnCode{
   AwFmSuccess             = 1,    AwFmFileReadOkay                = 2,    AwFmFileWriteOkay         = 3,
@@ -131,7 +129,6 @@ enum AwFmReturnCode{
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
   const char *restrict const fileSrc, const bool allowFileOverwrite);
-
 
 
 /*
@@ -217,6 +214,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
  */
 struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity);
 
+
 /*
  * Function:  awFmDeallocKmerSearchList
  * --------------------
@@ -264,6 +262,7 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
  */
 void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
   struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
+
 
 /*
  * Function:  awFmParallelSearchCount
@@ -323,5 +322,101 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
   const size_t sequencePosition, const size_t priorFlankLength, const size_t postFlankLength,
   char *const sequenceBuffer);
 
+
+/*
+ * Function:  awFmCreateInitialQueryRange
+ * --------------------
+ * Creates the initial Start Pointer - End Pointer range for the given query.
+ *   This range represents all positions in the suffix array that correspond
+ *   to the last character in the given query.
+ *   The alphabet (nucleotide or amino acid) is determined by the alphabet of the index.
+ *
+ *   NOTE: This function is likely only useful if you need to query on a letter-by-letter
+ *   basis, e.g., to implement inexact matching. If you just want to query for exact matches,
+ *   especially for many queries, use awFmParallelSearchLocate or awFmParallelSearchCount instead.
+ *
+ *  Inputs:
+ *    index: AwFmIndex struct to search
+ *    query: ASCII string of the query. The last character of this string will be used to generate
+ *      the initial range.
+ *    queryLength: length of the query argument. This value is used to find the last character
+ *    in the input query.
+ */
+struct AwFmSearchRange awFmCreateInitialQueryRange(const struct AwFmIndex *restrict const index,
+  const char *restrict const query, const uint8_t queryLength);
+
+
+/*
+ * Function:  awFmIterativeStepBackwardSearch
+ * --------------------
+ * Performs a single backward search step on the given index.
+ *  In lieu of returning an additional value, this function updates the data pointed to by
+ *  the range ptr.
+ *
+ *  Inputs:
+ *    index: AwFmIndex struct to search
+ *    range: range in the BWT that corresponds to the implicit kmer that is about to be extended.
+ *      this acts as an out-parameter, and will update to the newly extended range once finished.
+ *    letter: letter of the prefix or suffix character.
+ */
+void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
+  struct AwFmSearchRange *restrict const range, const uint8_t letter);
+
+
+/*
+ * Function:  awFmIterativeStepBackwardSearch
+ * --------------------
+ * Performs a single backward search step on the given index.
+ *  In lieu of returning an additional value, this function updates the data pointed to by
+ *  the range ptr.
+ *
+ *  Inputs:
+ *    index: AwFmIndex struct to search
+ *    range: range in the BWT that corresponds to the implicit kmer that is about to be extended.
+ *      this acts as an out-parameter, and will update to the newly extended range once finished.
+ *    letter: letter of the prefix or suffix character.
+ */
+void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
+  struct AwFmSearchRange *restrict const range, const uint8_t letter);
+
+
+/*
+ * Function:  awFmFindDatabaseHitPositions
+ * --------------------
+ *  Takes a range of BWT positions, backtraces each position to find the nearest sample in the
+ *    compressed suffix array, and looks up those suffix array positions on disk to
+ *    determine the corresponding database sequence position for each BWT position
+ *    between the searchRange's pointers (inclusive startPtr, exclusive endPtr).
+ *
+ *  Note: When using a bi-directional FM-index, the range given should correspond the the
+ *    traditional backward BWT, not the forward BWT.
+ *
+ *  It is the caller's responsibility to free() the returned sequence position array and offset array.
+ *
+ *  This function will overwrite the data in the positionArray, returning the
+ *    database sequence positions in the corresponding elements of the positionArray.
+ *
+ *  Note: positionArray and offsetArray should be of equal length. Having either shorter
+ *    than positionArrayLength will result in undefined behavior.
+ *
+ *  Inputs:
+ *    index:              Pointer to the valid AwFmIndex struct.
+ *    positionArray:          Array of positions in the implied full suffix array to load.
+ *      This function will convert these positions to indices in the compressed suffix array,
+ *      as long as the positions are multiples of the suffix array compression ratio.
+ *    offsetArray:  array of offsets to be added to the database sequence positions.
+ *      This is needed because we can only query the suffix array on positions that are sampled.
+ *    positionArrayLength:    Length of the positionArray and offsetArray.
+ *
+ *  Returns:
+ *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
+ *      AwFmFileReadOkay on success,
+ *      AwFmFileOpenFail on failure to open the AwFm Index file
+ *      AwFmFileReadFail on failure to read as many characters as was expected by the sequence.
+ *      AwFmIllegalPositionError on a suffix array position being out of bounds of
+ *        the file's compressed suffix array.
+ */
+ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
+   const struct AwFmSearchRange *restrict const searchRange, enum AwFmReturnCode *restrict fileAccessResult);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

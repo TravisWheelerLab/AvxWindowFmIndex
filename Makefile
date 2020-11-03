@@ -108,6 +108,10 @@ uninstall:
 	rm -rf $(LIBDIVSUFSORT_STATIC_LIB_DEST_SRC)
 	cd $(LIBDIVSUFSORT_BUILD_DIR) && cmake -DCMAKE_BUILD_TYPE="Release" -DBUILD_DIVSUFSORT64:BOOL=ON  -DCMAKE_INSTALL_PREFIX="$(PREFIX)" .. && make uninstall
 
+.PHONY: format
+format:
+	clang-format -i --verbose `find . -name '*.[ch]'`
+
 #build the .so and place it in the build lib directory
 $(AWFMINDEX_BUILD_LIBRARY_FILE): $(LIBDIVSUFSORT_BUILD_INCLUDE_DIR) $(AWFMINDEX_BUILD_LIBRARY_DIR) $(OBJECT_FILES)
 	$(CC) $(LDFLAGS) -o $(AWFMINDEX_BUILD_LIBRARY_FILE) $(OBJECT_FILES)

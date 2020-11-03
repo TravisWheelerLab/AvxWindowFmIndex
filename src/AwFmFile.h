@@ -6,12 +6,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-
 /*
  * Function:  awFmReadPositionsFromSuffixArray
  * --------------------
- * Given an array of positions in the compressed suffix array, replaces each element in the positionArray
- *  with the sequence position found at that location in the compressed suffix array.
+ * Given an array of positions in the compressed suffix array, replaces each element in the
+ * positionArray with the sequence position found at that location in the compressed suffix array.
  *  Note that the positions in the position array are positions into the 'unsampled' suffix array,
  *  and will be divided by the compression ratio to find the index into the compressed
  *  suffix array stored in the file.
@@ -29,8 +28,8 @@
  *      AwFmFileReadFail if the file could not be read sucessfully.
  */
 enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *restrict const index,
-  uint64_t *restrict const positionArray, const size_t positionArrayLength);
-
+                                                     uint64_t *restrict const positionArray,
+                                                     const size_t positionArrayLength);
 
 /*
  * Function:  awFmSuffixArrayReadPositionParallel
@@ -48,9 +47,9 @@ enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *res
  *      AwFmFileReadOkay on success.
  *      AwFmFileReadFail if the file could not be read sucessfully.
  */
-enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *restrict const index,
- struct AwFmBacktrace *restrict const backtracePtr);
-
+enum AwFmReturnCode
+awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *restrict const index,
+                                    struct AwFmBacktrace *restrict const backtracePtr);
 
 /*
  * Function:  awFmGetSequenceFileOffset
@@ -65,7 +64,6 @@ enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *
  */
 size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index);
 
-
 /*
  * Function:  awFmGetSuffixArrayFileOffset
  * --------------------
@@ -78,6 +76,5 @@ size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index);
  *    Offset into the file, in bytes, where the compressed suffix array starts.
  */
 size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index);
-
 
 #endif /* end of include guard: AW_FM_INDEX_FILE_H */

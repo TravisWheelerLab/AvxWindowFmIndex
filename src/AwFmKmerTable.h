@@ -4,14 +4,13 @@
 #include "AwFmIndexStruct.h"
 #include <stdint.h>
 
-
 /*
  * Function:  awFmNucleotideKmerSeedRangeFromTable
  * --------------------
- * Given an ascii nucleotide kmer, queries the kmerSeedTable for the partially completed range in the backward suffix array,
- *  and returns a copy of that range. This function looks up the range for the
- *  suffix of length equal to the kmers stored in the seed table. As such, using this to query for kmers
- *  that are shorter than those in the table is undefined behavior.
+ * Given an ascii nucleotide kmer, queries the kmerSeedTable for the partially completed range in
+ * the backward suffix array, and returns a copy of that range. This function looks up the range for
+ * the suffix of length equal to the kmers stored in the seed table. As such, using this to query
+ * for kmers that are shorter than those in the table is undefined behavior.
  *
  *  Inputs:
  *    index: AwFmIndex struct to search
@@ -22,17 +21,17 @@
  *  Returns:
  *    Copy of the AwFmSearchRange containing the startPtr and endPtr for the kmer seed.
  */
-struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(const struct AwFmIndex *restrict const index,
-  const char *restrict const kmer, const uint8_t kmerLength);
-
+struct AwFmSearchRange
+awFmNucleotideKmerSeedRangeFromTable(const struct AwFmIndex *restrict const index,
+                                     const char *restrict const kmer, const uint8_t kmerLength);
 
 /*
  * Function:  awFmAminoKmerSeedRangeFromTable
  * --------------------
- * Given an ascii amino acid kmer, queries the kmerSeedTable for the partially completed range in the backward suffix array,
- *  and returns a copy of that range. This function looks up the range for the
- *  suffix of length equal to the kmers stored in the seed table. As such, using this to query for kmers
- *  that are shorter than those in the table is undefined behavior.
+ * Given an ascii amino acid kmer, queries the kmerSeedTable for the partially completed range in
+ * the backward suffix array, and returns a copy of that range. This function looks up the range for
+ * the suffix of length equal to the kmers stored in the seed table. As such, using this to query
+ * for kmers that are shorter than those in the table is undefined behavior.
  *
  *  Inputs:
  *    index: AwFmIndex struct to search
@@ -44,7 +43,7 @@ struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(const struct AwFmInd
  *    Copy of the AwFmSearchRange containing the startPtr and endPtr for the kmer seed.
  */
 struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(const struct AwFmIndex *restrict const index,
-  const char *restrict const kmer, const uint8_t kmerLength);
-
+                                                       const char *restrict const kmer,
+                                                       const uint8_t kmerLength);
 
 #endif /* end of include guard: AW_FM_KMER_TABLE_H */

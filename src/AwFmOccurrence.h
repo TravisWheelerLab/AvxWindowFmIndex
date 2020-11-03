@@ -4,7 +4,6 @@
 #include "AwFmIndexStruct.h"
 #include <stdint.h>
 
-
 /*
  * Function:  awFmMakeNucleotideOccurrenceVector
  * --------------------
@@ -19,9 +18,9 @@
  *  Returns:
  *   Vector with bits set at every position the given letter was found.
  */
-__m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *restrict const blockPtr,
-  const uint8_t letter);
-
+__m256i
+awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *restrict const blockPtr,
+                                   const uint8_t letter);
 
 /*
  * Function:  awFmMakeAminoAcidOccurrenceVector
@@ -37,8 +36,7 @@ __m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *res
  *   Vector with bits set at every position the given letter was found.
  */
 __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict const blockPtr,
-  const uint8_t letter);
-
+                                          const uint8_t letter);
 
 /*
  * Function:  awFmVectorPopcount
@@ -67,7 +65,8 @@ uint16_t awFmVectorPopcount(const __m256i occurrenceVector, const uint8_t localQ
  *  Returns:
  *    Count of the bits set in the occurrenceVector.
  */
-uint16_t awFmVectorPopcountBuiltin(const __m256i occurrenceVector, const uint8_t localQueryPosition);
+uint16_t awFmVectorPopcountBuiltin(const __m256i occurrenceVector,
+                                   const uint8_t localQueryPosition);
 
 /*
  * Function:  awFmBlockPrefetch
@@ -76,13 +75,13 @@ uint16_t awFmVectorPopcountBuiltin(const __m256i occurrenceVector, const uint8_t
  *
  *  Inputs:
  *    baseBlockListPtr: pointer to the blockList to prefetch into.
- *    blockByteWidth: width of the block, being either sizeof(struct AwFmNucleotideBlock) or sizeof(struct AwFmAminoBlock).
- *      This is left as an argument to help unnecessary branching.
- *    nextQueryPosition: position in the blockList that contains the block that should be prefetched.
+ *    blockByteWidth: width of the block, being either sizeof(struct AwFmNucleotideBlock) or
+ * sizeof(struct AwFmAminoBlock). This is left as an argument to help unnecessary branching.
+ *    nextQueryPosition: position in the blockList that contains the block that should be
+ * prefetched.
  */
 void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const uint64_t blockByteWidth,
-  const uint64_t nextQueryPosition);
-
+                       const uint64_t nextQueryPosition);
 
 /*
  * Function:  awFmGetNucleotideLetterAtBwtPosition
@@ -96,8 +95,8 @@ void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const uint64
  *  Returns:
  *    letter at the bwtPosition in the specified blockList.
  */
-uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *blockPtr, const uint8_t localPosition);
-
+uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *blockPtr,
+                                             const uint8_t localPosition);
 
 /*
  * Function:  awFmGetLetterAtBwtPosition
@@ -111,8 +110,7 @@ uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *b
  *  Returns:
  *    letter at the bwtPosition in the specified blockList.
  */
-uint8_t awFmGetAminoLetterAtBwtPosition(const struct AwFmAminoBlock *blockPtr, const uint8_t localPosition);
-
-
+uint8_t awFmGetAminoLetterAtBwtPosition(const struct AwFmAminoBlock *blockPtr,
+                                        const uint8_t localPosition);
 
 #endif /* end of include guard: AW_FM_OCCURANCE_H */

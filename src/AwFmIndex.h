@@ -1,109 +1,116 @@
 #ifndef AW_FM_INDEX_STRUCTS_H
 #define AW_FM_INDEX_STRUCTS_H
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <immintrin.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #define AW_FM_PREFETCH_STRATEGY _MM_HINT_NTA
 
 #ifndef AW_FM_NUM_CONCURRENT_QUERIES
-  #define AW_FM_NUM_CONCURRENT_QUERIES 8
+#define AW_FM_NUM_CONCURRENT_QUERIES 8
 #endif
 
-#define AW_FM_POSITIONS_PER_FM_BLOCK        256
-#define AW_FM_CACHE_LINE_SIZE_IN_BYTES      64
+#define AW_FM_POSITIONS_PER_FM_BLOCK 256
+#define AW_FM_CACHE_LINE_SIZE_IN_BYTES 64
 
 #define AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW 3
-#define AW_FM_NUCLEOTIDE_CARDINALITY        4
+#define AW_FM_NUCLEOTIDE_CARDINALITY 4
 
-#define AW_FM_AMINO_VECTORS_PER_WINDOW      5
-#define AW_FM_AMINO_CARDINALITY             20
+#define AW_FM_AMINO_VECTORS_PER_WINDOW 5
+#define AW_FM_AMINO_CARDINALITY 20
 
+enum AwFmAlphabetType { AwFmAlphabetAmino = 1, AwFmAlphabetNucleotide = 2 };
 
+enum AwFmBwtType { AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2 };
 
-enum AwFmAlphabetType{
-  AwFmAlphabetAmino = 1, AwFmAlphabetNucleotide = 2};
-
-enum AwFmBwtType{
-  AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2};
-
-struct AwFmAminoBlock{
-  __m256i   letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
-  uint64_t  baseOccurrences[AW_FM_AMINO_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding
+struct AwFmAminoBlock {
+    __m256i letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
+    uint64_t
+        baseOccurrences[AW_FM_AMINO_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding
 };
 
-struct AwFmNucleotideBlock{
-  __m256i   letterBitVectors[AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW];
-  uint64_t  baseOccurrences[AW_FM_NUCLEOTIDE_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding
+struct AwFmNucleotideBlock {
+    __m256i letterBitVectors[AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW];
+    uint64_t baseOccurrences[AW_FM_NUCLEOTIDE_CARDINALITY +
+                             4]; //+4 is for sentinel count and 32B padding
 };
 
-union AwFmBwtBlockList{
-  struct AwFmNucleotideBlock  *asNucleotide;
-  struct AwFmAminoBlock       *asAmino;
+union AwFmBwtBlockList {
+    struct AwFmNucleotideBlock *asNucleotide;
+    struct AwFmAminoBlock *asAmino;
 };
 
 /*Struct for the metadata in the AwFmIndex struct.
-* This contains data that helps to build the index, or to determine how the index
-* will function.*/
-struct AwFmIndexMetadata{
-  uint16_t              versionNumber;
-  uint8_t               suffixArrayCompressionRatio;
-  uint8_t               kmerLengthInSeedTable;
-  enum AwFmAlphabetType alphabetType;
-  bool                  keepSuffixArrayInMemory;
+ * This contains data that helps to build the index, or to determine how the index
+ * will function.*/
+struct AwFmIndexMetadata {
+    uint16_t versionNumber;
+    uint8_t suffixArrayCompressionRatio;
+    uint8_t kmerLengthInSeedTable;
+    enum AwFmAlphabetType alphabetType;
+    bool keepSuffixArrayInMemory;
 };
 
-struct AwFmSearchRange{
-  uint64_t startPtr;
-  uint64_t endPtr;
+struct AwFmSearchRange {
+    uint64_t startPtr;
+    uint64_t endPtr;
 };
 
-struct AwFmIndex{
-          uint64_t          bwtLength;
-  union   AwFmBwtBlockList  bwtBlockList;
-          uint64_t          *prefixSums;
-  struct  AwFmSearchRange   *kmerSeedTable;
-          uint64_t          *inMemorySuffixArray;
-          FILE              *fileHandle;
-  struct  AwFmIndexMetadata metadata;
-          int               fileDescriptor;
-          size_t            suffixArrayFileOffset;
-          size_t            sequenceFileOffset;
+struct AwFmIndex {
+    uint64_t bwtLength;
+    union AwFmBwtBlockList bwtBlockList;
+    uint64_t *prefixSums;
+    struct AwFmSearchRange *kmerSeedTable;
+    uint64_t *inMemorySuffixArray;
+    FILE *fileHandle;
+    struct AwFmIndexMetadata metadata;
+    int fileDescriptor;
+    size_t suffixArrayFileOffset;
+    size_t sequenceFileOffset;
 };
 
-struct AwFmBacktrace{
-  uint64_t position;
-  uint64_t _offset;   //for internal use during backtrace, you can likely ignore this
+struct AwFmBacktrace {
+    uint64_t position;
+    uint64_t _offset; // for internal use during backtrace, you can likely ignore this
 };
 
-struct AwFmKmerSearchData{
-  char                        *kmerString;
-  uint64_t                    kmerLength;
-  struct AwFmBacktrace        *positionBacktraceList;
-  uint32_t                    count;
-  uint32_t                    capacity;
+struct AwFmKmerSearchData {
+    char *kmerString;
+    uint64_t kmerLength;
+    struct AwFmBacktrace *positionBacktraceList;
+    uint32_t count;
+    uint32_t capacity;
 };
 
-struct AwFmKmerSearchList{
-  size_t                      capacity;
-  size_t                      count;
-  struct AwFmKmerSearchData   *kmerSearchData;
+struct AwFmKmerSearchList {
+    size_t capacity;
+    size_t count;
+    struct AwFmKmerSearchData *kmerSearchData;
 };
 
-
-
-
-//todo: remove unused return codes
-enum AwFmReturnCode{
-  AwFmSuccess             = 1,    AwFmFileReadOkay                = 2,    AwFmFileWriteOkay         = 3,
-  AwFmGeneralFailure      = -1,   AwFmUnsupportedVersionError     = -2,   AwFmAllocationFailure     = -3,
-  AwFmNullPtrError        = -4,   AwFmSuffixArrayCreationFailure  = -5,   AwFmIllegalPositionError  = -6,
-  AwFmNoFileSrcGiven      = -7,   AwFmNoDatabaseSequenceGiven     = -8,   AwFmFileFormatError       = -9,
-  AwFmFileOpenFail        = -10,  AwFmFileReadFail                = -11,  AwFmFileWriteFail         = -12,
-  AwFmErrorDbSequenceNull = -13,  AwFmErrorSuffixArrayNull        = -14,  AwFmFileAlreadyExists     = -15};
-
+// todo: remove unused return codes
+enum AwFmReturnCode {
+    AwFmSuccess = 1,
+    AwFmFileReadOkay = 2,
+    AwFmFileWriteOkay = 3,
+    AwFmGeneralFailure = -1,
+    AwFmUnsupportedVersionError = -2,
+    AwFmAllocationFailure = -3,
+    AwFmNullPtrError = -4,
+    AwFmSuffixArrayCreationFailure = -5,
+    AwFmIllegalPositionError = -6,
+    AwFmNoFileSrcGiven = -7,
+    AwFmNoDatabaseSequenceGiven = -8,
+    AwFmFileFormatError = -9,
+    AwFmFileOpenFail = -10,
+    AwFmFileReadFail = -11,
+    AwFmFileWriteFail = -12,
+    AwFmErrorDbSequenceNull = -13,
+    AwFmErrorSuffixArrayNull = -14,
+    AwFmFileAlreadyExists = -15
+};
 
 /*
  * Function:  awFmCreateIndex
@@ -125,14 +132,14 @@ enum AwFmReturnCode{
  *      AwFmFileWriteOkay on success.
  *      AwFmAllocationFailure if memory could not be allocated during the creation process.
  *      AwFmFileAlreadyExists if a file exists at the given fileSrc, but allowOverwite was false.
- *      AwFmSuffixArrayCreationFailure if an error was caused by divsufsort64 in suffix array creation.
- *      AwFmFileWriteFail if a file write failed.
+ *      AwFmSuffixArrayCreationFailure if an error was caused by divsufsort64 in suffix array
+ * creation. AwFmFileWriteFail if a file write failed.
  */
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
-  struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
-  const char *restrict const fileSrc, const bool allowFileOverwrite);
-
-
+                                    struct AwFmIndexMetadata *restrict const metadata,
+                                    const uint8_t *restrict const sequence,
+                                    const size_t sequenceLength, const char *restrict const fileSrc,
+                                    const bool allowFileOverwrite);
 
 /*
  * Function:  awFmDeallocIndex
@@ -143,8 +150,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
  *  Inputs:
  *    index:  Pointer to the AwFmIndex struct to deallocate
  */
-void          awFmDeallocIndex(struct AwFmIndex *index);
-
+void awFmDeallocIndex(struct AwFmIndex *index);
 
 /*
  * Function:  awFmWriteIndexToFile
@@ -169,9 +175,11 @@ void          awFmDeallocIndex(struct AwFmIndex *index);
  *      AwFmFileWriteFail if a file write failed.
  */
 enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
-  const uint64_t *restrict const suffixArray, const uint8_t *restrict const sequence,
-  const uint64_t sequenceLength, const char *restrict const fileSrc, const bool allowOverwrite);
-
+                                         const uint64_t *restrict const suffixArray,
+                                         const uint8_t *restrict const sequence,
+                                         const uint64_t sequenceLength,
+                                         const char *restrict const fileSrc,
+                                         const bool allowOverwrite);
 
 /*
  * Function:  awFmReadIndexFromFile
@@ -189,14 +197,12 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
  *    AwFmReturnCode represnting the result of the write. Possible returns are:
  *      AwFmFileReadOkay on success.
  *      AwFmFileAlreadyExists if no file could be opened at the given fileSrc.
- *      AwFmFileFormatError if the header was not correct. This suggests that the file at this location
- *        is not the correct format.
- *      AwFmAllocationFailure on failure to allocated the necessary memory for the index.
+ *      AwFmFileFormatError if the header was not correct. This suggests that the file at this
+ * location is not the correct format. AwFmAllocationFailure on failure to allocated the necessary
+ * memory for the index.
  */
 enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict index,
-  const char *fileSrc, const bool keepSuffixArrayInMemory);
-
-
+                                          const char *fileSrc, const bool keepSuffixArrayInMemory);
 
 /*
  * Function:  awFmCreateKmerSearchList
@@ -224,16 +230,15 @@ struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity);
  *    and positionLists inside the searchData.
  *
  *  Note that, since the searchData doesn't own the kmer char strings, it will not try to
- *  deallocate them. If kmers were dynamically allocated externally, it is the caller's responsibility
- *  to deallocate them. This means that if these pointers are the only pointer to the data,
- *  and if they were dynamically allocated, forgetting to deallocate them before calling this function
- *  will leak the data.
+ *  deallocate them. If kmers were dynamically allocated externally, it is the caller's
+ * responsibility to deallocate them. This means that if these pointers are the only pointer to the
+ * data, and if they were dynamically allocated, forgetting to deallocate them before calling this
+ * function will leak the data.
  *
  *  Inputs:
  *    searchData:   pointer to the searchData struct to deallocate
  */
 void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchList);
-
 
 /*
  * Function:  awFmParallelSearchLocate
@@ -263,7 +268,8 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
  *                    will likely vary from system to system. Suggested default value is 4
  */
 void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
-  struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
+                              struct AwFmKmerSearchList *restrict const searchList,
+                              uint8_t numThreads);
 
 /*
  * Function:  awFmParallelSearchCount
@@ -293,8 +299,8 @@ void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
  *                    will likely vary from system to system. Suggested default value is 4
  */
 void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
-  struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
-
+                             struct AwFmKmerSearchList *restrict const searchList,
+                             uint8_t numThreads);
 
 /*
  * Function:  awFmReadSequenceFromFile
@@ -320,8 +326,9 @@ void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
  *      AwFmFileReadFail if the file could not be read sucessfully.
  */
 enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
-  const size_t sequencePosition, const size_t priorFlankLength, const size_t postFlankLength,
-  char *const sequenceBuffer);
-
+                                             const size_t sequencePosition,
+                                             const size_t priorFlankLength,
+                                             const size_t postFlankLength,
+                                             char *const sequenceBuffer);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

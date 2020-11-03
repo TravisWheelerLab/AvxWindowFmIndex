@@ -1,12 +1,11 @@
 #ifndef AW_FM_INDEX_STRUCT_H
 #define AW_FM_INDEX_STRUCT_H
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <immintrin.h>
-#include <stdio.h>
 #include "AwFmIndex.h"
-
+#include <immintrin.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 
 /*
  * Function:  awFmIndexAlloc
@@ -23,7 +22,7 @@
  *      If any dynamic allocation fails, all data used in the AwFmIndex will be deallocated, too.
  */
 struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const metadata,
-  const size_t bwtLength);
+                                 const size_t bwtLength);
 
 /*
  * Function:  awFmGetAlphabetCardinality
@@ -38,7 +37,6 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const 
  *    Cardinality of the alphabet.
  */
 uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
-
 
 /*
  * Function:  awFmGetKmerTableLength
@@ -55,7 +53,6 @@ uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
  */
 size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict index);
 
-
 /*
  * Function:  awFmNumBlocksFromBwtLength
  * --------------------
@@ -69,7 +66,6 @@ size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict index);
  *    Number of blocks required to store the BWT.
  */
 size_t awFmNumBlocksFromBwtLength(const size_t suffixArrayLength);
-
 
 /*
  * Function:  awFmGetPrefixSumsLength
@@ -86,7 +82,6 @@ size_t awFmNumBlocksFromBwtLength(const size_t suffixArrayLength);
  */
 uint8_t awFmGetPrefixSumsLength(const enum AwFmAlphabetType alphabet);
 
-
 /*
  * Function:  awFmBwtPositionIsSampled
  * --------------------
@@ -99,8 +94,8 @@ uint8_t awFmGetPrefixSumsLength(const enum AwFmAlphabetType alphabet);
  *  Returns:
  *    True if the given position is sampled in the suffix array, false otherwise.
  */
-bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
-
+bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index,
+                              const uint64_t position);
 
 /*
  * Function:  awFmGetCompressedSuffixArrayLength
@@ -115,7 +110,6 @@ bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, cons
  */
 uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
 
-
 /*
  * Function:  awFmSearchRangeIsValid
  * --------------------
@@ -127,10 +121,10 @@ uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict con
  *    searchRange: Pointer to the search range to query.
  *
  *  Returns:
- *    True if the search range represents a valid range of positions, or false if it represents no elements.
+ *    True if the search range represents a valid range of positions, or false if it represents no
+ * elements.
  */
 bool awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
-
 
 /*
  * Function:  awFmReturnCodeSuccess
@@ -146,18 +140,16 @@ bool awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchR
  */
 bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode);
 
-
 /*
-* Function:  getBlockIndexFromGlobalPosition
-* --------------------
-*  Computes the block index, given the full BWT query position.
-*  Inputs:
-*    globalQueryPosition: Position in the BWT that the occurrence function is requesting
-*   Returns:
-*     Index of the block where the given query position resides.
-*/
+ * Function:  getBlockIndexFromGlobalPosition
+ * --------------------
+ *  Computes the block index, given the full BWT query position.
+ *  Inputs:
+ *    globalQueryPosition: Position in the BWT that the occurrence function is requesting
+ *   Returns:
+ *     Index of the block where the given query position resides.
+ */
 size_t awFmGetBlockIndexFromGlobalPosition(const size_t globalQueryPosition);
-
 
 /*
  * Function:  getBlockQueryPositionFromGlobalPosition
@@ -169,7 +161,6 @@ size_t awFmGetBlockIndexFromGlobalPosition(const size_t globalQueryPosition);
  *     Bit position into the block's AVX2 vectors where the query position lands.
  */
 uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQueryPosition);
-
 
 /*
  * Function:  awFmSearchRangeLength
@@ -185,6 +176,5 @@ uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQuer
  *      or 0 otherwise, as that would imply that no instances of that kmer were found.
  */
 size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range);
-
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCT_H */

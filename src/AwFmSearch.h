@@ -6,7 +6,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-
 /*
  * Function:  awFmIterativeStepBackwardSearch
  * --------------------
@@ -21,7 +20,8 @@
  *    letter: letter of the prefix or suffix character.
  */
 void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
-  struct AwFmSearchRange *restrict const range, const uint8_t letter);
+                                               struct AwFmSearchRange *restrict const range,
+                                               const uint8_t letter);
 
 /*
  * Function:  awFmIterativeStepBackwardSearch
@@ -37,8 +37,8 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
  *    letter: letter of the prefix or suffix character.
  */
 void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
-  struct AwFmSearchRange *restrict const range, const uint8_t letter);
-
+                                          struct AwFmSearchRange *restrict const range,
+                                          const uint8_t letter);
 
 /*
  * Function:  awFmFindDatabaseHitPositions
@@ -51,7 +51,8 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
  *  Note: When using a bi-directional FM-index, the range given should correspond the the
  *    traditional backward BWT, not the forward BWT.
  *
- *  It is the caller's responsibility to free() the returned sequence position array and offset array.
+ *  It is the caller's responsibility to free() the returned sequence position array and offset
+ * array.
  *
  *  This function will overwrite the data in the positionArray, returning the
  *    database sequence positions in the corresponding elements of the positionArray.
@@ -76,35 +77,35 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
  *      AwFmIllegalPositionError on a suffix array position being out of bounds of
  *        the file's compressed suffix array.
  */
- uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
-   const struct AwFmSearchRange *restrict const searchRange, enum AwFmReturnCode *restrict fileAccessResult);
+uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
+                                       const struct AwFmSearchRange *restrict const searchRange,
+                                       enum AwFmReturnCode *restrict fileAccessResult);
 
-
- /*
-  * Function:  awFmDatabaseSingleKmerExactMatch
-  * --------------------
-  *  Queries the FM-Index for the range of BWT positions that represent instances
-  *    of the given Kmer found in the database.
-  *
-  *  If the given kmer is not found, the AwFmSearch Range will result in a false value
-  *   when given to the awFmSearchRangeIsValid function.
-  *
-  *  Inputs:
-  *    index:        Pointer to the valid AwFmIndex struct.
-  *    kmer:         Pointer to the kmer character string.
-  *      kmer MUST point to valid data, otherwise, undefined behavior may occur, including
-  *      creating potential segfauts.
-  *    kmerLength:   Length of the kmer to be queried. Undefined behavior may occur if
-  *      the function is given a kmerLength of 0.
-  *
-  *  Returns:
-  *    AwFmSearchRange representing the range of BWT positions where the given
-  *    kmer may be found, as long as startPtr < endPtr. Otherwise (startPtr >= endPtr),
-  *    the given kmer does not exist in the database sequence.
-  */
-struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *restrict const index,
-  const char *restrict const kmer, const uint16_t kmerLength);
-
+/*
+ * Function:  awFmDatabaseSingleKmerExactMatch
+ * --------------------
+ *  Queries the FM-Index for the range of BWT positions that represent instances
+ *    of the given Kmer found in the database.
+ *
+ *  If the given kmer is not found, the AwFmSearch Range will result in a false value
+ *   when given to the awFmSearchRangeIsValid function.
+ *
+ *  Inputs:
+ *    index:        Pointer to the valid AwFmIndex struct.
+ *    kmer:         Pointer to the kmer character string.
+ *      kmer MUST point to valid data, otherwise, undefined behavior may occur, including
+ *      creating potential segfauts.
+ *    kmerLength:   Length of the kmer to be queried. Undefined behavior may occur if
+ *      the function is given a kmerLength of 0.
+ *
+ *  Returns:
+ *    AwFmSearchRange representing the range of BWT positions where the given
+ *    kmer may be found, as long as startPtr < endPtr. Otherwise (startPtr >= endPtr),
+ *    the given kmer does not exist in the database sequence.
+ */
+struct AwFmSearchRange
+awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *restrict const index,
+                                 const char *restrict const kmer, const uint16_t kmerLength);
 
 /*
  * Function:  awFmBacktraceBwtPosition
@@ -121,7 +122,8 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *
  *    Position in the suffix array of the character in the sequence immediately preceeding the one
  *      found at the given bwtPosition.
  */
-size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
+size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *restrict const index,
+                                          const uint64_t bwtPosition);
 
 /*
  * Function:  awFmBacktraceBwtPosition
@@ -138,12 +140,14 @@ size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *restrict const
  *    Position in the suffix array of the character in the sequence immediately preceeding the one
  *      found at the given bwtPosition.
  */
-size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
+size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict const index,
+                                     const uint64_t bwtPosition);
 
 /*
  * Function:  awFmSingleKmerExists
  * --------------------
- *  Queries the FM-Index to determine if the database sequence contains any instances of the given kmer
+ *  Queries the FM-Index to determine if the database sequence contains any instances of the given
+ * kmer
  *
  *  Inputs:
  *    index:        Pointer to the valid AwFmIndex struct.
@@ -157,8 +161,8 @@ size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict const inde
  *    True if the kmer exists in the database sequence, or false if it
  *      cannot be found in the database sequence.
  */
-bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const char *restrict const kmer,
-  const uint16_t kmerLength);
+bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index,
+                          const char *restrict const kmer, const uint16_t kmerLength);
 
 /*
  * Function:  awFmNucleotideNonSeededSearch
@@ -182,8 +186,8 @@ bool awFmSingleKmerExists(const struct AwFmIndex *restrict const index, const ch
  *
  */
 void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const index,
-  const char *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range);
-
+                                   const char *restrict const kmer, const uint8_t kmerLength,
+                                   struct AwFmSearchRange *range);
 
 /*
  * Function:  awFmAminoNonSeededSearch
@@ -207,7 +211,7 @@ void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const index,
  *
  */
 void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const index,
- const char *restrict const kmer, const uint8_t kmerLength, struct AwFmSearchRange *range);
-
+                              const char *restrict const kmer, const uint8_t kmerLength,
+                              struct AwFmSearchRange *range);
 
 #endif /* end of include guard: AW_FM_INDEX_SEARCH_H */

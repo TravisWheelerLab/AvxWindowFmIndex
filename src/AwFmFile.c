@@ -286,24 +286,24 @@ enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *res
 
 
 enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
-  const size_t sequencePosition, const size_t priorFlankLength, const size_t postFlankLength,
+  const size_t sequenceStartPosition, const size_t sequenceEndPosition,
   char *const sequenceBuffer){
 
-    //check to make sure that the prior flank length won't underflow the sequence.
-  bool bufferWouldUnderflowSequence = priorFlankLength > sequencePosition;
-  const size_t actualPriorFlankLength = (bufferWouldUnderflowSequence?
-    sequencePosition: priorFlankLength);
+  if(__builtin_expect(sequenceStartPosition >= sequenceEndPosition, 0)){
+    return AwFmIllegalPositionError;
+  }
 
-  const size_t seekPosition = index->sequenceFileOffset + sequencePosition - actualPriorFlankLength;
-  const size_t sequenceSegmentLength = actualPriorFlankLength + postFlankLength;
-  size_t bytesRead = pread(index->fileDescriptor, sequenceBuffer, sequenceSegmentLength * sizeof(char), seekPosition);
+  const size_t sequenceBufferReadLength = sequenceEndPosition - sequenceStartPosition;
+  const size_t seekPosition = index->sequenceFileOffset + sequenceStartPosition;
 
-  if(bytesRead != sequenceSegmentLength * sizeof(char)){
+  size_t bytesRead = pread(index->fileDescriptor, sequenceBuffer, sequenceBufferReadLength * sizeof(char), seekPosition);
+
+  if(bytesRead != sequenceBufferReadLength * sizeof(char)){
     return AwFmFileReadFail;
   }
 
   //null terminate the string
-  sequenceBuffer[sequenceSegmentLength] = 0;
+  sequenceBuffer[sequenceBufferReadLength] = 0;
   return AwFmFileReadOkay;
 }
 

@@ -1,4 +1,4 @@
-
+#include "../../src/AwFmIndexStruct.h"
 
 #include <immintrin.h>
 #include <stdlib.h>

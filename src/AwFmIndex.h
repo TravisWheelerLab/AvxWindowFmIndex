@@ -22,10 +22,10 @@
 #define AW_FM_AMINO_CARDINALITY             20
 
 
-
 enum AwFmAlphabetType{
   AwFmAlphabetAmino = 1, AwFmAlphabetNucleotide = 2};
 
+//NOTE: not currently used, but this enum is kept for future use.
 enum AwFmBwtType{
   AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2};
 

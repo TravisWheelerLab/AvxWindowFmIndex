@@ -1,9 +1,9 @@
 #ifndef AW_FM_INDEX_STRUCTS_H
 #define AW_FM_INDEX_STRUCTS_H
 
+#include "AwFmSimdConfig.h"
 #include <stdint.h>
 #include <stdbool.h>
-#include <immintrin.h>
 #include <stdio.h>
 
 #define AW_FM_PREFETCH_STRATEGY _MM_HINT_NTA

@@ -1,8 +1,8 @@
 #include "AwFmIndex.h"
 #include "AwFmOccurrence.h"
 #include "AwFmLetter.h"
+#include "AwFmSimdConfig.h"
 
-#include <immintrin.h>
 #include <stdbool.h>
 
 

@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <immintrin.h>
 #include <stdio.h>
 #include "AwFmIndex.h"
 

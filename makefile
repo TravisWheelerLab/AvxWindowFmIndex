@@ -15,6 +15,9 @@ CFLAGS 	= -std=gnu11 -fpic -O3 -mtune=native -mavx2 -Wall -Werror -Wextra -fopen
 LDFLAGS	= -shared # linking flags
 
 
+#optional argument(s) for compilation definitions
+SIMD_CONFIG = default
+#other option = M1
 #directories
 AWFMINDEX_PROJECT_DIR						:= $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 AWFMINDEX_BUILD_DIR 						= $(AWFMINDEX_PROJECT_DIR)/build
@@ -58,6 +61,10 @@ LIBDIVSUFSORT_STATIC_HEADER_DEST_SRC		= $(AWFMINDEX_BUILD_DIR)/$(LIBDIVSUFSORT_H
 
 SOURCE_FILES 	:= $(wildcard $(AWFMINDEX_SRC_DIR)/*.c)
 OBJECT_FILES 	:= $(patsubst $(AWFMINDEX_SRC_DIR)/%, $(AWFMINDEX_BUILD_DIR)/%, $(SOURCE_FILES:.c=.o))
+
+
+#define optional macros
+SIMD_M1_MACRO_DEFINE_FLAG = AW_FM_SIMD_CONFIG_M1	#for emulating AVX2 on apple M1 processors.
 
 
 #create a variable to hold the libs to install, to make rule generation easier
@@ -114,7 +121,11 @@ $(AWFMINDEX_BUILD_LIBRARY_FILE): $(LIBDIVSUFSORT_BUILD_INCLUDE_DIR) $(AWFMINDEX_
 
 #create the object files from each c file in the src directory
 $(AWFMINDEX_BUILD_DIR)/%.o: $(AWFMINDEX_SRC_DIR)/%.c
+ifeq ($(SIMD_CONFIG), M1)
+	$(CC) $(CFLAGS) -D $(SIMD_M1_MACRO_DEFINE_FLAG) -c $< -o $@ -I $(LIBDIVSUFSORT_BUILD_INCLUDE_DIR)
+else
 	$(CC) $(CFLAGS) -c $< -o $@ -I $(LIBDIVSUFSORT_BUILD_INCLUDE_DIR)
+endif
 
 #copies the AwFmIndex.h header to the build directory
 $(AWFMINDEX_BUILD_HEADER_FILE): $(AWFMINDEX_SRC_HEADER_FILE) $(AWFMINDEX_BUILD_INCLUDE_DIR)

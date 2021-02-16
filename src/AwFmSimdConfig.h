@@ -1,3 +1,6 @@
+#ifndef AWFM_SIMD_CONFIG_H
+#define AWFM_SIMD_CONFIG_H
+
 #include <stdint.h>
 
 #ifdef AW_FM_SIMD_CONFIG_M1
@@ -56,5 +59,7 @@
 #else
   //if no SIMD configuration was given, attempt to build as normal(AVX2 support)
   #include <immintrin.h>
+
+#endif
 
 #endif

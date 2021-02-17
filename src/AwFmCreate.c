@@ -7,7 +7,7 @@
 #include "AwFmFile.h"
 #include <stdlib.h>
 #include <string.h>
-#include "divsufsort64.h"
+#include "../libdivsufsort/build/include/divsufsort64.h"
 
 #define AW_FM_VERSION_NUMBER_DEFAULT 1
 

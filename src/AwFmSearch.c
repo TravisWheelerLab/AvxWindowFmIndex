@@ -38,7 +38,7 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
   AwFmSimdVec256 occurrenceVector = awFmMakeNucleotideOccurrenceVector(&(index->bwtBlockList.asNucleotide[blockIndex]),
     letter);
 
-  uint_fast8_t vectorPopcount = awFmVectorPopcount(occurrenceVector, localQueryPosition);
+  uint_fast8_t vectorPopcount = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
   newStartPointer += vectorPopcount + baseOccurrence;
 
   range->startPtr = newStartPointer;
@@ -61,7 +61,7 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
   baseOccurrence = index->bwtBlockList.asNucleotide[blockIndex].baseOccurrences[letter];
   occurrenceVector = awFmMakeNucleotideOccurrenceVector(&(index->bwtBlockList.asNucleotide[blockIndex]),
   letter);
-  vectorPopcount = awFmVectorPopcount(occurrenceVector, localQueryPosition);
+  vectorPopcount = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
 
   newEndPointer += vectorPopcount + baseOccurrence;
 
@@ -86,7 +86,7 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
   uint8_t localQueryPosition      = awFmGetBlockQueryPositionFromGlobalPosition(queryPosition);
   uint64_t baseOccurrence         = index->bwtBlockList.asAmino[blockIndex].baseOccurrences[letter];
   AwFmSimdVec256 occurrenceVector = awFmMakeAminoAcidOccurrenceVector(&(index->bwtBlockList.asAmino[blockIndex]), letter);
-  uint_fast8_t  vectorPopcount    = awFmVectorPopcount(occurrenceVector, localQueryPosition);
+  uint_fast8_t  vectorPopcount    = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
   uint64_t      newStartPointer   = letterPrefixSum + vectorPopcount + baseOccurrence;
 
   //prefetch the next start ptr
@@ -105,7 +105,7 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
 
   baseOccurrence      = index->bwtBlockList.asAmino[blockIndex].baseOccurrences[letter];
   occurrenceVector    = awFmMakeAminoAcidOccurrenceVector(&(index->bwtBlockList.asAmino[blockIndex]), letter);
-  vectorPopcount      = awFmVectorPopcount(occurrenceVector, localQueryPosition);
+  vectorPopcount      = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
 
   const uint64_t newEndPointer = letterPrefixSum + vectorPopcount + baseOccurrence - 1;
 
@@ -252,7 +252,7 @@ inline size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *restric
   const AwFmSimdVec256 occurrenceVector      = awFmMakeNucleotideOccurrenceVector(blockPtr, letterIndex);
 
 
-  uint8_t vectorPopcount = awFmVectorPopcount(occurrenceVector, localQueryPosition);
+  uint8_t vectorPopcount = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
   uint64_t backtraceBwtPosition = prefixSums[letterIndex] + baseOccurrence + vectorPopcount - 1;
 
   return backtraceBwtPosition;
@@ -275,7 +275,7 @@ inline size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict con
   AwFmSimdVec256 occurrenceVector      = awFmMakeAminoAcidOccurrenceVector(blockPtr, letterIndex);
   const uint64_t baseOccurrence = blockPtr->baseOccurrences[letterIndex];
 
-  const uint_fast8_t vectorPopcount   = awFmVectorPopcount(occurrenceVector, localQueryPosition);
+  const uint_fast8_t vectorPopcount   = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
   const uint64_t backtraceBwtPosition = prefixSums[letterIndex] + baseOccurrence + vectorPopcount - 1;
 
   return backtraceBwtPosition;
@@ -328,7 +328,7 @@ inline void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const inde
 //   AwFmSimdVec256 occurrenceVector = awFmMakeNucleotideOccurrenceVector(&(index->bwtBlockList.asNucleotide[blockIndex]),
 //     letter);
 //
-//   uint_fast8_t vectorPopcount = awFmVectorPopcount(occurrenceVector, localQueryPosition);
+//   uint_fast8_t vectorPopcount = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
 //
 //
 //   result += vectorPopcount + baseOccurrence;
@@ -355,7 +355,7 @@ inline void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const inde
 //   uint64_t baseOccurrence   = index->bwtBlockList.asAmino[blockIndex].baseOccurrences[letter];
 //   AwFmSimdVec256 occurrenceVector  = awFmMakeAminoAcidOccurrenceVector(&(index->bwtBlockList.asAmino[blockIndex]),
 //     letter);
-//   uint_fast8_t  vectorPopcount  = awFmVectorPopcount(occurrenceVector, localQueryPosition);
+//   uint_fast8_t  vectorPopcount  = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
 //
 //   uint64_t result = letterPrefixSum + vectorPopcount + baseOccurrence;
 //

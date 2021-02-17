@@ -94,6 +94,8 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
 
 void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
   struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads){
+
+  printf("OpenMP not supported yet, num threads %i\n",(int)numThreads);
   #pragma omp parallel for num_threads(numThreads)
   for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchList->count; threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES){
 
@@ -111,6 +113,7 @@ void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
 void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
   struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads){
 
+  printf("OpenMP not supported yet, num threads %i\n",(int)numThreads);
   #pragma omp parallel for num_threads(numThreads)
   for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchList->count; threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES){
 

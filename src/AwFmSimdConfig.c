@@ -5,8 +5,8 @@
 
   AwFmSimdVec256 AwFmSimdVecLoad(const AwFmSimdVec256* memAddr){
     AwFmSimdVec256 loadVector;
-    loadVector.lowVec = vld1q_u8(memAddr);
-    loadVector.highVec = vld1q_u8(memAddr+16); //each lane is 16B, so 2nd has offset of 16
+    loadVector.lowVec = vld1q_u8((uint8_t*)memAddr);
+    loadVector.highVec = vld1q_u8((uint8_t*)(memAddr+16)); //each lane is 16B, so 2nd has offset of 16
     return loadVector;
   }
 

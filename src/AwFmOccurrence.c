@@ -9,13 +9,13 @@
 
 
 
-__m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *restrict const blockPtr,
+AwFmSimdVec256 awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *restrict const blockPtr,
   const uint8_t letter){
   //load the letter bit vectors
-  const __m256i *restrict const blockVectorPtr = blockPtr->letterBitVectors;
-  const __m256i bit0Vector          = AwFmSimdVecLoad(blockVectorPtr);
-  const __m256i bit1Vector          = AwFmSimdVecLoad(blockVectorPtr + 1);
-  const __m256i bit2Vector          = AwFmSimdVecLoad(blockVectorPtr + 2);
+  const AwFmSimdVec256 *restrict const blockVectorPtr = blockPtr->letterBitVectors;
+  const AwFmSimdVec256 bit0Vector          = AwFmSimdVecLoad(blockVectorPtr);
+  const AwFmSimdVec256 bit1Vector          = AwFmSimdVecLoad(blockVectorPtr + 1);
+  const AwFmSimdVec256 bit2Vector          = AwFmSimdVecLoad(blockVectorPtr + 2);
 
   switch(letter){
     case 0: //Nucleotide A 0b110
@@ -49,7 +49,7 @@ __m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *res
  *  Returns:
  *   Vector with bits set at every position the given letter was found.
  */
-__m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict const blockPtr,
+AwFmSimdVec256 awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict const blockPtr,
   const uint8_t letter){
 
 
@@ -114,14 +114,14 @@ __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict 
 // inline uint16_t awFmVectorPopcount(const AwFmSimdVec256 occurrenceVector, const uint8_t localQueryPosition){
 //   return awFmVectorPopcountBuiltin(occurrenceVector, localQueryPosition);
   //deprecated
-// const __m256i lowBitsLookupTable = _mm256_set_epi8( 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0, 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0);
-// const __m256i highBitsLookupTable = _mm256_set_epi8(-5,-4,-4,-3,-4,-3,-3,-2,-4,-3,-3,-2,-3,-2,-2, -1,-5,-4,-4,-3,-4,-3,-3,-2,-4,-3,-3,-2,-3,-2,-2, -1);
-// const __m256i lowNybbleBitmasked = AwFmSimdVecAnd(occurrenceVector, _mm256_set1_epi8(0x0F));
-// const __m256i lowNybbleBitCount = _mm256_shuffle_epi8(lowBitsLookupTable, lowNybbleBitmasked);
-// const __m256i highNybbleBits = _mm256_srli_epi16(occurrenceVector, 4);
-// const __m256i highNybbleBitmasked = AwFmSimdVecAnd(highNybbleBits, _mm256_set1_epi8(0x0F));
-// const __m256i highNybbleNegativeBitCount = _mm256_shuffle_epi8(highBitsLookupTable, highNybbleBitmasked);
-// const __m256i sadCountVector = _mm256_sad_epu8(lowNybbleBitCount, highNybbleNegativeBitCount);
+// const AwFmSimdVec256 lowBitsLookupTable = _mm256_set_epi8( 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0, 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0);
+// const AwFmSimdVec256 highBitsLookupTable = _mm256_set_epi8(-5,-4,-4,-3,-4,-3,-3,-2,-4,-3,-3,-2,-3,-2,-2, -1,-5,-4,-4,-3,-4,-3,-3,-2,-4,-3,-3,-2,-3,-2,-2, -1);
+// const AwFmSimdVec256 lowNybbleBitmasked = AwFmSimdVecAnd(occurrenceVector, _mm256_set1_epi8(0x0F));
+// const AwFmSimdVec256 lowNybbleBitCount = _mm256_shuffle_epi8(lowBitsLookupTable, lowNybbleBitmasked);
+// const AwFmSimdVec256 highNybbleBits = _mm256_srli_epi16(occurrenceVector, 4);
+// const AwFmSimdVec256 highNybbleBitmasked = AwFmSimdVecAnd(highNybbleBits, _mm256_set1_epi8(0x0F));
+// const AwFmSimdVec256 highNybbleNegativeBitCount = _mm256_shuffle_epi8(highBitsLookupTable, highNybbleBitmasked);
+// const AwFmSimdVec256 sadCountVector = _mm256_sad_epu8(lowNybbleBitCount, highNybbleNegativeBitCount);
 //
 // const uint8_t finalSum = 224 -
 //   ((_mm256_extract_epi8(sadCountVector, 0)) + (_mm256_extract_epi8(sadCountVector, 8)) +
@@ -155,7 +155,7 @@ __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict 
   //alternative:
   // uint8_t unalignedBuffer[32 + 31];
   // uint8_t *alignedBuffer = (uint8_t *)((intptr_t)( unalignedBuffer + 31 ) & ~31);
-  // _mm256_store_si256((__m256i*)alignedBuffer, vec);
+  // _mm256_store_si256((AwFmSimdVec256*)alignedBuffer, vec);
   //
   // uint64_t *bufferAs64_t = (uint64_t*) alignedBuffer;
   // return _mm_popcnt_u64(bufferAs64_t[0]) +
@@ -186,7 +186,7 @@ inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const
 //   const uint8_t bitInBlockByte = positionInBlock / 8;
 //   uint8_t letter = 0;
 //   uint8_t letterBitWidth = alphabet == AwFmAlphabetNucleotide? 2: 5;
-//   const __m256i *restrict const letterBitVectorPtr = alphabet == AwFmAlphabetNucleotide?
+//   const AwFmSimdVec256 *restrict const letterBitVectorPtr = alphabet == AwFmAlphabetNucleotide?
 //     blockList.asNucleotide[blockIndex].letterBitVectors:
 //     blockList.asAmino[blockIndex].letterBitVectors;
 //

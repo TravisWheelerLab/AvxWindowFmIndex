@@ -1,7 +1,6 @@
 #include "AwFmIndex.h"
 #include "AwFmOccurrence.h"
 #include "AwFmLetter.h"
-#include "AwFmSimdConfig.h"
 
 #include <stdbool.h>
 
@@ -14,21 +13,21 @@ __m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *res
   const uint8_t letter){
   //load the letter bit vectors
   const __m256i *restrict const blockVectorPtr = blockPtr->letterBitVectors;
-  const __m256i bit0Vector          = _mm256_load_si256(blockVectorPtr);
-  const __m256i bit1Vector          = _mm256_load_si256(blockVectorPtr + 1);
-  const __m256i bit2Vector          = _mm256_load_si256(blockVectorPtr + 2);
+  const __m256i bit0Vector          = AwFmSimdVecLoad(blockVectorPtr);
+  const __m256i bit1Vector          = AwFmSimdVecLoad(blockVectorPtr + 1);
+  const __m256i bit2Vector          = AwFmSimdVecLoad(blockVectorPtr + 2);
 
   switch(letter){
     case 0: //Nucleotide A 0b110
-      return _mm256_and_si256(bit2Vector, bit1Vector);
+      return AwFmSimdVecAnd(bit2Vector, bit1Vector);
     case 1://Nucleotide C 0b101
-      return _mm256_and_si256(bit2Vector, bit0Vector);
+      return AwFmSimdVecAnd(bit2Vector, bit0Vector);
     case 2://Nucleotide G 0b011
-      return _mm256_and_si256(bit1Vector, bit0Vector);
+      return AwFmSimdVecAnd(bit1Vector, bit0Vector);
     case 3://Nucletoide T 0b001
-      return  _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit0Vector));
+      return  AwFmSimdVecAndNot(bit2Vector, AwFmSimdVecAndNot(bit1Vector, bit0Vector));
     case 4: //ambiguity character 'X' 0b010
-      return  _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit1Vector));
+      return  AwFmSimdVecAndNot(bit2Vector, AwFmSimdVecAndNot(bit0Vector, bit1Vector));
       //0b100 is sentinel, but since you can't search for sentinels, it is not included here.
     default:
     __builtin_unreachable();
@@ -55,56 +54,56 @@ __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict 
 
 
   //load the letter bit vectors
-  const __m256i *restrict const blockVectorPtr = blockPtr->letterBitVectors;
-  const __m256i bit0Vector = _mm256_load_si256(blockVectorPtr);
-  const __m256i bit1Vector = _mm256_load_si256(blockVectorPtr + 1);
-  const __m256i bit2Vector = _mm256_load_si256(blockVectorPtr + 2);
-  const __m256i bit3Vector = _mm256_load_si256(blockVectorPtr + 3);
-  const __m256i bit4Vector = _mm256_load_si256(blockVectorPtr + 4);
+  const AwFmSimdVec256 *restrict const blockVectorPtr = blockPtr->letterBitVectors;
+  const AwFmSimdVec256 bit0Vector = AwFmSimdVecLoad(blockVectorPtr);
+  const AwFmSimdVec256 bit1Vector = AwFmSimdVecLoad(blockVectorPtr + 1);
+  const AwFmSimdVec256 bit2Vector = AwFmSimdVecLoad(blockVectorPtr + 2);
+  const AwFmSimdVec256 bit3Vector = AwFmSimdVecLoad(blockVectorPtr + 3);
+  const AwFmSimdVec256 bit4Vector = AwFmSimdVecLoad(blockVectorPtr + 4);
 
   switch(__builtin_expect(letter, 0)){
     case 0:   /*A (alanine) encoding 0b01100*/
-      return _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit2Vector));
+      return AwFmSimdVecAnd(bit3Vector, AwFmSimdVecAndNot(bit4Vector, bit2Vector));
     case 1:   /*C (cysteine) encoding 0b10111*/
-      return  _mm256_and_si256(_mm256_andnot_si256(bit3Vector, bit2Vector), _mm256_and_si256(bit1Vector, bit0Vector));
+      return  AwFmSimdVecAnd(AwFmSimdVecAndNot(bit3Vector, bit2Vector), AwFmSimdVecAnd(bit1Vector, bit0Vector));
     case 2:   /*D (aspartic acid) encoding 0b00011*/
-      return _mm256_and_si256(bit1Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      return AwFmSimdVecAnd(bit1Vector, AwFmSimdVecAndNot(bit4Vector, bit0Vector));
     case 3:   /*E (Glutamic acid) encoding 0b00110*/
-      return _mm256_andnot_si256(bit4Vector, _mm256_and_si256(bit2Vector, bit1Vector));
+      return AwFmSimdVecAndNot(bit4Vector, AwFmSimdVecAnd(bit2Vector, bit1Vector));
     case 4:   /*F (Phenylalanine) encoding 0b11110*/
-      return _mm256_and_si256(_mm256_andnot_si256(bit0Vector, bit3Vector), _mm256_and_si256(bit2Vector, bit1Vector));
+      return AwFmSimdVecAnd(AwFmSimdVecAndNot(bit0Vector, bit3Vector), AwFmSimdVecAnd(bit2Vector, bit1Vector));
     case 5:   /*G (Glycine) encoding 0b11010*/
-      return _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      return AwFmSimdVecAndNot(bit2Vector, AwFmSimdVecAndNot(bit0Vector, bit4Vector));
     case 6:   /*H (Histidine) encoding 0b11011*/
-      return _mm256_and_si256(_mm256_andnot_si256(bit2Vector, bit3Vector), _mm256_and_si256(bit1Vector, bit0Vector));
+      return AwFmSimdVecAnd(AwFmSimdVecAndNot(bit2Vector, bit3Vector), AwFmSimdVecAnd(bit1Vector, bit0Vector));
     case 7:   /*I (Isoleucine) encoding 0b11001*/
-      return _mm256_andnot_si256(bit2Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
+      return AwFmSimdVecAndNot(bit2Vector, AwFmSimdVecAndNot(bit1Vector, bit4Vector));
     case 8:   /*K (Lysine) encoding 0b10101*/
-      return _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit1Vector, bit4Vector));
+      return AwFmSimdVecAndNot(bit3Vector, AwFmSimdVecAndNot(bit1Vector, bit4Vector));
     case 9:   /*L (Leucine) encoding 0b11100*/
-      return _mm256_andnot_si256(bit1Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      return AwFmSimdVecAndNot(bit1Vector, AwFmSimdVecAndNot(bit0Vector, bit4Vector));
     case 10:  /*M (Methionine) encoding 0b11101*/
-      return _mm256_and_si256(_mm256_andnot_si256(bit1Vector, bit3Vector), _mm256_and_si256(bit2Vector, bit0Vector));
+      return AwFmSimdVecAnd(AwFmSimdVecAndNot(bit1Vector, bit3Vector), AwFmSimdVecAnd(bit2Vector, bit0Vector));
     case 11:  /*N (Asparagine) encoding 0b01000*/
-      return _mm256_andnot_si256(_mm256_or_si256(bit0Vector, bit1Vector), _mm256_andnot_si256(bit2Vector, bit3Vector));
+      return AwFmSimdVecAndNot(AwFmSimdVecOr(bit0Vector, bit1Vector), AwFmSimdVecAndNot(bit2Vector, bit3Vector));
     case 12:  /*P (Proline) encoding 0b01001*/
-      return _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      return AwFmSimdVecAnd(bit3Vector, AwFmSimdVecAndNot(bit4Vector, bit0Vector));
     case 13:  /*Q (glutamine) encoding 0b00100*/
-      return _mm256_andnot_si256(_mm256_or_si256(bit3Vector, bit1Vector), _mm256_andnot_si256(bit0Vector, bit2Vector));
+      return AwFmSimdVecAndNot(AwFmSimdVecOr(bit3Vector, bit1Vector), AwFmSimdVecAndNot(bit0Vector, bit2Vector));
     case 14:  /*R (Arginine) encoding 0b10011*/
-      return _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit2Vector, bit4Vector));
+      return AwFmSimdVecAndNot(bit3Vector, AwFmSimdVecAndNot(bit2Vector, bit4Vector));
     case 15:  /*S (Serine) encoding 0b01010*/
-      return _mm256_and_si256(bit3Vector, _mm256_andnot_si256(bit4Vector, bit1Vector));
+      return AwFmSimdVecAnd(bit3Vector, AwFmSimdVecAndNot(bit4Vector, bit1Vector));
     case 16:  /*T (Threonine) encoding 0b00101*/
-      return _mm256_and_si256(bit2Vector, _mm256_andnot_si256(bit4Vector, bit0Vector));
+      return AwFmSimdVecAnd(bit2Vector, AwFmSimdVecAndNot(bit4Vector, bit0Vector));
     case 17:  /*V (Valine) encoding 0b10110*/
-      return _mm256_andnot_si256(bit3Vector, _mm256_andnot_si256(bit0Vector, bit4Vector));
+      return AwFmSimdVecAndNot(bit3Vector, AwFmSimdVecAndNot(bit0Vector, bit4Vector));
     case 18:  /*W (Tryptophan) encoding 0b00001*/
-      return _mm256_andnot_si256(_mm256_or_si256(bit3Vector, bit2Vector), _mm256_andnot_si256(bit1Vector, bit0Vector));
+      return AwFmSimdVecAndNot(AwFmSimdVecOr(bit3Vector, bit2Vector), AwFmSimdVecAndNot(bit1Vector, bit0Vector));
     case 19:  /*Y (Tyrosine) encoding 0b00010*/
-      return _mm256_andnot_si256(_mm256_or_si256(bit0Vector, bit2Vector), _mm256_andnot_si256(bit3Vector, bit1Vector));
+      return AwFmSimdVecAndNot(AwFmSimdVecOr(bit0Vector, bit2Vector), AwFmSimdVecAndNot(bit3Vector, bit1Vector));
     case 20: /*ambiguity character Z 0b11111 */
-      return _mm256_and_si256(_mm256_and_si256(bit3Vector, bit2Vector),_mm256_and_si256(bit1Vector, bit0Vector));
+      return AwFmSimdVecAnd(AwFmSimdVecAnd(bit3Vector, bit2Vector),AwFmSimdVecAnd(bit1Vector, bit0Vector));
     //0b00000 is sentinel, but since you can't search for sentinels, it is not included here.
     default: __builtin_unreachable();   //GCC respects this, doesn't check for letters that aren't valid
   }
@@ -112,15 +111,15 @@ __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict 
 
 
 
-inline uint16_t awFmVectorPopcount(const __m256i occurrenceVector, const uint8_t localQueryPosition){
-  return awFmVectorPopcountBuiltin(occurrenceVector, localQueryPosition);
+// inline uint16_t awFmVectorPopcount(const AwFmSimdVec256 occurrenceVector, const uint8_t localQueryPosition){
+//   return awFmVectorPopcountBuiltin(occurrenceVector, localQueryPosition);
   //deprecated
 // const __m256i lowBitsLookupTable = _mm256_set_epi8( 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0, 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0);
 // const __m256i highBitsLookupTable = _mm256_set_epi8(-5,-4,-4,-3,-4,-3,-3,-2,-4,-3,-3,-2,-3,-2,-2, -1,-5,-4,-4,-3,-4,-3,-3,-2,-4,-3,-3,-2,-3,-2,-2, -1);
-// const __m256i lowNybbleBitmasked = _mm256_and_si256(occurrenceVector, _mm256_set1_epi8(0x0F));
+// const __m256i lowNybbleBitmasked = AwFmSimdVecAnd(occurrenceVector, _mm256_set1_epi8(0x0F));
 // const __m256i lowNybbleBitCount = _mm256_shuffle_epi8(lowBitsLookupTable, lowNybbleBitmasked);
 // const __m256i highNybbleBits = _mm256_srli_epi16(occurrenceVector, 4);
-// const __m256i highNybbleBitmasked = _mm256_and_si256(highNybbleBits, _mm256_set1_epi8(0x0F));
+// const __m256i highNybbleBitmasked = AwFmSimdVecAnd(highNybbleBits, _mm256_set1_epi8(0x0F));
 // const __m256i highNybbleNegativeBitCount = _mm256_shuffle_epi8(highBitsLookupTable, highNybbleBitmasked);
 // const __m256i sadCountVector = _mm256_sad_epu8(lowNybbleBitCount, highNybbleNegativeBitCount);
 //
@@ -131,25 +130,25 @@ inline uint16_t awFmVectorPopcount(const __m256i occurrenceVector, const uint8_t
 // // keeping all the high bitmask one less than actual forces every add to overflow, making this consistent.
 //
 // return finalSum;
-}
+// }
 
 
-inline uint16_t awFmVectorPopcountBuiltin(const __m256i occurrenceVector, const uint8_t localQueryPosition){
-  uint64_t bitmasks[4] = {0};
-  uint8_t  bitmaskedQuadWordIndex = localQueryPosition / 64;
-
-  for(int8_t i = 0; i < bitmaskedQuadWordIndex; i++){
-      bitmasks[i] = ~0UL;
-  }
-  bitmasks[bitmaskedQuadWordIndex] = ~0UL >> (63 - (localQueryPosition % 64));
-
-  uint16_t popcount = _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 0) & bitmasks[0]);
-   popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 1) & bitmasks[1]);
-   popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 2) & bitmasks[2]);
-   popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 3) & bitmasks[3]);
-
-  return popcount;
-}
+// inline uint16_t awFmVectorPopcountBuiltin(const AwFmSimdVec256 occurrenceVector, const uint8_t localQueryPosition){
+//   uint64_t bitmasks[4] = {0};
+//   uint8_t  bitmaskedQuadWordIndex = localQueryPosition / 64;
+//
+//   for(int8_t i = 0; i < bitmaskedQuadWordIndex; i++){
+//       bitmasks[i] = ~0UL;
+//   }
+//   bitmasks[bitmaskedQuadWordIndex] = ~0UL >> (63 - (localQueryPosition % 64));
+//
+//   uint16_t popcount = _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 0) & bitmasks[0]);
+//    popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 1) & bitmasks[1]);
+//    popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 2) & bitmasks[2]);
+//    popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(occurrenceVector, 3) & bitmasks[3]);
+//
+//   return popcount;
+// }
 
 
 
@@ -256,45 +255,45 @@ uint8_t awFmGetAminoLetterAtBwtPosition(const struct AwFmAminoBlock *blockPtr, c
 }
 
 
-//I might only need to mask one quad-word, then I can just skip popcounting the ones after!
-//okay, new strategy: compress to bit vector with AVX2. popcount and accumulate up to mask word,
-//then shift the mask word to zero out as many bits as needed., popcount and add that, then done.
-//if given position 0, one bit should be set., if given 256, all bits should be set.
-/*
- * Function:  createQueryPositionBitmask
- * --------------------
- *  Creates an AVX2 vector that acts as a bitmask to remove positions after the query position,
- *    and to remove the sentinel character if it exists in this vector.
- *
- *  Inputs:
- *    localQueryPosition: position in this AVX2 vector to query. All bits after
- *      this position are cleared in the returned vector.
- *
- *   Returns:
- *     Bitmask Vector for the occurrence vector.
- */
-inline __m256i createQueryPositionBitmask(const uint8_t localQueryPosition){
-  //make the mask for the quad word where the localQueryPositions shows up in.
-  uint64_t quadWordMask = (1UL << ((uint64_t)(localQueryPosition) +1) % 64) - 1;
-  const uint8_t quadWordIndexForQueryPosition = localQueryPosition / 64;
-  __m256i maskVector = _mm256_setzero_si256();
-
-  //starting in the quad word where the query position shows up, set the quad word mask,
-  // and then change the quad word mask to all 1s so everything below gets set to 1s as well.
-  // this switch-case intentionally falls through, and is supposed to not have 'break' statements.
-  switch(quadWordIndexForQueryPosition){
-    case 3:
-    maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 3);
-    quadWordMask = -1UL;
-    case 2:
-    maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 2);
-    quadWordMask = -1UL;
-    case 1:
-    maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 1);
-    quadWordMask = -1UL;
-    case 0:
-    maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 0);
-  }
-
-  return maskVector;
-}
+// //I might only need to mask one quad-word, then I can just skip popcounting the ones after!
+// //okay, new strategy: compress to bit vector with AVX2. popcount and accumulate up to mask word,
+// //then shift the mask word to zero out as many bits as needed., popcount and add that, then done.
+// //if given position 0, one bit should be set., if given 256, all bits should be set.
+// /*
+//  * Function:  createQueryPositionBitmask
+//  * --------------------
+//  *  Creates an AVX2 vector that acts as a bitmask to remove positions after the query position,
+//  *    and to remove the sentinel character if it exists in this vector.
+//  *
+//  *  Inputs:
+//  *    localQueryPosition: position in this AVX2 vector to query. All bits after
+//  *      this position are cleared in the returned vector.
+//  *
+//  *   Returns:
+//  *     Bitmask Vector for the occurrence vector.
+//  */
+// inline AwFmSimdVec256 createQueryPositionBitmask(const uint8_t localQueryPosition){
+//   //make the mask for the quad word where the localQueryPositions shows up in.
+//   uint64_t quadWordMask = (1UL << ((uint64_t)(localQueryPosition) +1) % 64) - 1;
+//   const uint8_t quadWordIndexForQueryPosition = localQueryPosition / 64;
+//   AwFmSimdVec256 maskVector = _mm256_setzero_si256();
+//
+//   //starting in the quad word where the query position shows up, set the quad word mask,
+//   // and then change the quad word mask to all 1s so everything below gets set to 1s as well.
+//   // this switch-case intentionally falls through, and is supposed to not have 'break' statements.
+//   switch(quadWordIndexForQueryPosition){
+//     case 3:
+//     maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 3);
+//     quadWordMask = -1UL;
+//     case 2:
+//     maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 2);
+//     quadWordMask = -1UL;
+//     case 1:
+//     maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 1);
+//     quadWordMask = -1UL;
+//     case 0:
+//     maskVector = _mm256_insert_epi64(maskVector, quadWordMask, 0);
+//   }
+//
+//   return maskVector;
+// }

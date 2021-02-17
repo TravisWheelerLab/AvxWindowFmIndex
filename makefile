@@ -17,12 +17,14 @@ AWFMINDEX_STATIC_LIB_FILENAME			=	libawfmindex.a
 LIBDIVSUFSORT_HEADER_FILENAME			=	divsufsort64.h
 LIBDIVSUFSORT_STATIC_LIB_FILENAME = libdivsufsort64.a
 
-ifeq ($(ARCH), M1)
+
+
+#configurations for different architectures
+AWFMINDEX_SIMD_CONFIG_FLAG_ARM64 = AW_FM_SIMD_CONFIG_ARM_NEON
+ifeq ($(ARCH), ARM)
 AWFMINDEX_SHARED_LIBRARY_FILENAME = libawfmindex.dylib
-CFLAGS = $(CFLAGS_M1)
 endif
 
-#other option = M1
 #directories
 AWFMINDEX_PROJECT_DIR						:= $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 AWFMINDEX_BUILD_DIR 						= $(AWFMINDEX_PROJECT_DIR)/build
@@ -60,7 +62,12 @@ AWFMINDEX_STATIC_LIB_BUILD_SRC					= $(AWFMINDEX_BUILD_DIR)/$(AWFMINDEX_STATIC_L
 
 CC 				= gcc
 CFLAGS 		= -std=gnu11 -fpic -O3 -mtune=native -mavx2 -Wall -Werror -Wextra -fopenmp -ldivsufsort64
-CFLAGS_M1	=	-std=gnu11 -fpic -O3 -mtune=native -Wall -Werror -Wextra-mpopcnt -ldivsufsort64
+CFLAGS_ARM64	=	-std=gnu11 -fpic -O3 -mtune=native -Wall -Werror -Wextra -D $(AWFMINDEX_SIMD_CONFIG_FLAG_ARM64)
+
+ifeq ($(ARCH), ARM)
+CFLAGS = $(CFLAGS_ARM64)
+endif
+
 LDFLAGS 	= -shared -L$(LIBDIVSUFSORT_BUILD_LIBRARY_DIR) -I$(LIBDIVSUFSORT_BUILD_INCLUDE_DIR) -ldivsufsort64 # linking flags
 
 
@@ -72,7 +79,7 @@ OBJECT_FILES 	:= $(patsubst $(AWFMINDEX_SRC_DIR)/%, $(AWFMINDEX_BUILD_DIR)/%, $(
 
 #rules
 .PHONY: all
-all: $(OBJECT_FILES) $(LIBDIVSUFSORT_BUILD_STATIC_LIBRARY_FILE)
+all: $(AWFMINDEX_BUILD_DIR) $(LIBDIVSUFSORT_BUILD_STATIC_LIBRARY_FILE) $(OBJECT_FILES)
 	$(CC) $(LDFLAGS) -o $(AWFMINDEX_BUILD_SHARED_LIB_FILE) $(OBJECT_FILES)
 
 
@@ -84,7 +91,7 @@ install: $(AWFMINDEX_BUILD_SHARED_LIB_FILE) $(AWFMINDEX_SRC_HEADER_FILE)
 	#if either the shared lib or static lib are found, install them
 ifneq ("$(wildcard $(AWFMINDEX_BUILD_SHARED_LIB_FILE))","")
 	cp $(AWFMINDEX_BUILD_SHARED_LIB_FILE) $(AWFMINDEX_INSTALL_SHARED_LIB_FILE)
-else
+endif
 ifneq ("$(wildcard $(AWFMINDEX_STATIC_LIB_BUILD_SRC))","")
 	cp $(AWFMINDEX_STATIC_LIB_BUILD_SRC) $(AWFMINDEX_INSTALL_STATIC_LIB_FILE)
 endif
@@ -118,16 +125,16 @@ uninstall:
 
 
 # builds libdivsufsort into a static library
-$(LIBDIVSUFSORT_BUILD_STATIC_LIBRARY_FILE): $(LIBDIVSUFSORT_PROJECT_DIR)
+$(LIBDIVSUFSORT_BUILD_STATIC_LIBRARY_FILE): $(LIBDIVSUFSORT_PROJECT_DIR)/.git $(LIBDIVSUFSORT_PROJECT_DIR)
 	cd $(LIBDIVSUFSORT_BUILD_DIR) && cmake -DCMAKE_BUILD_TYPE="Release" -DUSE_OPENMP="ON" -DBUILD_SHARED_LIBS="OFF" -DBUILD_DIVSUFSORT64:BOOL=ON  -DCMAKE_INSTALL_PREFIX="$(AWFMINDEX_BUILD_DIR)" .. && make
 
 
 #create the object files from each c file in the src directory
 $(AWFMINDEX_BUILD_DIR)/%.o: $(AWFMINDEX_SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@ -I $(LIBDIVSUFSORT_BUILD_INCLUDE_DIR)
 # ifeq ($(ARCH), M1)
 # 	$(CC) $(CFLAGS_M1) -D $(SIMD_M1_MACRO_DEFINE_FLAG) -c $< -o $@ -I $(LIBDIVSUFSORT_BUILD_INCLUDE_DIR)
 # else
-	$(CC) $(CFLAGS) -c $< -o $@ -I $(LIBDIVSUFSORT_BUILD_INCLUDE_DIR)
 # endif
 
 # #copies the AwFmIndex.h header to the build directory
@@ -140,7 +147,6 @@ $(AWFMINDEX_BUILD_DIR)/%.o: $(AWFMINDEX_SRC_DIR)/%.c
 
 #initialize the libdivsufsort project submodule if not already done
 $(LIBDIVSUFSORT_PROJECT_DIR)/.git:
-	echo "git --rescursive not used, automatically initializing submodules..."
 	git submodule init
 	git submodule update
 
@@ -151,6 +157,10 @@ $(LIBDIVSUFSORT_BUILD_DIR): $(LIBDIVSUFSORT_PROJECT_DIR)/.git
 #make the AwFmIndex build lib directory
 $(AWFMINDEX_BUILD_LIBRARY_DIR):
 	mkdir -p $(AWFMINDEX_BUILD_LIBRARY_DIR)
+
+#make the AwFmIndex build lib directory
+$(AWFMINDEX_BUILD_DIR):
+	mkdir -p $(AWFMINDEX_BUILD_DIR)
 
 #make the AwFmIndex build include directory
 $(AWFMINDEX_BUILD_INCLUDE_DIR):

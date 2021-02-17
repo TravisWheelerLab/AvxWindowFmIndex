@@ -30,12 +30,12 @@ enum AwFmBwtType{
   AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2};
 
 struct AwFmAminoBlock{
-  __m256i   letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
+  AwFmSimdVec256   letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
   uint64_t  baseOccurrences[AW_FM_AMINO_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding
 };
 
 struct AwFmNucleotideBlock{
-  __m256i   letterBitVectors[AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW];
+  AwFmSimdVec256   letterBitVectors[AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW];
   uint64_t  baseOccurrences[AW_FM_NUCLEOTIDE_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding
 };
 

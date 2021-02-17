@@ -2,6 +2,7 @@
 #define AW_FM_OCCURANCE_H
 
 #include "AwFmIndexStruct.h"
+#include "AwFmSimdConfig.h"
 #include <stdint.h>
 
 
@@ -19,7 +20,7 @@
  *  Returns:
  *   Vector with bits set at every position the given letter was found.
  */
-__m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *restrict const blockPtr,
+AwFmSimdVec256 awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *restrict const blockPtr,
   const uint8_t letter);
 
 
@@ -36,7 +37,7 @@ __m256i awFmMakeNucleotideOccurrenceVector(const struct AwFmNucleotideBlock *res
  *  Returns:
  *   Vector with bits set at every position the given letter was found.
  */
-__m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict const blockPtr,
+AwFmSimdVec256 awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict const blockPtr,
   const uint8_t letter);
 
 
@@ -52,7 +53,7 @@ __m256i awFmMakeAminoAcidOccurrenceVector(const struct AwFmAminoBlock *restrict 
  *  Returns:
  *    Count of the bits set in the occurrenceVector.
  */
-uint16_t awFmVectorPopcount(const __m256i occurrenceVector, const uint8_t localQueryPosition);
+uint16_t awFmVectorPopcount(const AwFmSimdVec256 occurrenceVector, const uint8_t localQueryPosition);
 
 /*
  * Function:  awFmVectorPopcountBuiltin
@@ -67,7 +68,7 @@ uint16_t awFmVectorPopcount(const __m256i occurrenceVector, const uint8_t localQ
  *  Returns:
  *    Count of the bits set in the occurrenceVector.
  */
-uint16_t awFmVectorPopcountBuiltin(const __m256i occurrenceVector, const uint8_t localQueryPosition);
+uint16_t awFmVectorPopcountBuiltin(const AwFmSimdVec256 occurrenceVector, const uint8_t localQueryPosition);
 
 /*
  * Function:  awFmBlockPrefetch

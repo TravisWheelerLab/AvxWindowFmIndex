@@ -6,7 +6,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define AW_FM_PREFETCH_STRATEGY _MM_HINT_NTA
 
 #ifndef AW_FM_NUM_CONCURRENT_QUERIES
   #define AW_FM_NUM_CONCURRENT_QUERIES 8

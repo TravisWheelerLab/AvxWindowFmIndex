@@ -1,11 +1,12 @@
 #include "AwFmSimdConfig.h"
+#include "AwFmIndex.h"
 
 #ifdef AW_FM_SIMD_CONFIG_ARM_NEON
 
-  AwFmSimdVec256 AwFmSimdVecLoad(const AwFmSimdVec256* mem_addr){
+  AwFmSimdVec256 AwFmSimdVecLoad(const AwFmSimdVec256* memAddr){
     AwFmSimdVec256 loadVector;
-    loadVector.lowVec = vld1q_u8(mem_addr);
-    loadVector.highVec = vld1q_u8(mem_addr+16); //each lane is 16B, so 2nd has offset of 16
+    loadVector.lowVec = vld1q_u8(memAddr);
+    loadVector.highVec = vld1q_u8(memAddr+16); //each lane is 16B, so 2nd has offset of 16
     return loadVector;
   }
 
@@ -47,10 +48,14 @@
     return (uint32_t) lowHorizontalSum + (uint32_t) highHorizontalSum;
   }
 
+  void AwFmSimdPrefetch(const void *memAddr){
+    __builtin_prefetch(memAddr, 0, 0);
+  }
+
 #else
 
-  AwFmSimdVec256 AwFmSimdVecLoad(const AwFmSimdVec256* mem_addr){
-      return _mm256_load_si256(mem_addr);
+  AwFmSimdVec256 AwFmSimdVecLoad(const AwFmSimdVec256* memAddr){
+      return _mm256_load_si256(memAddr);
   }
 
   AwFmSimdVec256 AwFmSimdVecAnd(const AwFmSimdVec256 v1, const AwFmSimdVec256 v2){
@@ -81,5 +86,10 @@
 
     return popcount;
   }
+
+
+    void AwFmSimdPrefetch(const void *memAddr){
+      _mm_prefetch(memAddr, _MM_HINT_NTA);  //prefetch with a non-temporal hint
+    }
 
 #endif

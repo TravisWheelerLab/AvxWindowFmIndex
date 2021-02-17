@@ -173,7 +173,7 @@ inline void awFmBlockPrefetch(const void *restrict const baseBlockListPtr, const
   const uint8_t *blockAddress  = ((uint8_t*)baseBlockListPtr + (blockIndex * blockByteWidth));
 
   for(uint_fast16_t prefetchOffset = 0; prefetchOffset < blockByteWidth; prefetchOffset += AW_FM_CACHE_LINE_SIZE_IN_BYTES){
-    _mm_prefetch(blockAddress + prefetchOffset, AW_FM_PREFETCH_STRATEGY);
+    AwFmSimdPrefetch(blockAddress + prefetchOffset);
   }
 }
 

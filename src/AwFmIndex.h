@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 #ifndef AW_FM_NUM_CONCURRENT_QUERIES

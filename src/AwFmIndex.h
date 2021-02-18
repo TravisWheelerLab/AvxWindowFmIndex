@@ -29,6 +29,23 @@ enum AwFmAlphabetType{
 enum AwFmBwtType{
   AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2};
 
+
+//define the Simd vector type, which is determined by the architecture we're building for.
+#ifdef AW_FM_SIMD_CONFIG_ARM_NEON
+  #include <arm_neon.h>
+
+  typedef struct AwFmSimdVec256{
+    uint8x16_t lowVec;
+    uint8x16_t highVec;
+  } AwFmSimdVec256;
+
+#else
+  #include <immintrin.h>
+
+  typedef __m256i AwFmSimdVec256;
+#endif
+
+//Types for the actual FM index structs
 struct AwFmAminoBlock{
   AwFmSimdVec256   letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
   uint64_t  baseOccurrences[AW_FM_AMINO_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding

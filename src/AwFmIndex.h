@@ -1,7 +1,6 @@
 #ifndef AW_FM_INDEX_STRUCTS_H
 #define AW_FM_INDEX_STRUCTS_H
 
-#include "AwFmSimdConfig.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>

@@ -18,10 +18,10 @@ LIBDIVSUFSORT_HEADER_FILENAME			=	divsufsort64.h
 LIBDIVSUFSORT_STATIC_LIB_FILENAME = libdivsufsort64.a
 
 
-
-#configurations for different architectures
-AWFMINDEX_SIMD_CONFIG_FLAG_ARM64 = AW_FM_SIMD_CONFIG_ARM_NEON
-ifeq ($(ARCH), ARM)
+#determine the current operating system and architecture.
+OS_NAME 	= $(shell uname -s)
+ARCH_NAME = $(shell uname -p)
+ifeq ($(OS_NAME), Dawrin)
 AWFMINDEX_SHARED_LIB_FILENAME = libawfmindex.dylib
 endif
 
@@ -52,10 +52,10 @@ LIBDIVSUFSORT_BUILD_STATIC_LIBRARY_FILE	= $(LIBDIVSUFSORT_BUILD_LIBRARY_DIR)/$(L
 
 
 CC 				= gcc
-CFLAGS 		= -std=gnu11 -fpic -O3 -mtune=native -mavx2 -Wall -Werror -Wextra -fopenmp -ldivsufsort64
-CFLAGS_ARM64	=	-std=gnu11 -fpic -O3 -mtune=native -Wall -Werror -Wextra -D $(AWFMINDEX_SIMD_CONFIG_FLAG_ARM64)
+CFLAGS 		= -std=gnu11 -fpic -O3 -mtune=native -mavx2 -Wall -Werror -Wextra -fopenmp
+CFLAGS_ARM64	=	-std=gnu11 -fpic -O3 -mtune=native -Wall -Werror -Wextra
 
-ifeq ($(ARCH), ARM)
+ifeq ($(ARCH_NAME), arm64)
 CFLAGS = $(CFLAGS_ARM64)
 endif
 

@@ -30,7 +30,7 @@ enum AwFmBwtType{
 
 
 //define the Simd vector type, which is determined by the architecture we're building for.
-#ifdef AW_FM_SIMD_CONFIG_ARM_NEON
+#ifdef __aarch64__
   #include <arm_neon.h>
 
   typedef struct AwFmSimdVec256{

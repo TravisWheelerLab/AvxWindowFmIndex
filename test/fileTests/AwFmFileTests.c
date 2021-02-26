@@ -57,8 +57,7 @@ void sequenceRecallTest(void){
     for(size_t sequencePosition = 0; sequencePosition< sequenceLength; sequencePosition++){
       size_t priorFlankLength = rand()%10+1;
       size_t postFlankLength = rand()%10+1;
-      enum AwFmReturnCode returnCode = awFmReadSequenceFromFile(index, sequencePosition,
-        priorFlankLength, postFlankLength, sequenceBuffer);
+      enum AwFmReturnCode returnCode = awFmReadSequenceFromFile(index, sequencePosition - priorFlankLength, sequencePosition + postFlankLength, sequenceBuffer);
 
       sprintf(buffer, "awFmReadSequenceFromFile returned failure code %i", returnCode);
       testAssertString(returnCode > 0, buffer);
@@ -94,8 +93,8 @@ void sequenceRecallTest(void){
     for(size_t sequencePosition = 0; sequencePosition< sequenceLength; sequencePosition++){
       size_t priorFlankLength = rand()%10+1;
       size_t postFlankLength = rand()%10+1;
-      enum AwFmReturnCode returnCode = awFmReadSequenceFromFile(index, sequencePosition,
-        priorFlankLength, postFlankLength, sequenceBuffer);
+      enum AwFmReturnCode returnCode = awFmReadSequenceFromFile(index, sequencePosition - priorFlankLength,
+        sequencePosition + postFlankLength, sequenceBuffer);
 
       sprintf(buffer, "awFmReadSequenceFromFile returned failure code %i", returnCode);
       testAssertString(returnCode > 0, buffer);

@@ -44,7 +44,7 @@
     bitmasks[bitmaskedQuadWordIndex] = ~0UL >> (63 - (localQueryPosition % 64));
 
     uint8x16_t lowBitmask = vld1q_u8((uint8_t*)bitmasks);
-    uint8x16_t highBitmask = vld1q_u8(((uint8_t)bitmask)+32);
+    uint8x16_t highBitmask = vld1q_u8(((uint8_t)bitmask)+16); //16 byte offset puts us at the next 128-bit lane
     uint8x16_t lowVecBitmasked = vandq_u8(vec.lowVec, lowBitmask);
     uint8x16_t highVecBitmasked = vandq_u8(vec.highVec, highBitmask);
     uint8x16_t lowVectorPopcnt  = vcntq_u8(lowVecBitmasked);

@@ -1,12 +1,15 @@
 #include "AwFmSimdConfig.h"
 #include "AwFmIndex.h"
 
-#ifdef AW_FM_SIMD_CONFIG_ARM_NEON
+//function implementations are defined based on if they're ARM_NEON (aarch64) or AVX2 (x86_64) architectures.
+#ifdef __aarch64__
 
   AwFmSimdVec256 AwFmSimdVecLoad(const AwFmSimdVec256* memAddr){
     AwFmSimdVec256 loadVector;
-    loadVector.lowVec = vld1q_u8((uint8_t*)memAddr);
-    loadVector.highVec = vld1q_u8((uint8_t*)(memAddr+16)); //each lane is 16B, so 2nd has offset of 16
+    uint8_t *lowLaneMemAddr = (uint8_t*)memAddr;
+    uint8_t *highLaneMemAddr = lowLaneMemAddr + 16; //each lane is 16B, so 2nd has offset of 16
+    loadVector.lowVec = vld1q_u8(lowLaneMemAddr);
+    loadVector.highVec = vld1q_u8(highLaneMemAddr);
     return loadVector;
   }
 
@@ -40,8 +43,12 @@
     }
     bitmasks[bitmaskedQuadWordIndex] = ~0UL >> (63 - (localQueryPosition % 64));
 
-    uint8x16_t lowVectorPopcnt  = vcntq_u8(vec.lowVec);
-    uint8x16_t highVectorPopcnt = vcntq_u8(vec.highVec);
+    uint8x16_t lowBitmask = vld1q_u8((uint8_t*)bitmasks);
+    uint8x16_t highBitmask = vld1q_u8(((uint8_t)bitmask)+32);
+    uint8x16_t lowVecBitmasked = vandq_u8(vec.lowVec, lowBitmask);
+    uint8x16_t highVecBitmasked = vandq_u8(vec.highVec, highBitmask);
+    uint8x16_t lowVectorPopcnt  = vcntq_u8(lowVecBitmasked);
+    uint8x16_t highVectorPopcnt = vcntq_u8(highVecBitmasked);
     uint8_t lowHorizontalSum    = vaddvq_u8(lowVectorPopcnt);
     uint8_t highHorizontalSum   = vaddvq_u8(highVectorPopcnt);
 

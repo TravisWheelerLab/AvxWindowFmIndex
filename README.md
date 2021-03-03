@@ -183,13 +183,13 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
 If you would like to read sections of the database sequence around a given position, use the function:
 ``` c
 enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
-  const size_t sequencePosition, const size_t priorFlankLength, const size_t postFlankLength,
+  const size_t sequenceStartPosition, const size_t sequenceEndPosition,
   char *const sequenceBuffer);
 ```
 where
 * index is the AwFmIndex to query
-* sequencePosition is the position to return a window around.
-* priorFlankLength and postFlankLength are the number of characters to include before and after the sequencePosition, respectively
-* sequenceBuffer is a preallocated buffer large enough to fit the window described by the flank lengths. The length must be equal or greater to the sum of the priorFlankLength and postFlankLength.
+* sequenceStartPosition is the position of the first character to be included in the window.
+* sequenceEndPosition is the position of the end of the buffer, exclusive
+* sequenceBuffer is a preallocated buffer large enough to fit sequence segment. Once populated, the buffer is null terminated.
 
-If the flank lengths would force the window to start before the start of the database sequence, or end after, the window is trimmed to stay within the bounds of the database sequence. Regardless, the sequenceBuffer will be null-terminated.
+The total number of characters read from the file equals sequenceEndPosition - sequenceStartPosition. Giving a sequenceEndPosition greater than the length of the sequence can result in undefined behavior.

@@ -25,6 +25,18 @@ $ make
 $ sudo make install
 ```
 
+## Building a shared library on Mac
+Since AwFmIndex relies on OpenMP for thread-parallelization, Mac users will need to use a compiler that supports OpenMP. We recommend using homebrew to install GCC, and use that executable for compilation.
+```shell
+$ brew install gcc
+```
+
+Then, pass the location of the GCC executable to the makefile. An example is below, but it will depend on the gcc version, where you GCC was installed to, etc.
+```shell
+$ make CC=/usr/local/bin/gcc-4.9
+$ make install
+```
+
 ### Building to non-default location
 Sometimes you may need to install the library to a non-default location, for example, if you do not have sudo privileges to write to /usr/local. To install the shared library into a non-default location, such as ~/usr/local, change the PREFIX argument in the install step.
 ```shell
@@ -45,6 +57,12 @@ To build a static library,
 $ make static
 ```
 This will generate two static libraries, libawfmindex.a and libdivsufsort64.a, plus the associated header files in the build/ directory.
+
+### Building a static library for Mac
+Like building a dynamic library, this requires an actual GCC compiler, and a argument to the makefile for the location of the compiler, example below.
+```shell
+$ make static CC=/usr/local/bin/gcc-4.9
+```
 
 
 ## AwFmIndex Quick Start Guide

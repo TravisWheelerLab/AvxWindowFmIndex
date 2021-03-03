@@ -3,10 +3,11 @@
 #include "AwFmCreate.h"
 #include "AwFmLetter.h"
 #include "AwFmSearch.h"
+#include "AwFmSimdConfig.h"
 #include "AwFmFile.h"
 #include <stdlib.h>
 #include <string.h>
-#include "divsufsort64.h"
+#include "../libdivsufsort/build/include/divsufsort64.h"
 
 #define AW_FM_VERSION_NUMBER_DEFAULT 1
 
@@ -159,7 +160,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         //while we only use 5 elements, copy over all 8 (to preserve padding and so valgrind
         //doesn't complain about invalid writes)
         memcpy(nucleotideBlockPtr->baseOccurrences, baseOccurrences, 8 * sizeof(uint64_t));
-        memset(nucleotideBlockPtr->letterBitVectors, 0, sizeof(__m256i) * AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW);
+        memset(nucleotideBlockPtr->letterBitVectors, 0, sizeof(AwFmSimdVec256) * AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW);
       }
 
       uint64_t sequencePositionInSuffixArray = suffixArray[suffixArrayPosition];
@@ -205,7 +206,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         //while we only use 21 elements, copy over all 24 (to preserve padding and so valgrind
         //doesn't complain about invalid writes)
         memcpy(aminoBlockPointer->baseOccurrences, baseOccurrences, 24 * sizeof(uint64_t));
-        memset(aminoBlockPointer->letterBitVectors, 0, sizeof(__m256i) * AW_FM_AMINO_VECTORS_PER_WINDOW);
+        memset(aminoBlockPointer->letterBitVectors, 0, sizeof(AwFmSimdVec256) * AW_FM_AMINO_VECTORS_PER_WINDOW);
       }
 
       uint64_t sequencePositionInSuffixArray = suffixArray[suffixArrayPosition];

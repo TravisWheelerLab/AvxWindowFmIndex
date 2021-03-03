@@ -3,10 +3,9 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <immintrin.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-#define AW_FM_PREFETCH_STRATEGY _MM_HINT_NTA
 
 #ifndef AW_FM_NUM_CONCURRENT_QUERIES
   #define AW_FM_NUM_CONCURRENT_QUERIES 8
@@ -29,13 +28,30 @@ enum AwFmAlphabetType{
 enum AwFmBwtType{
   AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2};
 
+
+//define the Simd vector type, which is determined by the architecture we're building for.
+#ifdef __aarch64__
+  #include <arm_neon.h>
+
+  typedef struct AwFmSimdVec256{
+    uint8x16_t lowVec;
+    uint8x16_t highVec;
+  } AwFmSimdVec256;
+
+#else
+  #include <immintrin.h>
+
+  typedef __m256i AwFmSimdVec256;
+#endif
+
+//Types for the actual FM index structs
 struct AwFmAminoBlock{
-  __m256i   letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
+  AwFmSimdVec256   letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
   uint64_t  baseOccurrences[AW_FM_AMINO_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding
 };
 
 struct AwFmNucleotideBlock{
-  __m256i   letterBitVectors[AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW];
+  AwFmSimdVec256   letterBitVectors[AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW];
   uint64_t  baseOccurrences[AW_FM_NUCLEOTIDE_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding
 };
 

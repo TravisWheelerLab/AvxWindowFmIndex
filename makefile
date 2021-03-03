@@ -20,8 +20,8 @@ LIBDIVSUFSORT_STATIC_LIB_FILENAME = libdivsufsort64.a
 
 #determine the current operating system and architecture.
 OS_NAME 	= $(shell uname -s)
-ARCH_NAME = $(shell uname -p)
-ifeq ($(OS_NAME), Dawrin)
+ARCH_NAME = $(shell uname -p)	#currently unused.
+ifeq ($(OS_NAME), Darwin)
 AWFMINDEX_SHARED_LIB_FILENAME = libawfmindex.dylib
 endif
 
@@ -50,14 +50,12 @@ AWFMINDEX_INSTALL_SHARED_LIB_FILE					= $(AWFMINDEX_INSTALL_LIBRARY_DIR)/$(AWFMI
 LIBDIVSUFSORT_BUILD_HEADER_FILE						= $(LIBDIVSUFSORT_BUILD_INCLUDE_DIR)/$(LIBDIVSUFSORT_HEADER_FILENAME)
 LIBDIVSUFSORT_BUILD_STATIC_LIBRARY_FILE	= $(LIBDIVSUFSORT_BUILD_LIBRARY_DIR)/$(LIBDIVSUFSORT_STATIC_LIB_FILENAME)
 
+#if on a Mac system, CC may need to be overwritten with a makefile argument to compile with
+#an actual GCC compiler instead of the clang that ships native with mac.
+CC 			= gcc
+CFLAGS 	= -std=gnu11 -fpic -O3 -mtune=native -Wall -Wextra -fopenmp
 
-CC 				= gcc
-CFLAGS 		= -std=gnu11 -fpic -O3 -mtune=native -mavx2 -Wall -Werror -Wextra -fopenmp
-CFLAGS_ARM64	=	-std=gnu11 -fpic -O3 -mtune=native -Wall -Werror -Wextra
 
-ifeq ($(ARCH_NAME), arm64)
-CFLAGS = $(CFLAGS_ARM64)
-endif
 
 LDFLAGS 	= -shared -L$(LIBDIVSUFSORT_BUILD_LIBRARY_DIR) -I$(LIBDIVSUFSORT_BUILD_INCLUDE_DIR) -ldivsufsort64 # linking flags
 
@@ -67,7 +65,6 @@ OBJECT_FILES 	:= $(patsubst $(AWFMINDEX_SRC_DIR)/%, $(AWFMINDEX_BUILD_DIR)/%, $(
 #rules
 .PHONY: all
 all: $(LIBDIVSUFSORT_BUILD_STATIC_LIBRARY_FILE) $(AWFMINDEX_BUILD_LIBRARY_DIR) $(OBJECT_FILES) $(AWFMINDEX_BUILD_HEADER_FILE)
-	echo "ldsf static $(LIBDIVSUFSORT_BUILD_STATIC_LIBRARY_FILE)"
 	$(CC) $(LDFLAGS) -o $(AWFMINDEX_BUILD_SHARED_LIB_FILE) $(OBJECT_FILES)
 
 .PHONY: install

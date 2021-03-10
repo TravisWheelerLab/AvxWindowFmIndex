@@ -296,6 +296,10 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
       return AwFmAllocationFailure;
     }
 
+    //free the sequence buffer in the fastaVector, since it won't be used here
+    free(fastaVector->sequence.charData);
+    fastaVector->sequence.charData = NULL;
+
     indexData->fastaVector = fastaVector;
     size_t fastaVectorHeaderLength;
     size_t fastaVectorMetadataLength;

@@ -190,6 +190,57 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
 }
 
 
+enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct AwFmIndex *restrict const index,
+  size_t globalPosition, size_t *sequenceNumber, size_t *localSequencePosition){
+    if(!index->fastaVector){
+      return AwFmUnsupportedVersionError;
+    }
+    else{
+      if(globalPosition >= index->bwtLength){
+        return AwFmIllegalPositionError;
+      }
+
+      const size_t numSequencesInIndex = index->fastaVector->metadata.count;
+      for(size_t sequenceIndex = 0; sequenceIndex < numSequencesInIndex; sequenceIndex++){
+        size_t sequenceEndPosition = index->fastaVector->metadata.data[sequenceIndex].sequenceEndPosition;
+        if(sequenceEndPosition > globalPosition){
+          //generate the sequenceNumber and localSequencePosition
+          size_t sequenceStartPosition;
+          if(sequenceIndex == 0){
+            sequenceStartPosition = 0;
+          }
+          else{
+            sequenceStartPosition = index->fastaVector->metadata.data[sequenceIndex-1].sequenceEndPosition;
+          }
+          *sequenceNumber = sequenceIndex;
+          *localSequencePosition = globalPosition - sequenceStartPosition;
+          return AwFmSuccess;
+        }
+      }
+
+      return  AwFmIllegalPositionError;
+    }
+  }
+
+
+enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(const struct AwFmIndex *restrict const index,
+  size_t sequenceNumber, char **headerBuffer, size_t *headerLength){
+  if(sequenceNumber > index->fastaVector->metadata.count){
+    return AwFmIllegalPositionError;
+  }
+
+  size_t headerStartOffset = 0;
+  if(sequenceNumber != 0){
+    headerStartOffset = index->fastaVector->metadata.data[sequenceNumber-1].headerEndPosition;
+  }
+  size_t headerEndPosition = index->fastaVector->metadata.data[sequenceNumber].headerEndPosition;
+
+  *headerBuffer = index->fastaVector->header.charData + headerStartOffset;
+  *headerLength = headerEndPosition - headerStartOffset;
+  return AwFmSuccess;
+}
+
+
 struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint16_t kmerLength){
   int8_t kmerLetterPosition = kmerLength-1;

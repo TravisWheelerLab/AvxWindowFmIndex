@@ -1,6 +1,7 @@
 #ifndef AW_FM_INDEX_SEARCH_H
 #define AW_FM_INDEX_SEARCH_H
 
+#include "AwFmIndex.h"
 #include "AwFmFile.h"
 #include "AwFmIndexStruct.h"
 #include <stdbool.h>

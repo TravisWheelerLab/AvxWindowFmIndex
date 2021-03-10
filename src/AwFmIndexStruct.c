@@ -1,5 +1,6 @@
 #include "AwFmIndexStruct.h"
 #include "AwFmIndex.h"
+#include "FastaVector.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -58,6 +59,10 @@ void awFmDeallocIndex(struct AwFmIndex *index){
     free(index->prefixSums);
     free(index->kmerSeedTable);
     free(index->inMemorySuffixArray);
+    if(index->fastaVector != NULL){
+      fastaVectorDealloc(index->fastaVector);
+      free(index->fastaVector);
+    }
     free(index);
   }
 }
@@ -99,9 +104,11 @@ size_t awFmNumBlocksFromBwtLength(const size_t suffixArrayLength){
   return  1 + ((suffixArrayLength -1) / AW_FM_POSITIONS_PER_FM_BLOCK);
 }
 
+
 uint8_t awFmGetPrefixSumsLength(const enum AwFmAlphabetType alphabet){
   return  awFmGetAlphabetCardinality(alphabet) + 2; //1 for sentinel count, 1 for bwt length
 }
+
 
 bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode){
   return returnCode >= 0;
@@ -118,7 +125,17 @@ uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQuer
 }
 
 
- size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range){
+size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range){
   uint64_t length = range->endPtr - range->startPtr;
   return (range->startPtr <= range->endPtr)? length + 1: 0;
+}
+
+
+bool awFmIndexIsVersionValid(const uint16_t versionNumber){
+  return versionNumber <= 2;
+}
+
+
+bool awFmIndexContainsFastaVector(const uint16_t versionNumber){
+  return versionNumber == AW_FM_VERSION_NUMBER_INCLUDE_FASTA_VECTOR;
 }

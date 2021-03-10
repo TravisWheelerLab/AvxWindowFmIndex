@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include "AwFmIndex.h"
 
+#define AW_FM_VERSION_NUMBER_DEFAULT 1
+#define AW_FM_VERSION_NUMBER_INCLUDE_FASTA_VECTOR 2
 
 /*
  * Function:  awFmIndexAlloc
@@ -185,5 +187,34 @@ uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQuer
  */
 size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range);
 
+
+/*
+* Function:  awFmIndexIsVersionValid
+* --------------------
+* returns true if the given version number is one that is currently supported.
+*   The supported version numbers are enumerated at the top of this header (AwFmIndexStruct.h)
+*
+*  Inputs:
+*    versionNumber: version number from the AwFmIndex struct's metadata.
+*
+*  Returns:
+*    true if the versionNumber is one of the supported versions.
+*/
+bool awFmIndexIsVersionValid(const uint16_t versionNumber);
+
+/*
+* Function:  awFmIndexContainsFastaVector
+* --------------------
+* returns true if indices of the given version number contain a FastaVector struct to catalog
+*   headers and the position of each sequence in the index. This function should be updated every
+*   time a new version is added.
+*
+*  Inputs:
+*    versionNumber: version number from the AwFmIndex struct's metadata.
+*
+*  Returns:
+*    True if the given version contains a FastaVector struct
+*/
+bool awFmIndexContainsFastaVector(const uint16_t versionNumber);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCT_H */

@@ -14,7 +14,7 @@
 static const uint8_t IndexFileFormatIdHeaderLength  = 10;
 static const char    IndexFileFormatIdHeader[11]    = "AwFmIndex\n\0";
 
-
+//TODO: update to conditionally use fastaVector (but the seq will still be passed in here as args)
 enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
   const uint64_t *restrict const suffixArray, const uint8_t *restrict const sequence,
   const uint64_t sequenceLength, const char *restrict const fileSrc, const bool allowOverwrite){
@@ -33,6 +33,8 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
   if(__builtin_expect(sequence == NULL, 0)){
     return AwFmNullPtrError;
   }
+
+  const bool indexContainsFastaVector = awFmIndexContainsFastaVector(index->metadata.versionNumber);
 
   //open the file
   char fileOpenMode[5] = {'w','+','b', (allowOverwrite? 0:'x'), 0};
@@ -123,6 +125,33 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     }
   }
 
+
+  if(indexContainsFastaVector){
+    //write the lengths for the header string and the metadata vector
+    const size_t headerStringLength = index->fastaVector->header.count;
+    const size_t fastaVectorMetadataLength = index->fastaVector->metadata.count;
+    size_t headerStringLengthWritten = fwrite(&headerStringLength, sizeof(size_t), 1, index->fileHandle);
+    if(headerStringLengthWritten != 1){
+      fclose(index->fileHandle);
+      return AwFmFileWriteFail;
+    }
+    size_t fastaVectorMetadataLengthWritten = fwrite(&fastaVectorMetadataLength, sizeof(size_t), 1, index->fileHandle);
+    if(fastaVectorMetadataLengthWritten != 1){
+      fclose(index->fileHandle);
+      return AwFmFileWriteFail;
+    }
+    size_t headerStringBytesWritten = fwrite(&index->fastaVector->header.charData, sizeof(char), headerStringLength, index->fileHandle);
+    if(headerStringBytesWritten != headerStringLength){
+      fclose(index->fileHandle);
+      return AwFmFileWriteFail;
+    }
+    size_t fastaVectorMetadataElementsWritten = fwrite(&index->fastaVector->metadata.data, sizeof(struct FastaVectorMetadata), fastaVectorMetadataLength, index->fileHandle);
+    if(fastaVectorMetadataElementsWritten != fastaVectorMetadataLength){
+      fclose(index->fileHandle);
+      return AwFmFileWriteFail;
+    }
+  }
+
   fflush(index->fileHandle);
   index->fileDescriptor = fileno(index->fileHandle);
 
@@ -183,6 +212,9 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   metadata.alphabetType = alphabetType;
 
 
+  //from the version number, determine if we expect to find FastaVector data.
+  const bool indexContainsFastaVector = awFmIndexContainsFastaVector(metadata.versionNumber);
+
   //read the bwt length
   uint64_t bwtLength;
   elementsRead = fread(&bwtLength, sizeof(uint64_t), 1, fileHandle);
@@ -229,10 +261,11 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   //handle the in memory suffix array, if requested.
   indexData->metadata.keepSuffixArrayInMemory = keepSuffixArrayInMemory;
   indexData->inMemorySuffixArray = NULL;  //probably unnecessary, but here for safety.
+
+  size_t compressedSuffixArrayLength = awFmGetCompressedSuffixArrayLength(indexData);
   if(keepSuffixArrayInMemory){
     //seek to the suffix array
     fseek(fileHandle, awFmGetSuffixArrayFileOffset(indexData), SEEK_SET);
-    size_t compressedSuffixArrayLength = awFmGetCompressedSuffixArrayLength(indexData);
     indexData->inMemorySuffixArray = malloc(compressedSuffixArrayLength * sizeof(uint64_t));
 
     if(indexData->inMemorySuffixArray == NULL){
@@ -248,6 +281,58 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
         return AwFmFileReadFail;
       }
     }
+  }
+  else if(indexContainsFastaVector){
+    //allocate and init the fastaVector struct
+    struct FastaVector *fastaVector = malloc(sizeof(fastaVector));
+    if(!fastaVector){
+      fclose(fileHandle);
+      awFmDeallocIndex(indexData);
+    }
+    enum FastaVectorReturnCode fastaVectorReturnCode = fastaVectorInit(fastaVector);
+    if(fastaVectorReturnCode == FASTA_VECTOR_ALLOCATION_FAIL){
+      fclose(fileHandle);
+      awFmDeallocIndex(indexData);
+      return AwFmAllocationFailure;
+    }
+
+    indexData->fastaVector = fastaVector;
+    size_t fastaVectorHeaderLength;
+    size_t fastaVectorMetadataLength;
+    fseek(fileHandle, awFmGetSuffixArrayFileOffset(indexData) + (compressedSuffixArrayLength * sizeof(uint64_t)), SEEK_SET);
+    elementsRead = fread(&fastaVectorHeaderLength, sizeof(size_t), 1, fileHandle);
+    if(elementsRead != 1){
+      fclose(fileHandle);
+      awFmDeallocIndex(indexData);
+      return AwFmAllocationFailure;
+    }
+    elementsRead = fread(&fastaVectorMetadataLength, sizeof(size_t), 1, fileHandle);
+    if(elementsRead != 1){
+      fclose(fileHandle);
+      awFmDeallocIndex(indexData);
+      return AwFmAllocationFailure;
+    }
+
+    //now, to do some hacking to the FastaVector struct
+    fastaVector->header.charData = realloc(fastaVector->header.charData, fastaVectorHeaderLength * sizeof(char));
+    if(!fastaVector->header.charData){
+      fclose(fileHandle);
+      awFmDeallocIndex(indexData);
+      return AwFmAllocationFailure;
+    }
+    fastaVector->metadata.data = realloc(fastaVector->metadata.data, fastaVectorMetadataLength * sizeof(struct FastaVectorMetadata));
+    if(!fastaVector->metadata.data){
+      fclose(fileHandle);
+      awFmDeallocIndex(indexData);
+      return AwFmAllocationFailure;
+    }
+    fastaVector->header.count       = fastaVectorHeaderLength;
+    fastaVector->header.capacity    = fastaVectorHeaderLength;
+    fastaVector->metadata.count     = fastaVectorMetadataLength;
+    fastaVector->metadata.capacity  = fastaVectorMetadataLength;
+
+    //read in the header and the metadata
+
   }
 
   indexData->suffixArrayFileOffset  = awFmGetSuffixArrayFileOffset(indexData);

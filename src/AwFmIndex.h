@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "FastaVector.h"
 
 
 #ifndef AW_FM_NUM_CONCURRENT_QUERIES
@@ -87,6 +88,8 @@ struct AwFmIndex{
           int               fileDescriptor;
           size_t            suffixArrayFileOffset;
           size_t            sequenceFileOffset;
+  //optional member data, dependant on the index version.
+  struct  FastaVector       *fastaVector; // ptr should be null if not in use.
 };
 
 struct AwFmBacktrace{
@@ -137,6 +140,7 @@ enum AwFmReturnCode{
  *  Returns:
  *    AwFmReturnCode represnting the result of the write. Possible returns are:
  *      AwFmFileWriteOkay on success.
+ *      AwFmNullPtrError on passing an argument as a null ptr
  *      AwFmAllocationFailure if memory could not be allocated during the creation process.
  *      AwFmFileAlreadyExists if a file exists at the given fileSrc, but allowOverwite was false.
  *      AwFmSuffixArrayCreationFailure if an error was caused by divsufsort64 in suffix array creation.
@@ -145,6 +149,37 @@ enum AwFmReturnCode{
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
   const char *restrict const fileSrc, const bool allowFileOverwrite);
+
+
+/*
+ * Function:  awFmCreateIndexFromFasta
+ * --------------------
+ * Loads the sequence and header data from the given fasta, and a allocates a new
+ *  AwFmIndex from the sequence using the given metadata configuration.
+ *
+ *  Inputs:
+ *    index:          Double pointer to a AwFmIndex struct to be allocated and constructed.
+ *    metadata:       Fully initialized metadata to construct the index with.
+ *      This metadata will be memcpy'd into the created index.
+ *    fastaSrc:       File source of the fasta to use to generate the index.
+ *      Every sequence in the fasta file will be included in the index.
+ *    indexFileSrc:        File path to write the Index file to.
+ *    allowOverwrite: If set, will allow overwriting the file at the given fileSrc.
+ *      If allowOverwite is false, will return error code AwFmFileAlreadyExists.
+ *
+ *  Returns:
+ *    AwFmReturnCode represnting the result of the write. Possible returns are:
+ *      AwFmFileWriteOkay on success.
+ *      AwFmNullPtrError on passing an argument as a null ptr
+ *      AwFmFileOpenFail if the fasta cannot be opened for reading.
+ *      AwFmAllocationFailure if memory could not be allocated during the creation process.
+ *      AwFmFileAlreadyExists if a file exists at the given fileSrc, but allowOverwite was false.
+ *      AwFmSuffixArrayCreationFailure if an error was caused by divsufsort64 in suffix array creation.
+ *      AwFmFileWriteFail if a file write failed.
+ */
+enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
+  struct AwFmIndexMetadata *restrict const metadata, const char *fastaSrc,
+  const char *restrict const indexFileSrc, const bool allowFileOverwrite);
 
 
 /*
@@ -432,5 +467,53 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
  */
  uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
    const struct AwFmSearchRange *restrict const searchRange, enum AwFmReturnCode *restrict fileAccessResult);
+
+
+/*
+* Function:  awFmGetLocalSequencePositionFromIndexPosition
+* --------------------
+*  For indices that are built from a fasta file (indices that use an internal FastaVector struct),
+*   this function takes the global position into the full indexed sequence collection, and returns
+*   the index of the individual sequence that the global position lands in and the local position
+*   in that sequence that corresponds to the global position.
+*
+*  Inputs:
+*     index:                  Pointer to the valid AwFmIndex struct.
+*     globalPosition:         Position into the sequence collection, as is stored in the suffix array.
+*     sequenceNumber:         Out-argument that returns the index of the sequence the global position falls into,
+*       or 0 on error.
+*     localSequencePosition:  Out-argument that returns the local position in the relevant sequence,
+*       or 0 on error.
+*
+*  Returns:
+*    AwFmReturnCode detailing the result of the read attempt. Possible return values:
+*      AwFmFileReadOkay on success,
+*      AwFmIllegalPositionError if the globalPosition is greater than the length of the index.
+*      AwFmUnsupportedVersionError if the version of the AwFmIndex does not support FastaVector.
+*/
+enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct AwFmIndex *restrict const index,
+  size_t globalPosition, size_t *sequenceNumber, size_t *localSequencePosition);
+
+
+/*
+* Function:  awFmGetHeaderStringFromSequenceNumber
+* --------------------
+*  For indices that are built from a fasta file (indices that use an internal FastaVector struct),
+*   this function returns a pointer to the header and the length of said for for the
+*   given sequenceNumber as out-arguments.
+*
+*  Inputs:
+*     index:            Pointer to the valid AwFmIndex struct.
+*     sequenceNumber:   Index of the sequence whose corresponding header the function will return.
+*     headerBuffer:     Upon success, this function returns the pointer to the (non null-terminated) header in this out-argument.
+*     headerLength:     Upon success, this fucntion reuturns the length of the header in this out-argument.
+*
+*  Returns:
+*    AwFmReturnCode detailing the result of the read attempt. Possible return values:
+*      AwFmFileReadOkay on success,
+*      AwFmUnsupportedVersionError if the version of the AwFmIndex does not support FastaVector.
+*/
+enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(const struct AwFmIndex *restrict const index,
+  size_t sequenceNumber, char **headerBuffer, size_t *headerLength);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

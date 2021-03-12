@@ -64,7 +64,8 @@ uint8_t awFmAsciiAminoLetterSanitize(const uint8_t asciiLetter){
   uint8_t letterAsLowerCase = asciiLetter | 0x20;
   bool letterIsAmbiguityChar =
     letterAsLowerCase == 'b' ||
-    letterAsLowerCase == 'x';
+    letterAsLowerCase == 'x' ||
+    asciiLetter == '\0';
 
   if(__builtin_expect(letterIsAmbiguityChar, 0)){
     return 'z';

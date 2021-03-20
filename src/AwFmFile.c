@@ -140,12 +140,12 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
       fclose(index->fileHandle);
       return AwFmFileWriteFail;
     }
-    size_t headerStringBytesWritten = fwrite(&index->fastaVector->header.charData, sizeof(char), headerStringLength, index->fileHandle);
+    size_t headerStringBytesWritten = fwrite(index->fastaVector->header.charData, sizeof(char), headerStringLength, index->fileHandle);
     if(headerStringBytesWritten != headerStringLength){
       fclose(index->fileHandle);
       return AwFmFileWriteFail;
     }
-    size_t fastaVectorMetadataElementsWritten = fwrite(&index->fastaVector->metadata.data, sizeof(struct FastaVectorMetadata), fastaVectorMetadataLength, index->fileHandle);
+    size_t fastaVectorMetadataElementsWritten = fwrite(index->fastaVector->metadata.data, sizeof(struct FastaVectorMetadata), fastaVectorMetadataLength, index->fileHandle);
     if(fastaVectorMetadataElementsWritten != fastaVectorMetadataLength){
       fclose(index->fileHandle);
       return AwFmFileWriteFail;

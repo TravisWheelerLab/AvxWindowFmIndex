@@ -8,8 +8,8 @@
 #include "AwFmIndexStruct.h"
 #include <stdlib.h>
 #include <string.h>
-#include "../libdivsufsort/build/include/divsufsort64.h"
-#include "fastaVector.h"
+#include "divsufsort64.h"
+#include "FastaVector.h"
 
 
 
@@ -162,15 +162,20 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
   *index = NULL;
 
   //read in the sequence file with FastaVector
-  struct FastaVector *fastaVector;
-  enum FastaVectorReturnCode returnCode = fastaVectorInit(fastaVector);
-  if(returnCode == FASTA_VECTOR_ALLOCATION_FAIL){
+  struct FastaVector *fastaVector = malloc(sizeof(struct FastaVector));
+  if(fastaVector == NULL){
     return AwFmAllocationFailure;
   }
-  returnCode = fastaVectorReadFasta(fastaSrc, &fastaVector);
-  switch(returnCode){
-    case FASTA_VECTOR_FILE_OPEN_FAIL:   return AwFmFileOpenFail;
-    case FASTA_VECTOR_ALLOCATION_FAIL:  return AwFmAllocationFailure;
+  enum FastaVectorReturnCode fastaVectorReturnCode = fastaVectorInit(fastaVector);
+  if(fastaVectorReturnCode == FASTA_VECTOR_ALLOCATION_FAIL){
+    return AwFmAllocationFailure;
+  }
+  fastaVectorReturnCode = fastaVectorReadFasta(fastaSrc, fastaVector);
+  if(fastaVectorReturnCode == FASTA_VECTOR_FILE_OPEN_FAIL){
+    return AwFmFileOpenFail;
+  }
+  else if (fastaVectorReturnCode == FASTA_VECTOR_ALLOCATION_FAIL){
+    return AwFmAllocationFailure;
   }
 
   const size_t fullSequenceLength = fastaVector->sequence.count;
@@ -186,7 +191,7 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
   //sanitize the sequence, turning ambiguity characters into the singular ambiguity character
   //character (x for nucleotide, z for amino)
   //giving the sequencePtr as the in and out arrays makes this an in-place algorithm
-  fullSequenceSanitize(fullSequencePtr, fullSequencePtr, fullSequenceLength, metadata->alphabetType);
+  fullSequenceSanitize((uint8_t*)fullSequencePtr, sanitizedSequenceCopy, fullSequenceLength, metadata->alphabetType);
 
   // FastaVector will always have one extra storage at the end of the string, so this shouldn't ever
   // cause a buffer overflow
@@ -228,6 +233,8 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 
     //set the bwt and prefix sums
     setBwtAndPrefixSums(indexData, indexData->bwtLength, sanitizedSequenceCopy, suffixArray);
+
+
     //after generating the bwt, the sequence copy is no longer needed.
     free(sanitizedSequenceCopy);
 
@@ -239,8 +246,8 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
     //file descriptor will be set in awFmWriteIndexToFile
 
     //create the file
-    enum AwFmReturnCode returnCode = awFmWriteIndexToFile(indexData, suffixArray, fullSequencePtr, fullSequenceLength,
-      fileSrc, allowFileOverwrite);
+    enum AwFmReturnCode returnCode = awFmWriteIndexToFile(indexData, suffixArray, (uint8_t*)fullSequencePtr, fullSequenceLength,
+      fastaSrc, allowFileOverwrite);
     //if suffix array was requested to be kept in memory, realloc it to it's compressed shape
     if(metadata->keepSuffixArrayInMemory){
       //if the suffix array is uncompressed, we get to skip the compression and realloc

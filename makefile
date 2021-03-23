@@ -4,6 +4,7 @@
 #when calling, allow for the #DONT_INSTALL_DIVSUFSORT env variable
 #todo: documentation for calling git clone with --recurse-submodules or use git submodule init & git submodule update
 SHELL = /bin/sh
+PREFIX = /usr/local
 
 AWFMINDEX_PROJECT_NAME 			= awfmindex
 AWFMINDEX_MAJOR_VERSION_NUM = 0
@@ -62,12 +63,17 @@ FASTA_VECTOR_BUILD_STATIC_LIBRARY_FILE		= $(FASTA_VECTOR_BUILD_DIR)/$(FASTA_VECT
 
 #if on a Mac system, CC may need to be overwritten with a makefile argument to compile with
 #an actual GCC compiler instead of the clang that ships native with mac.
+ARCH = $(shell uname -m)
 CC 			= gcc
+ifeq ($(ARCH),x86_64)
+CFLAGS 	= -std=gnu11 -fpic -O3 -mtune=native -Wall -Wextra -fopenmp -mavx2
+else
 CFLAGS 	= -std=gnu11 -fpic -O3 -mtune=native -Wall -Wextra -fopenmp
+endif
 
 
 
-LDFLAGS 	= -shared -L$(LIBDIVSUFSORT_BUILD_LIBRARY_DIR) -I$(LIBDIVSUFSORT_BUILD_INCLUDE_DIR) -ldivsufsort64 # linking flags
+LDFLAGS 	= -shared -L$(LIBDIVSUFSORT_BUILD_LIBRARY_DIR) -I$(LIBDIVSUFSORT_BUILD_INCLUDE_DIR) -ldivsufsort64 -lfastavector # linking flags
 
 SOURCE_FILES 	:= $(wildcard $(AWFMINDEX_SRC_DIR)/*.c)
 OBJECT_FILES 	:= $(patsubst $(AWFMINDEX_SRC_DIR)/%, $(AWFMINDEX_BUILD_DIR)/%, $(SOURCE_FILES:.c=.o))
@@ -81,8 +87,9 @@ all: $(LIBDIVSUFSORT_BUILD_STATIC_LIBRARY_FILE) $(FASTA_VECTOR_BUILD_STATIC_LIBR
 install:
 	mkdir -p $(DESTDIR)$(PREFIX)/lib
 	mkdir -p $(DESTDIR)$(PREFIX)/include
+	cp $(LIBDIVSUFSORT_BUILD_HEADER_FILE)
 	cp $(AWFMINDEX_SRC_HEADER_FILE) $(AWFMINDEX_INSTALL_HEADER_FILE)
-	#if either the shared lib or static lib are found, install them
+
 ifneq ("$(wildcard $(AWFMINDEX_BUILD_SHARED_LIB_FILE))","")
 	cp $(AWFMINDEX_BUILD_SHARED_LIB_FILE) $(AWFMINDEX_INSTALL_SHARED_LIB_FILE)
 endif

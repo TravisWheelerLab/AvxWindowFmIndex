@@ -5,6 +5,7 @@
 #include "../../src/AwFmSearch.h"
 #include "../../src/AwFmKmerTable.h"
 #include "../../src/AwFmLetter.h"
+#include "../../src/AwFmSimdConfig.h"
 #include "../test.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,41 +46,41 @@ uint16_t setVectorRandBits(uint8_t *restrict const vector){
   return bitsSet;
 }
 
-//tests awFmVectorPopcount function
+//tests AwFmMaskedVectorPopcount function
 void popcountTestSuite(void){
   uint8_t vectorBytes[32];
 
   //test all 0s
   __m256i vector = vector = _mm256_set1_epi8(0x00);
-  uint16_t popcount = awFmVectorPopcount(vector, 255);
+  uint16_t popcount = AwFmMaskedVectorPopcount(vector, 255);
   sprintf(buffer, "vector popcount of all zeros should be zero, returned %d.", popcount);
   testAssertString(popcount == 0, buffer);
 
   //test all 1s
   setVectorBytes(vectorBytes, 0xFF);
   vector = _mm256_set1_epi8(0xff);
-  popcount = awFmVectorPopcount(vector, 255);
+  popcount = AwFmMaskedVectorPopcount(vector, 255);
   sprintf(buffer, "vector popcount of all zeros should be all ones (256), returned %d.", popcount);
   testAssertString(popcount == 256, buffer);
 
   //test all 0x7fs
   setVectorBytes(vectorBytes, 0x7f);
   vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-  popcount = awFmVectorPopcount(vector,255);
+  popcount = AwFmMaskedVectorPopcount(vector,255);
   sprintf(buffer, "vector popcount of all 0x7f should be (224), returned %d.", popcount);
   testAssertString(popcount == 224, buffer);
 
   //test all 0xf7
   setVectorBytes(vectorBytes, 0xf7);
   vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-  popcount = awFmVectorPopcount(vector,255);
+  popcount = AwFmMaskedVectorPopcount(vector,255);
   sprintf(buffer, "vector popcount of all 0xf7 should be (224), returned %d.", popcount);
   testAssertString(popcount == 224, buffer);
 
   //test all 77s
   setVectorBytes(vectorBytes, 0x77);
   vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-  popcount = awFmVectorPopcount(vector,255);
+  popcount = AwFmMaskedVectorPopcount(vector,255);
   sprintf(buffer, "vector popcount of all 0x77 should be (192), returned %d.", popcount);
   testAssertString(popcount == 192, buffer);
 
@@ -88,14 +89,14 @@ void popcountTestSuite(void){
 //test all 77s
 setVectorBytes(vectorBytes, 0x0f);
 vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-popcount = awFmVectorPopcount(vector, 255);
+popcount = AwFmMaskedVectorPopcount(vector, 255);
 sprintf(buffer, "vector popcount of all 0x0f should be (128), returned %d.", popcount);
 testAssertString(popcount == 128, buffer);
 
 //test all 77s
 setVectorBytes(vectorBytes, 0xf0);
 vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-popcount = awFmVectorPopcount(vector, 255);
+popcount = AwFmMaskedVectorPopcount(vector, 255);
 sprintf(buffer, "vector popcount of all 0x0f should be (128), returned %d.", popcount);
 testAssertString(popcount == 128, buffer);
 
@@ -104,7 +105,7 @@ testAssertString(popcount == 128, buffer);
   for(uint16_t testNum = 0; testNum < numRandTests; testNum++){
     uint16_t bitsSet = setVectorRandBits(vectorBytes);
     vector = _mm256_loadu_si256((__m256i*)vectorBytes);
-    popcount = awFmVectorPopcount(vector, 255);
+    popcount = AwFmMaskedVectorPopcount(vector, 255);
     sprintf(buffer, "vector popcount of all zeros should be %d, returned %d.", bitsSet, popcount);
     testAssertString(popcount == bitsSet, buffer);
   }

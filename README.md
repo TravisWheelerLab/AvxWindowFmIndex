@@ -1,7 +1,7 @@
-# AvxWindowFmIndex (BETA)
+# AvxWindowFmIndex
 A fast, AVX2 accelerated FM-index library that utilizes windows of SIMD registers to quickly locate exact match kmers in genetic data. This FM-index is highly optimized for both nucleotide and amino sequences, but is unsuitable for general text.
 
-This library is currently in beta release, so some bugs are expected. Please report any issues on the git project page.
+Please report any issues or bugs to the "Issues" tab on the project's github (https://github.com/TravisWheelerLab/AvxWindowFmIndex)
 
 
 ## Prerequisites

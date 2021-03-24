@@ -26,7 +26,7 @@ void checkRangeForCorrectness(const struct AwFmSearchRange *restrict const range
   const uint64_t *restrict const suffixArray, const char *kmer, const uint8_t kmerLength,
   const uint8_t *restrict const sequence, const uint64_t sequenceLength);
 bool rangeCompare(struct AwFmSearchRange range1, struct AwFmSearchRange range2);
-void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequenceLength);
+void testAllKmerRanges(struct AwFmIndexMetadata *metadata, uint64_t sequenceLength);
 
 int main(int argc, char **argv){
   srand(time(NULL));
@@ -103,7 +103,7 @@ bool rangeCompare(struct AwFmSearchRange range1, struct AwFmSearchRange range2){
 
 
 
-void testAllKmerRanges(const struct AwFmIndexMetadata *metadata, uint64_t sequenceLength){
+void testAllKmerRanges(struct AwFmIndexMetadata *metadata, uint64_t sequenceLength){
   const uint8_t kmerLength = metadata->kmerLengthInSeedTable;
   struct AwFmIndex *index;
   for(uint8_t testNum = 0; testNum < 4; testNum++){

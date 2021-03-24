@@ -1,7 +1,7 @@
 # AvxWindowFmIndex
 A fast, AVX2 accelerated FM-index library that utilizes windows of SIMD registers to quickly locate exact match kmers in genetic data. This FM-index is highly optimized for both nucleotide and amino sequences, but is unsuitable for general text.
 
-Please report any issues or bugs to the "Issues" tab on the project's github (https://github.com/TravisWheelerLab/AvxWindowFmIndex)
+Please report any issues or bugs to the "Issues" tab on the project's github (https://github.com/TravisWheelerLab/AvxWindowFmIndex), and view our pre-print article here (https://www.biorxiv.org/content/10.1101/2021.01.12.426474v2).
 
 
 ## Prerequisites
@@ -77,6 +77,14 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   const size_t sequenceLength, const char *restrict const fileSrc, const bool allowFileOverwrite);
 ```
 
+or, to generate an index from all sequences in a well-formed fasta file,
+``` c
+enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
+  struct AwFmIndexMetadata *restrict const metadata, const char *fastaSrc,
+  const char *restrict const indexFileSrc, const bool allowFileOverwrite);
+```
+
+
 The metadata struct is as follows:
 ``` c
 struct AwFmIndexMetadata{
@@ -88,7 +96,7 @@ struct AwFmIndexMetadata{
 };
 ```
 
-* version number represents the version of .awfmi file to create. At the moment, there is only one version, so a versionNumber of 1 should always be given. If an unsupported version number is given, an error message will be generated, and a valid default version number will be used instead.
+* version number represents the version of .awfmi file to create. This field is automatically assigned when the index is generated, so this should be ignored by the end-user, except for checking the version of an existing index. A version number of 1 represents an index from a single sequence (generated with awFmCreateIndex()), while 2 represents an index comprised of multiple sequences, taken from a fasta file (generated with awFmCreateIndexFromFasta). Version 2 indices also support a few helper functions to match a position in the index to a specific sequence from the input fasta, and the position into that sequence.
 * suffixArrayCompressionRatio represents how much to compress the suffix array to reduce the size of the .awfmi file on drive. As an example, a value of 8 will tell AwFmIndex to build a suffix array where 1/8th of the suffix array is sampled, and on average, each hit will take 8 additional backtrace operations to find the actual database sequence position. As the suffix array is never kept in memory queries, it will have no affect on memory usage during index searches.
 * kmerLengthInSeedTable represents how long of kmers to memoize in a lookup table to speed up queries. Higher values will speed up searches, but will take exponentially more memory. A value of 12 (268MB lookup table) is recommended for nucleotide indices, and a value of 5 (51MB) is recommended for protein indices. increasing this value by one will result in 4x table size for nucleotide indices, and a 20x table size for protein indices.
 * alphabetType allows the user to set the type of index to make. Options are AwFmAlphabetNucleotide and AwFmAlphabetAmino
@@ -193,3 +201,36 @@ where
 * sequenceBuffer is a preallocated buffer large enough to fit sequence segment. Once populated, the buffer is null terminated.
 
 The total number of characters read from the file equals sequenceEndPosition - sequenceStartPosition. Giving a sequenceEndPosition greater than the length of the sequence can result in undefined behavior.
+
+
+### Functions for Indices built from fasta files (Version 2 indices)
+When an index is generated from a fasta file, it may contain multiple sequences, and each sequence has a corresponding header. When an AwFmIndex is built from a fasta, it is able to retrieve the headers, as well as determine which sequence a hit match occurrs in, and the corresponding position in that sequence.
+
+
+When a search returns results, they are returned as positions in the entire index. To determine the sequence and relative position in that sequence a search result corresponds to, use the function:
+``` c
+enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct AwFmIndex *restrict const index,
+  size_t globalPosition, size_t *sequenceNumber, size_t *localSequencePosition);
+```
+where
+* index is the AwFmIndex used,
+* globalPosition is the position returned as the result of a locate() search.
+* sequenceNumber is an out-argument where the index of the sequence the hit falls inside will be written.
+* localSequencePosition is an out-argument where the position in that sequence that corresponds to the globalPosition will be written.
+
+This function requires the index to be built from a fasta file. Otherwise, the error code AwFmUnsupportedVersionError will be returned.
+
+
+Once which sequence the locate() hit comes from is determined with awFmGetLocalSequencePositionFromIndexPosition(), the following function can be used to retrieve the corresponding header.
+``` c
+enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(const struct AwFmIndex *restrict const index,
+  size_t sequenceNumber, char **headerBuffer, size_t *headerLength);
+```
+where
+* index is the AwFmIndex used,
+* globalPosition is the position returned as the result of a locate() search.
+* sequenceNumber is the index of the relevant sequence.
+* headerBuffer is a pointer to the char* variable that this function will set to the beginning of the header.
+* headerLength is an out-argument where the function will write the length of the header.
+
+This function also returns AwFmUnsupportedVersionError if the index was not built from a fasta file.

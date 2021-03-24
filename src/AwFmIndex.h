@@ -356,7 +356,7 @@ void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
  *    index:          Pointer to the AwFmIndex struct that contains the file handle to read.
  *      index file that stores the compressed suffix array.
  *    sequenceStartPosition:  Position in the sequence to begin reading to fill the provided buffer.
- *    sequenceEndPosition:    Position in the sequence where the reading will stop.
+ *    sequenceSegmentLength:  Length of the sequence segment to read.
  *    sequenceBuffer: Pointer to the buffer to read the sequence segment into. This
  *      buffer  must be large enough to hold (sequenceStartPosition - sequenceEndPosition +1) characters.
  *      the + 1 on this length is for the null terminator added to the end of the string.
@@ -368,7 +368,7 @@ void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
  *    AwFmIllegalPositionError if the start position is not less than the end position
  */
 enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
-  const size_t sequenceStartPosition, const size_t sequenceEndPosition,
+  const size_t sequenceStartPosition, const size_t sequenceSegmentLength,
   char *const sequenceBuffer);
 
 

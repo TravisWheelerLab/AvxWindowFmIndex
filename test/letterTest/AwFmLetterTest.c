@@ -58,140 +58,139 @@ void testNucleotideAscii(){
 
 
 void testAminoIndex(){
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('a')) == 0);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('A')) == 0);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('a')) == 0);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('A'))) == 0);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('b')) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('B')) == 20);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('b')) == 20);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('B'))) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('c')) == 1);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('C')) == 1);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('c')) == 1);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('C'))) == 1);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('d')) == 2);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('D')) == 2);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('d')) == 2);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('D'))) == 2);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('e')) == 3);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('E')) == 3);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('e')) == 3);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('E'))) == 3);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('f')) == 4);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('F')) == 4);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('f')) == 4);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('F'))) == 4);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('g')) == 5);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('G')) == 5);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('g')) == 5);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('G'))) == 5);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('h')) == 6);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('H')) == 6);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('h')) == 6);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('H'))) == 6);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('i')) == 7);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('I')) == 7);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('i')) == 7);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('I'))) == 7);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('j')) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('J')) == 20);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('j')) == 20);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('J'))) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('k')) == 8);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('K')) == 8);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('k')) == 8);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('K'))) == 8);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('l')) == 9);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('L')) == 9);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('l')) == 9);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('L'))) == 9);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('m')) == 10);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('M')) == 10);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('m')) == 10);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('M'))) == 10);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('n')) == 11);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('N')) == 11);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('n')) == 11);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('N'))) == 11);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('o')) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('O')) == 20);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('o')) == 20);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('O'))) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('p')) == 12);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('P')) == 12);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('p')) == 12);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('P'))) == 12);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('q')) == 13);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('Q')) == 13);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('q')) == 13);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('Q'))) == 13);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('r')) == 14);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('R')) == 14);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('r')) == 14);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('R'))) == 14);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('s')) == 15);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('S')) == 15);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('s')) == 15);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('S'))) == 15);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('t')) == 16);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('T')) == 16);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('t')) == 16);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('T'))) == 16);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('u')) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('u')) == 20);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('u')) == 20);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('u'))) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('v')) == 17);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('v')) == 17);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('v')) == 17);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('v'))) == 17);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('w')) == 18);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('W')) == 18);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('w')) == 18);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('W'))) == 18);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('x')) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('X')) == 20);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('x')) == 20);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('X'))) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('y')) == 19);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('Y')) == 19);
 
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('y')) == 19);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('Y'))) == 19);
-
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex('z')) == 20);
-testAssert(awFmAsciiAminoLetterSanitize(
-  awFmAsciiAminoAcidToLetterIndex(toupper('Z'))) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('z')) == 20);
+testAssert(awFmAsciiAminoAcidToLetterIndex(
+  awFmAsciiAminoLetterSanitize('Z')) == 20);
 
 
-  testAssert(awFmAsciiAminoLetterSanitize(
-    awFmAsciiAminoAcidToLetterIndex('$')) == 21);
+  testAssert(awFmAsciiAminoAcidToLetterIndex(
+    awFmAsciiAminoLetterSanitize('$')) == 21);
 
 }
 

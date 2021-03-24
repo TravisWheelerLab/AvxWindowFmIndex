@@ -376,24 +376,23 @@ enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *res
 
 
 enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
-  const size_t sequenceStartPosition, const size_t sequenceEndPosition,
+  const size_t sequenceStartPosition, const size_t sequenceSegmentLength,
   char *const sequenceBuffer){
 
-  if(__builtin_expect(sequenceStartPosition >= sequenceEndPosition, 0)){
+  if(__builtin_expect((sequenceStartPosition + sequenceSegmentLength) > index->bwtLength, 0)){
     return AwFmIllegalPositionError;
   }
 
-  const size_t sequenceBufferReadLength = sequenceEndPosition - sequenceStartPosition;
   const size_t seekPosition = index->sequenceFileOffset + sequenceStartPosition;
 
-  size_t bytesRead = pread(index->fileDescriptor, sequenceBuffer, sequenceBufferReadLength * sizeof(char), seekPosition);
+  size_t bytesRead = pread(index->fileDescriptor, sequenceBuffer, sequenceSegmentLength * sizeof(char), seekPosition);
 
-  if(bytesRead != sequenceBufferReadLength * sizeof(char)){
+  if(bytesRead != sequenceSegmentLength * sizeof(char)){
     return AwFmFileReadFail;
   }
 
   //null terminate the string
-  sequenceBuffer[sequenceBufferReadLength] = 0;
+  sequenceBuffer[sequenceSegmentLength] = 0;
   return AwFmFileReadOkay;
 }
 

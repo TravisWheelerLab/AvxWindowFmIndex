@@ -14,7 +14,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <string.h>
-#include "divsufsort64.h"
+#include "../../libdivsufsort/build/include/divsufsort64.h"
 
 
 

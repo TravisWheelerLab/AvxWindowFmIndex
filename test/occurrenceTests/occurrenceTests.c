@@ -12,7 +12,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <time.h>
-#include "divsufsort64.h"
+#include "../../libdivsufsort/build/include/divsufsort64.h"
 
 void popcountTestSuite(void);
 

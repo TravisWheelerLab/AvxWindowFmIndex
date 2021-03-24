@@ -5,7 +5,7 @@
 #include "../../src/AwFmLetter.h"
 #include "../../src/AwFmOccurrence.h"
 #include "../test.h"
-#include "divsufsort64.h"
+#include "../../libdivsufsort/build/include/divsufsort64.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>

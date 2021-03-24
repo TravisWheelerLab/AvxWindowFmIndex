@@ -13,7 +13,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
-#include "divsufsort64.h"
+#include "../../libdivsufsort/build/include/divsufsort64.h"
 
 
 char buffer[2048];

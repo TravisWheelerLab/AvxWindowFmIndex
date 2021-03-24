@@ -13,7 +13,7 @@
 #include <time.h>
 #include <string.h>
 #include <ctype.h>
-#include "divsufsort64.h"
+#include "../../libdivsufsort/build/include/divsufsort64.h"
 
 char buffer[2048];
 uint8_t aminoLookup[21]     = {'a','c','d','e','f',

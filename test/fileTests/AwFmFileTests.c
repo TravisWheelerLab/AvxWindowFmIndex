@@ -14,16 +14,16 @@
 #include <stdbool.h>
 #include <time.h>
 #include <string.h>
-#include "divsufsort64.h"
+#include "../../libdivsufsort/build/include/divsufsort64.h"
 
 
 
 char buffer[2048];
-uint8_t aminoLookup[21]     = {'$','a','c','d','e','f',
+uint8_t aminoLookup[21]     = {'a','c','d','e','f',
                               'g','h','i','k','l',
                               'm','n','p','q','r',
-                              's','t','v','w','y'};
-uint8_t nucleotideLookup[5] = {'$','a','g','c','t'};
+                              's','t','v','w','y','$'};
+uint8_t nucleotideLookup[5] = {'a','g','c','t','$'};
 
 void suffixArrayTest(void);
 void sequenceRecallTest(void);
@@ -45,7 +45,7 @@ void sequenceRecallTest(void){
     size_t sequenceLength = 4000 + rand()%400;
     uint8_t *sequence = malloc(sequenceLength * sizeof(uint8_t));
     for(size_t i = 0; i < sequenceLength; i++){
-      sequence[i] = nucleotideLookup[rand()%5];
+      sequence[i] = nucleotideLookup[rand()%4];
     }
 
     struct AwFmIndex *index;
@@ -55,30 +55,23 @@ void sequenceRecallTest(void){
 
     char sequenceBuffer[2048];
     for(size_t sequencePosition = 0; sequencePosition< sequenceLength; sequencePosition++){
-      size_t priorFlankLength = rand()%10+1;
-      size_t postFlankLength = rand()%10+1;
-      enum AwFmReturnCode returnCode = awFmReadSequenceFromFile(index, sequencePosition - priorFlankLength, sequencePosition + postFlankLength, sequenceBuffer);
+      size_t sequenceSegmentLength = rand()%10+1;
+      if(sequencePosition + sequenceSegmentLength >= index->bwtLength){
+        sequenceSegmentLength = (index->bwtLength-1) - sequencePosition;
+      }
+      // size_t priorFlankLength = rand()%10+1;
+      // size_t postFlankLength = rand()%10+1;
+      enum AwFmReturnCode returnCode = awFmReadSequenceFromFile(index, sequencePosition, sequenceSegmentLength, sequenceBuffer);
 
-      sprintf(buffer, "awFmReadSequenceFromFile returned failure code %i", returnCode);
+      sprintf(buffer, "awFmReadSequenceFromFile returned failure code %i for position %zu (segment length %zu, total len %zu)", returnCode, sequencePosition, sequenceSegmentLength, sequenceLength);
       testAssertString(returnCode > 0, buffer);
 
-      size_t numPriorCharacters = sequencePosition > priorFlankLength? priorFlankLength: sequencePosition;
-      size_t numPostCharacters = (sequencePosition + postFlankLength) > (index->bwtLength-1)?
-        (index->bwtLength - 1) - sequencePosition: postFlankLength;
-      int sequenceSegmentLength = numPriorCharacters +  numPostCharacters;
-      size_t sequenceSegmentStartPosition = priorFlankLength == numPriorCharacters?
-        sequencePosition - numPriorCharacters: 0;
 
-      int compareResult = strncmp(sequenceBuffer, (char*)(sequence + sequenceSegmentStartPosition), sequenceSegmentLength);
-      if(compareResult != 0){
-        printf("seq seg len: %i, res %i, seq: %.*s, buf %.*s, first l %u, %u, return code %u\n", sequenceSegmentLength,
-        compareResult, sequenceSegmentLength, (char*)(sequence+sequenceSegmentStartPosition),
-        sequenceSegmentLength, sequenceBuffer, sequence[sequenceSegmentStartPosition], sequenceBuffer[0], returnCode);
-        printf("seq pos: %zu, prior %zu, post %zu\n",sequencePosition, numPriorCharacters, numPostCharacters);
 
-      }
-      sprintf(buffer, "sequence segment %.*s did not match what was returned in the buffer %.*s",
-        sequenceSegmentLength, (char*)(sequence+ sequenceSegmentStartPosition), sequenceSegmentLength, sequenceBuffer);
+      int compareResult = strncmp(sequenceBuffer, (char*)(sequence + sequencePosition), sequenceSegmentLength);
+
+      sprintf(buffer, "sequence segment %.*s  length %zu at position %zu did not match what was returned in the buffer %.*s",
+        (int)sequenceSegmentLength, (char*)(sequence+ sequencePosition),  sequenceSegmentLength, sequencePosition, (int)sequenceSegmentLength, sequenceBuffer);
 
       testAssertString(compareResult == 0, buffer);
     }
@@ -87,35 +80,30 @@ void sequenceRecallTest(void){
     //test amino recall
     metadata.alphabetType = AwFmAlphabetAmino;
     for(size_t i = 0; i < sequenceLength;i++){
-      sequence[i] = aminoLookup[rand()%21];
+      sequence[i] = aminoLookup[rand()%20];
     }
     awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
     for(size_t sequencePosition = 0; sequencePosition< sequenceLength; sequencePosition++){
-      size_t priorFlankLength = rand()%10+1;
-      size_t postFlankLength = rand()%10+1;
-      enum AwFmReturnCode returnCode = awFmReadSequenceFromFile(index, sequencePosition - priorFlankLength,
-        sequencePosition + postFlankLength, sequenceBuffer);
+      size_t sequenceSegmentLength = rand()%10 + 1;
+      if(sequencePosition + sequenceSegmentLength >= index->bwtLength){
+        sequenceSegmentLength = (index->bwtLength-1) - sequencePosition;
+      }
+      enum AwFmReturnCode returnCode = awFmReadSequenceFromFile(index, sequencePosition,
+        sequenceSegmentLength, sequenceBuffer);
 
       sprintf(buffer, "awFmReadSequenceFromFile returned failure code %i", returnCode);
       testAssertString(returnCode > 0, buffer);
 
-      size_t numPriorCharacters = sequencePosition > priorFlankLength? priorFlankLength: sequencePosition;
-      size_t numPostCharacters = (sequencePosition + postFlankLength) > (index->bwtLength-1)?
-        (index->bwtLength - 1) - sequencePosition: postFlankLength;
-      int sequenceSegmentLength = numPriorCharacters +  numPostCharacters;
-      size_t sequenceSegmentStartPosition = priorFlankLength == numPriorCharacters?
-        sequencePosition - numPriorCharacters: 0;
 
-      int compareResult = strncmp(sequenceBuffer, (char*)(sequence + sequenceSegmentStartPosition), sequenceSegmentLength);
+      int compareResult = strncmp(sequenceBuffer, (char*)(sequence + sequencePosition), sequenceSegmentLength);
       if(compareResult != 0){
-        printf("seq seg len: %i, res %i, seq: %.*s, buf %.*s, first l %u, %u, return code %u\n", sequenceSegmentLength,
-        compareResult, sequenceSegmentLength, (char*)(sequence+sequenceSegmentStartPosition),
-        sequenceSegmentLength, sequenceBuffer, sequence[sequenceSegmentStartPosition], sequenceBuffer[0], returnCode);
-        printf("seq pos: %zu, prior %zu, post %zu\n",sequencePosition, numPriorCharacters, numPostCharacters);
+        printf("seq seg len: %zu, res %i, seq: %.*s, buf %.*s, first l %u, %u, return code %u\n", sequenceSegmentLength,
+        compareResult, (int)sequenceSegmentLength, (char*)(sequence+sequencePosition),
+        (int)sequenceSegmentLength, sequenceBuffer, sequence[sequencePosition], sequenceBuffer[0], returnCode);
 
       }
       sprintf(buffer, "sequence segment %.*s did not match what was returned in the buffer %.*s",
-        sequenceSegmentLength, (char*)(sequence+ sequenceSegmentStartPosition), sequenceSegmentLength, sequenceBuffer);
+        (int)sequenceSegmentLength, (char*)(sequence+ sequencePosition), (int)sequenceSegmentLength, sequenceBuffer);
 
       testAssertString(compareResult == 0, buffer);
     }

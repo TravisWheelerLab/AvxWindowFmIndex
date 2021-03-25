@@ -119,7 +119,7 @@ uninstall:
 $(LIBDIVSUFSORT_BUILD_STATIC_LIBRARY_FILE): $(LIBDIVSUFSORT_PROJECT_DIR)/.git $(LIBDIVSUFSORT_BUILD_DIR) $(LIBDIVSUFSORT_PROJECT_DIR) $(AWFMINDEX_BUILD_DIR)
 	cd $(LIBDIVSUFSORT_BUILD_DIR) && cmake -DCMAKE_BUILD_TYPE="Release" -DUSE_OPENMP="ON" -DBUILD_SHARED_LIBS="OFF" -DBUILD_DIVSUFSORT64:BOOL=ON  -DCMAKE_INSTALL_PREFIX="$(AWFMINDEX_BUILD_DIR)" .. && make
 
-$(FASTA_VECTOR_BUILD_STATIC_LIBRARY_FILE): $(LIBDIVSUFSORT_PROJECT_DIR)/.git
+$(FASTA_VECTOR_BUILD_STATIC_LIBRARY_FILE): $(FASTA_VECTOR_PROJECT_DIR)/.git.
 	cd $(FASTA_VECTOR_PROJECT_DIR) $$ make static
 
 #create the object files from each c file in the src directory
@@ -128,6 +128,10 @@ $(AWFMINDEX_BUILD_DIR)/%.o: $(AWFMINDEX_SRC_DIR)/%.c
 
 #initialize the libdivsufsort project submodule if not already done
 $(LIBDIVSUFSORT_PROJECT_DIR)/.git:
+	git submodule init
+	git submodule update
+
+$(FASTA_VECTOR_PROJECT_DIR)/.git:
 	git submodule init
 	git submodule update
 

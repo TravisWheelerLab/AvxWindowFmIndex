@@ -93,6 +93,7 @@ struct AwFmIndexMetadata{
   uint8_t               kmerLengthInSeedTable;
   enum AwFmAlphabetType alphabetType;
   bool                  keepSuffixArrayInMemory;
+  bool                  storeOriginalSequence;
 };
 ```
 
@@ -101,6 +102,7 @@ struct AwFmIndexMetadata{
 * kmerLengthInSeedTable represents how long of kmers to memoize in a lookup table to speed up queries. Higher values will speed up searches, but will take exponentially more memory. A value of 12 (268MB lookup table) is recommended for nucleotide indices, and a value of 5 (51MB) is recommended for protein indices. increasing this value by one will result in 4x table size for nucleotide indices, and a 20x table size for protein indices.
 * alphabetType allows the user to set the type of index to make. Options are AwFmAlphabetNucleotide and AwFmAlphabetAmino
 * keepSuffixArrayInMemory determines if the compressed suffix array is loaded into memory, or left on disk. keeping the suffix array will consume a lot of memory (8 bytes per position in the database sequence), but will speed up searches by not having to go to disk for the final position lookup of each hit. An index made from an average mammalian nucleotide genome with this flag set to true will consume around 28GB of additional memory.
+* storeOriginalSequence determines if the original sequence data will be saved inside the index. If this is false, the sequence is omitted, which will generate a smaller index file. If true, sections of the original sequence can be recalled with the awFmReadSequenceFromFile() function. 
 
 
 To use awFmCreateIndex, pass a pointer to an uninitialized AwFmIndex struct pointer. The function will allocate memory for the index, build it in memory, and write it to the given fileSrc. The AwFmIndex struct is usable immediately after calling this function, and must be manually deallocated with awFmDeallocIndex().
@@ -200,7 +202,7 @@ where
 * sequenceSegmentLength is the length of the sequence segment to read.
 * sequenceBuffer is a preallocated buffer large enough to fit sequence segment. Once populated, the buffer is null terminated.
 
-The total number of characters read from the file equals sequenceEndPosition - sequenceStartPosition. Giving a sequenceEndPosition greater than the length of the sequence can result in undefined behavior.
+The total number of characters read from the file equals sequenceEndPosition - sequenceStartPosition. Giving a sequenceEndPosition greater than the length of the sequence can result in undefined behavior. This function will return the error code AwFmUnsupportedVersionError if the index did not store the sequence data (i.e., the metadata's storeOriginalSequence member variable was set to false when the index was generated.)
 
 
 ### Functions for Indices built from fasta files (Version 2 indices)

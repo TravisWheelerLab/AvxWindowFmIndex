@@ -44,7 +44,8 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
     return AwFmNullPtrError;
   }
 
-  metadata->versionNumber = 1;
+  metadata->versionNumber = 1 | (metadata->storeOriginalSequence?
+    1 << AW_FM_VERSION_NUMBER_BIT_STORE_ORIGINAL_SEQUENCE: 0);  //sets the correct bit if we should store the original sequence
 
   //set the index out arg initally to NULL, if this function fully completes this will get overwritten
   *index = NULL;
@@ -157,7 +158,8 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
     return AwFmNullPtrError;
   }
 
-  metadata->versionNumber = 2;
+  metadata->versionNumber = 2 | (metadata->storeOriginalSequence?
+    1 << AW_FM_VERSION_NUMBER_BIT_STORE_ORIGINAL_SEQUENCE: 0);  //sets the correct bit if we should store the original sequence
   //set the index out arg initally to NULL, if this function fully completes this will get overwritten
   *index = NULL;
 

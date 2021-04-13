@@ -70,6 +70,7 @@ struct AwFmIndexMetadata{
   uint8_t               kmerLengthInSeedTable;
   enum AwFmAlphabetType alphabetType;
   bool                  keepSuffixArrayInMemory;
+  bool                  storeOriginalSequence;
 };
 
 struct AwFmSearchRange{

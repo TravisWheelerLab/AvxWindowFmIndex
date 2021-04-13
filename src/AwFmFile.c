@@ -35,6 +35,7 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
   }
 
   const bool indexContainsFastaVector = awFmIndexContainsFastaVector(index->metadata.versionNumber);
+  const bool storeOriginalSequence = index->metadata.storeOriginalSequence;
 
   //open the file
   char fileOpenMode[5] = {'w','+','b', (allowOverwrite? 0:'x'), 0};
@@ -107,11 +108,13 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     return AwFmFileWriteFail;
   }
 
-  //write the sequence
-  elementsWritten = fwrite(sequence, sizeof(char), sequenceLength, index->fileHandle);
-  if(elementsWritten != sequenceLength){
-    fclose(index->fileHandle);
-    return AwFmFileWriteFail;
+  if(storeOriginalSequence){
+    //write the sequence
+    elementsWritten = fwrite(sequence, sizeof(char), sequenceLength, index->fileHandle);
+    if(elementsWritten != sequenceLength){
+      fclose(index->fileHandle);
+      return AwFmFileWriteFail;
+    }
   }
 
   //write the compressed suffix array
@@ -124,7 +127,6 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
       return AwFmFileWriteFail;
     }
   }
-
 
   if(indexContainsFastaVector){
     //write the lengths for the header string and the metadata vector
@@ -211,6 +213,9 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   }
   metadata.alphabetType = alphabetType;
 
+  //determine if the index stores the sequence
+  const bool storeOriginalSequence = metadata.versionNumber & 0x100;
+  metadata.storeOriginalSequence = storeOriginalSequence;
 
   //from the version number, determine if we expect to find FastaVector data.
   const bool indexContainsFastaVector = awFmIndexContainsFastaVector(metadata.versionNumber);
@@ -379,21 +384,28 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
   const size_t sequenceStartPosition, const size_t sequenceSegmentLength,
   char *const sequenceBuffer){
 
-  if(__builtin_expect((sequenceStartPosition + sequenceSegmentLength) > index->bwtLength, 0)){
-    return AwFmIllegalPositionError;
+  if(index->metadata.storeOriginalSequence){
+    if(__builtin_expect((sequenceStartPosition + sequenceSegmentLength) > index->bwtLength, 0)){
+      return AwFmIllegalPositionError;
+    }
+
+    const size_t seekPosition = index->sequenceFileOffset + sequenceStartPosition;
+
+    size_t bytesRead = pread(index->fileDescriptor, sequenceBuffer, sequenceSegmentLength * sizeof(char), seekPosition);
+
+    if(bytesRead != sequenceSegmentLength * sizeof(char)){
+      return AwFmFileReadFail;
+    }
+
+    //null terminate the string
+    sequenceBuffer[sequenceSegmentLength] = 0;
+    return AwFmFileReadOkay;
+
   }
+  else{
 
-  const size_t seekPosition = index->sequenceFileOffset + sequenceStartPosition;
-
-  size_t bytesRead = pread(index->fileDescriptor, sequenceBuffer, sequenceSegmentLength * sizeof(char), seekPosition);
-
-  if(bytesRead != sequenceSegmentLength * sizeof(char)){
-    return AwFmFileReadFail;
+   return AwFmUnsupportedVersionError;
   }
-
-  //null terminate the string
-  sequenceBuffer[sequenceSegmentLength] = 0;
-  return AwFmFileReadOkay;
 }
 
 
@@ -445,5 +457,10 @@ size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index){
 
 
 size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index){
-  return awFmGetSequenceFileOffset(index) + ((index->bwtLength - 1) * sizeof(char));
+  if(index->metadata.storeOriginalSequence){
+    return awFmGetSequenceFileOffset(index) + ((index->bwtLength - 1) * sizeof(char));
+  }
+  else{
+    return awFmGetSequenceFileOffset(index);
+  }
 }

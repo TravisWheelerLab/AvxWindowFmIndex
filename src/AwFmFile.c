@@ -214,7 +214,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   metadata.alphabetType = alphabetType;
 
   //determine if the index stores the sequence
-  const bool storeOriginalSequence = metadata.versionNumber & 0x100;
+  const bool storeOriginalSequence = !!(metadata.versionNumber & (1<< AW_FM_VERSION_NUMBER_BIT_STORE_ORIGINAL_SEQUENCE));
   metadata.storeOriginalSequence = storeOriginalSequence;
 
   //from the version number, determine if we expect to find FastaVector data.

@@ -252,9 +252,9 @@ bool setPositionListCount(struct AwFmKmerSearchData *restrict const searchData, 
       searchData->count = newCount;
     }
     else{
-      const size_t newCapacity = newCount * 2;
       const size_t newLengthInBytes = newCapacity * sizeof(struct AwFmBacktrace);
       void *tmpPtr = realloc(searchData->positionBacktraceList, newLengthInBytes);
+      const size_t newCapacity = newCount;
       if(__builtin_expect(tmpPtr == 0, 0)){
         fprintf(stderr, "Critical memory failure: could not allocate memory for position list.\n");
         return false;

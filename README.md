@@ -1,5 +1,5 @@
 # AvxWindowFmIndex
-A fast, AVX2 accelerated FM-index library that utilizes windows of SIMD registers to quickly locate exact match kmers in genetic data. This FM-index is highly optimized for both nucleotide and amino sequences, but is unsuitable for general text.
+A fast, SIMD accelerated FM-index library that utilizes windows of SIMD registers to quickly locate exact match kmers in genetic data. This FM-index is highly optimized for both nucleotide and amino sequences, but is unsuitable for general text. Despite then name, AvxWindowFmIndex supports SIMD operation on both x86_64 architectures via AVX2, and ARM_64 architectures via Arm Neon.
 
 Please report any issues or bugs to the "Issues" tab on the project's github (https://github.com/TravisWheelerLab/AvxWindowFmIndex), and view our pre-print article here (https://www.biorxiv.org/content/10.1101/2021.01.12.426474v2).
 

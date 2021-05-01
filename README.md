@@ -102,7 +102,7 @@ struct AwFmIndexMetadata{
 * kmerLengthInSeedTable represents how long of kmers to memoize in a lookup table to speed up queries. Higher values will speed up searches, but will take exponentially more memory. A value of 12 (268MB lookup table) is recommended for nucleotide indices, and a value of 5 (51MB) is recommended for protein indices. increasing this value by one will result in 4x table size for nucleotide indices, and a 20x table size for protein indices.
 * alphabetType allows the user to set the type of index to make. Options are AwFmAlphabetNucleotide and AwFmAlphabetAmino
 * keepSuffixArrayInMemory determines if the compressed suffix array is loaded into memory, or left on disk. keeping the suffix array will consume a lot of memory (8 bytes per position in the database sequence), but will speed up searches by not having to go to disk for the final position lookup of each hit. An index made from an average mammalian nucleotide genome with this flag set to true will consume around 28GB of additional memory.
-* storeOriginalSequence determines if the original sequence data will be saved inside the index. If this is false, the sequence is omitted, which will generate a smaller index file. If true, sections of the original sequence can be recalled with the awFmReadSequenceFromFile() function. 
+* storeOriginalSequence determines if the original sequence data will be saved inside the index. If this is false, the sequence is omitted, which will generate a smaller index file. If true, sections of the original sequence can be recalled with the awFmReadSequenceFromFile() function.
 
 
 To use awFmCreateIndex, pass a pointer to an uninitialized AwFmIndex struct pointer. The function will allocate memory for the index, build it in memory, and write it to the given fileSrc. The AwFmIndex struct is usable immediately after calling this function, and must be manually deallocated with awFmDeallocIndex().
@@ -153,12 +153,12 @@ e.g., to print the positions in the database sequence where a kmer at a given in
 ``` c
 void printKmerHitPositions(struct AwFmKmerSearchList *searchList, size_t kmerIndex)
   const uint32_t numHitPositions = searchList->kmerSearchData[kmerIndex].count;
-  struct AwFmBacktrace *positionBacktraceList =  
-    searchList->kmerSearchData[kmerIndex].positionBacktraceList;
+  uint64_t *positionList =  
+    searchList->kmerSearchData[kmerIndex].positionList;
 
   for(size_t i = 0; i < numHitPositions; i++){
     printf("kmer at index %zu found at database position %zu."\n,
-    kmerIndex, positionBacktraceList[i].position);
+    kmerIndex, positionList);
   }
 }
 ```

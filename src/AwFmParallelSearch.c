@@ -27,8 +27,9 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
   struct AwFmKmerSearchList *restrict const searchList, struct AwFmSearchRange *restrict const ranges,
   const size_t threadBlockStartIndex, const size_t threadBlockEndIndex);
 
-void parallelSearchSuffixArrayLookup(const struct AwFmIndex *restrict const index,
-  struct AwFmKmerSearchList *restrict const searchList, const size_t threadBlockStartIndex, const size_t threadBlockEndIndex);
+//deprecated
+// void parallelSearchSuffixArrayLookup(const struct AwFmIndex *restrict const index,
+//   struct AwFmKmerSearchList *restrict const searchList, const size_t threadBlockStartIndex, const size_t threadBlockEndIndex);
 
 bool setPositionListCount(struct AwFmKmerSearchData *restrict const searchData, uint32_t count);
 
@@ -59,20 +60,17 @@ struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity){
       searchList->kmerSearchData[i].kmerLength            = 0;
       searchList->kmerSearchData[i].capacity              = DEFAULT_POSITION_LIST_CAPACITY;
       searchList->kmerSearchData[i].count                 = 0;
-      // searchList->kmerSearchData[i].positionBacktraceList = aligned_alloc(
-      //   AW_FM_CACHE_LINE_SIZE_IN_BYTES,
-      //   DEFAULT_POSITION_LIST_CAPACITY * sizeof(struct AwFmBacktrace));
-      searchList->kmerSearchData[i].positionBacktraceList = malloc(
-        DEFAULT_POSITION_LIST_CAPACITY * sizeof(struct AwFmBacktrace));
+      searchList->kmerSearchData[i].positionList = malloc(
+        DEFAULT_POSITION_LIST_CAPACITY * sizeof(uint64_t));
 
       //check for an allocation failure
-      positionListAllocationFailed |= (searchList->kmerSearchData[i].positionBacktraceList == NULL);
+      positionListAllocationFailed |= (searchList->kmerSearchData[i].positionList == NULL);
     }
 
     //if any of the allocations failed, dealloc everything and return NULL.
     if(positionListAllocationFailed){
       for(size_t i = 0; i < capacity; i++){
-        free(searchList->kmerSearchData[i].positionBacktraceList);
+        free(searchList->kmerSearchData[i].positionList);
       }
       free(searchList->kmerSearchData);
       free(searchList);
@@ -85,7 +83,7 @@ struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity){
 
 void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchList){
   for(size_t i = 0; i < searchList->capacity; i++){
-    free(searchList->kmerSearchData[i].positionBacktraceList);
+    free(searchList->kmerSearchData[i].positionList);
   }
   free(searchList->kmerSearchData);
   free(searchList);
@@ -95,36 +93,76 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
 void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
   struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads){
 
-  #pragma omp parallel for num_threads(numThreads)
-  for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchList->count; threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES){
+  const uint32_t searchListCount = searchList->count;
 
-    const size_t threadBlockEndIndex = threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES > searchList->count?
+  if(numThreads > 1){
+    #pragma omp parallel for num_threads(numThreads)
+    for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchListCount; threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES){
+
+      const size_t threadBlockEndIndex = threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES > searchList->count?
       searchList->count: threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES;
-    struct AwFmSearchRange ranges[AW_FM_NUM_CONCURRENT_QUERIES];
+      struct AwFmSearchRange ranges[AW_FM_NUM_CONCURRENT_QUERIES];
 
-    parallelSearchFindKmerSeedsForBlock(  index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
-    parallelSearchExtendKmersInBlock(     index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
-    parallelSearchTracebackPositionLists( index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
-    parallelSearchSuffixArrayLookup(      index, searchList,          threadBlockStartIndex, threadBlockEndIndex);
+      parallelSearchFindKmerSeedsForBlock(  index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
+      parallelSearchExtendKmersInBlock(     index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
+      parallelSearchTracebackPositionLists( index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
+      //this is now done in the parallelSearchTracebackPositionLists function.
+      // parallelSearchSuffixArrayLookup(      index, searchList,          threadBlockStartIndex, threadBlockEndIndex);
+    }
+  }
+  else{
+    //exact duplicate of above code, without the omp pragma, so it doesn't kill performance with only 1 thread.
+    for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchListCount; threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES){
+      const size_t threadBlockEndIndex = threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES > searchList->count?
+      searchList->count: threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES;
+      struct AwFmSearchRange ranges[AW_FM_NUM_CONCURRENT_QUERIES];
+
+      parallelSearchFindKmerSeedsForBlock(  index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
+      parallelSearchExtendKmersInBlock(     index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
+      parallelSearchTracebackPositionLists( index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
+      //this is now done in the parallelSearchTracebackPositionLists function.
+      // parallelSearchSuffixArrayLookup(      index, searchList,          threadBlockStartIndex, threadBlockEndIndex);
+    }
   }
 }
 
 void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
   struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads){
 
-  #pragma omp parallel for num_threads(numThreads)
-  for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchList->count; threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES){
+  const uint32_t searchListCount = searchList->count;
 
-    const size_t threadBlockEndIndex = threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES > searchList->count?
+  if(numThreads > 1){
+    #pragma omp parallel for num_threads(numThreads)
+    for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchListCount; threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES){
+
+      const size_t threadBlockEndIndex = threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES > searchList->count?
       searchList->count: threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES;
-    struct AwFmSearchRange ranges[AW_FM_NUM_CONCURRENT_QUERIES];
+      struct AwFmSearchRange ranges[AW_FM_NUM_CONCURRENT_QUERIES];
 
-    parallelSearchFindKmerSeedsForBlock(  index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
-    parallelSearchExtendKmersInBlock(     index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
+      parallelSearchFindKmerSeedsForBlock(  index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
+      parallelSearchExtendKmersInBlock(     index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
 
-    //load the range lengths into the count member variables.
-    for(size_t i = threadBlockStartIndex; i < threadBlockEndIndex; i++){
-      searchList->kmerSearchData[i].count = awFmSearchRangeLength(&ranges[i-threadBlockStartIndex]);
+      //load the range lengths into the count member variables.
+      for(size_t i = threadBlockStartIndex; i < threadBlockEndIndex; i++){
+        searchList->kmerSearchData[i].count = awFmSearchRangeLength(&ranges[i-threadBlockStartIndex]);
+      }
+    }
+  }
+  else{
+    //exact duplicate of above code, without the omp pragma, so it doesn't kill performance with only 1 thread.
+    for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchListCount; threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES){
+
+      const size_t threadBlockEndIndex = threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES > searchList->count?
+      searchList->count: threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES;
+      struct AwFmSearchRange ranges[AW_FM_NUM_CONCURRENT_QUERIES];
+
+      parallelSearchFindKmerSeedsForBlock(  index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
+      parallelSearchExtendKmersInBlock(     index, searchList, ranges,  threadBlockStartIndex, threadBlockEndIndex);
+
+      //load the range lengths into the count member variables.
+      for(size_t i = threadBlockStartIndex; i < threadBlockEndIndex; i++){
+        searchList->kmerSearchData[i].count = awFmSearchRangeLength(&ranges[i-threadBlockStartIndex]);
+      }
     }
   }
 }
@@ -135,8 +173,9 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const 
   const size_t threadBlockStartIndex, const size_t threadBlockEndIndex){
 
   for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++){
-    const uint8_t kmerLength  = searchList->kmerSearchData[kmerIndex].kmerLength;
-    const char    *kmerString = searchList->kmerSearchData[kmerIndex].kmerString;
+    const struct AwFmKmerSearchData *searchData = &searchList->kmerSearchData[kmerIndex];
+    const uint8_t kmerLength  = searchData->kmerLength;
+    const char    *kmerString = searchData->kmerString;
 
     const uint64_t rangesIndex = kmerIndex - threadBlockStartIndex;
     if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
@@ -173,8 +212,9 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
 
     for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++){
       const uint64_t rangesIndex = kmerIndex - threadBlockStartIndex;
-      const uint8_t kmerLength  = searchList->kmerSearchData[kmerIndex].kmerLength;
-      const char    *kmerString = searchList->kmerSearchData[kmerIndex].kmerString;
+      const struct AwFmKmerSearchData *restrict const searchData = &searchList->kmerSearchData[kmerIndex];
+      const uint8_t kmerLength  = searchData->kmerLength;
+      const char    *kmerString = searchData->kmerString;
 
       if((kmerLength >= currentKmerLetterIndex) && awFmSearchRangeIsValid(&ranges[rangesIndex])){
         hasActiveQueries = true;
@@ -201,50 +241,58 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
   for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++){
     const uint64_t rangesIndex = kmerIndex - threadBlockStartIndex;
 
+    struct AwFmKmerSearchData *searchData = &searchList->kmerSearchData[kmerIndex];
     const size_t rangeLength  = awFmSearchRangeLength(&ranges[rangesIndex]);
-    setPositionListCount(&searchList->kmerSearchData[kmerIndex], rangeLength);
-    struct AwFmBacktrace *restrict const backtracePositionList = searchList->kmerSearchData[kmerIndex].positionBacktraceList;
+    setPositionListCount(searchData, rangeLength);
+    // struct AwFmBacktrace *restrict const backtracePositionList = {
+    //   .position = searchList->kmerSearchData[kmerIndex].positionList;
+    // };searchList->kmerSearchData[kmerIndex].positionBacktraceList;
 
-    size_t positionInRangeToBacktrace = 0;
-    while(positionInRangeToBacktrace < rangeLength){
+    size_t indexOfPositionToBacktrace = 0;
+    while(indexOfPositionToBacktrace < rangeLength){
       //initialize the offset.
-      uint64_t offset = 0;
-      uint64_t position = ranges[rangesIndex].startPtr + positionInRangeToBacktrace;
+      struct AwFmBacktrace backtrace = {
+        .position = ranges[rangesIndex].startPtr + indexOfPositionToBacktrace,
+        .offset = 0
+      };
+      // uint64_t offset = 0;
+      // uint64_t position = ranges[rangesIndex].startPtr + positionInRangeToBacktrace;
+
       if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-        while(!awFmBwtPositionIsSampled(index, position)){
-          position = awFmNucleotideBacktraceBwtPosition(index, position);
-          offset++;
+        while(!awFmBwtPositionIsSampled(index, backtrace.position)){
+          backtrace.position = awFmNucleotideBacktraceBwtPosition(index, backtrace.position);
+          backtrace.offset++;
         }
       }
       else{
-        while(!awFmBwtPositionIsSampled(index, position)){
-          position = awFmAminoBacktraceBwtPosition(index, position);
-          offset++;
+        while(!awFmBwtPositionIsSampled(index, backtrace.position)){
+          backtrace.position = awFmAminoBacktraceBwtPosition(index, backtrace.position);
+          backtrace.offset++;
         }
       }
 
-      backtracePositionList[positionInRangeToBacktrace].position = position;
-      backtracePositionList[positionInRangeToBacktrace]._offset = offset;
+      awFmSuffixArrayReadPositionParallel(index, &backtrace);
+      searchData->positionList[indexOfPositionToBacktrace] = backtrace.position;
 
-
-      positionInRangeToBacktrace++;
+      indexOfPositionToBacktrace++;
     }
   }
 }
 
 
-void parallelSearchSuffixArrayLookup(const struct AwFmIndex *restrict const index,
-  struct AwFmKmerSearchList *restrict const searchList, const size_t threadBlockStartIndex, const size_t threadBlockEndIndex){
-    for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++){
-
-    const size_t numSuffixArrayPositions = searchList->kmerSearchData[kmerIndex].count;
-    for(size_t backtraceIndex = 0; backtraceIndex < numSuffixArrayPositions; backtraceIndex++){
-      struct AwFmBacktrace *restrict const backtracePtr = &searchList->kmerSearchData[kmerIndex].positionBacktraceList[backtraceIndex];
-
-      awFmSuffixArrayReadPositionParallel(index, backtracePtr);
-    }
-  }
-}
+//deprecated
+// void parallelSearchSuffixArrayLookup(const struct AwFmIndex *restrict const index,
+//   struct AwFmKmerSearchList *restrict const searchList, const size_t threadBlockStartIndex, const size_t threadBlockEndIndex){
+//     for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++){
+//
+//     const size_t numSuffixArrayPositions = searchList->kmerSearchData[kmerIndex].count;
+//     for(size_t backtraceIndex = 0; backtraceIndex < numSuffixArrayPositions; backtraceIndex++){
+//       uint64_t *restrict const backtracePositionPtr = &searchList->kmerSearchData[kmerIndex].positionList[backtraceIndex];
+//
+//       awFmSuffixArrayReadPositionParallel(index, backtracePositionPtr);
+//     }
+//   }
+// }
 
 
 bool setPositionListCount(struct AwFmKmerSearchData *restrict const searchData, uint32_t newCount){
@@ -252,9 +300,9 @@ bool setPositionListCount(struct AwFmKmerSearchData *restrict const searchData, 
       searchData->count = newCount;
     }
     else{
-      const size_t newLengthInBytes = newCapacity * sizeof(struct AwFmBacktrace);
-      void *tmpPtr = realloc(searchData->positionBacktraceList, newLengthInBytes);
       const size_t newCapacity = newCount;
+      const size_t newLengthInBytes = newCapacity * sizeof(uint64_t);
+      void *tmpPtr = realloc(searchData->positionList, newLengthInBytes);
       if(__builtin_expect(tmpPtr == 0, 0)){
         fprintf(stderr, "Critical memory failure: could not allocate memory for position list.\n");
         return false;
@@ -262,7 +310,7 @@ bool setPositionListCount(struct AwFmKmerSearchData *restrict const searchData, 
 
       searchData->capacity = newCapacity;
       searchData->count = newCount;
-      searchData->positionBacktraceList = tmpPtr;
+      searchData->positionList = tmpPtr;
     }
 
   return true;

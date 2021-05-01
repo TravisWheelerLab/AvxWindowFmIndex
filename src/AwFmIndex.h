@@ -93,15 +93,11 @@ struct AwFmIndex{
   struct  FastaVector       *fastaVector; // ptr should be null if not in use.
 };
 
-struct AwFmBacktrace{
-  uint64_t position;
-  uint64_t _offset;   //for internal use during backtrace, you can likely ignore this
-};
 
 struct AwFmKmerSearchData{
   char                        *kmerString;
   uint64_t                    kmerLength;
-  struct AwFmBacktrace        *positionBacktraceList;
+  uint64_t                    *positionList;
   uint32_t                    count;
   uint32_t                    capacity;
 };
@@ -112,6 +108,11 @@ struct AwFmKmerSearchList{
   struct AwFmKmerSearchData   *kmerSearchData;
 };
 
+//for internal use during backtrace, you can likely ignore this
+struct AwFmBacktrace{
+  uint64_t position;
+  uint64_t offset;
+};
 
 //todo: remove unused return codes
 enum AwFmReturnCode{
@@ -192,7 +193,7 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
  *  Inputs:
  *    index:  Pointer to the AwFmIndex struct to deallocate
  */
-void          awFmDeallocIndex(struct AwFmIndex *index);
+void awFmDeallocIndex(struct AwFmIndex *index);
 
 
 /*

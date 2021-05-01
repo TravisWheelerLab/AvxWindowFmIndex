@@ -32,9 +32,9 @@ int main(int argc, char **argv){
   // size_t seedTime = 1582842257;
   // printf("seed time: %zu\n", seedTime);
   srand(seedTime);
+  testParallelCount();
   testParallelSearchNucleotide();
   testParallelSearchAmino();
-  testParallelCount();
 
 
   printf("parallel search testing finished.\n");
@@ -43,7 +43,8 @@ int main(int argc, char **argv){
 void testParallelSearchAmino(void){
     struct AwFmIndex *index;
     struct AwFmIndexMetadata metadata = {.versionNumber = 1, .suffixArrayCompressionRatio = 8,
-      .kmerLengthInSeedTable = 5, .alphabetType = AwFmAlphabetAmino};
+      .kmerLengthInSeedTable = 5, .alphabetType = AwFmAlphabetAmino,
+      .keepSuffixArrayInMemory=true, .storeOriginalSequence = false};
 
     const uint64_t sequenceLength = 10000 + rand()%50000;
     printf("creating amino sequence of length %zu.\n", sequenceLength);
@@ -117,47 +118,47 @@ void testParallelSearchAmino(void){
       for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++){
         bool kmerFoundAtThisPosition = (strncmp((char*)&sequence[sequencePosition], searchData->kmerString, searchData->kmerLength)) == 0;
 
-        const struct AwFmBacktrace *backtraceList = searchData->positionBacktraceList;
-        bool thisPositionInBacktraceList = false;
-        for(size_t backtraceIndex = 0; backtraceIndex < searchData->count; backtraceIndex++){
-          const size_t realPosition = backtraceList[backtraceIndex].position;
-          thisPositionInBacktraceList |= (realPosition == sequencePosition);
+        const uint64_t *positionList = searchData->positionList;
+        bool thisPositionInList = false;
+        for(size_t positionIndexInList = 0; positionIndexInList < searchData->count; positionIndexInList++){
+          const size_t realPosition = positionList[positionIndexInList];
+          thisPositionInList |= (realPosition == sequencePosition);
         }
 
-        if(kmerFoundAtThisPosition && !thisPositionInBacktraceList){
+        if(kmerFoundAtThisPosition && !thisPositionInList){
 
           printf("\n\n!!!!!\n\n");
           printf("test failure: returned positions are: ");
           printf("kmer %zu has count %u\n", kmerIndex, searchData->count);
           printf("position list: ");
           for(size_t i = 0; i < searchData->count; i++){
-            printf("pos: %zu, off %zu, ", backtraceList[i].position, backtraceList[i]._offset);
+            printf("pos: %zu, ", positionList[i]);
           }
           printf("\n");
           printf("debug: ");
           printf("from seq: %.*s\n", (uint32_t)searchData->kmerLength, sequence+sequencePosition);
-          sprintf(buffer, "kmer %.*s (%.*s) was found at position %zu, but was not represented in the backtrace vector.",
+          sprintf(buffer, "kmer %.*s (%.*s) was found at position %zu, but was not represented in the position list.",
             (uint32_t)searchData->kmerLength, searchData->kmerString, (uint32_t)searchData->kmerLength,
             sequence+sequencePosition, sequencePosition);
           printf("kmer @ position %zu in range: %.*s. in sequence: %.*s\n", sequencePosition,
             (uint32_t)searchData->kmerLength, searchData->kmerString, (uint32_t)searchData->kmerLength, sequence+ sequencePosition);
           printf("(seq pos = %zu), pos list count %u\n", sequencePosition, searchData->count);
           for(size_t i = 0; i < searchData->count; i++){
-            printf("pos: [%zu, offset %zu], ",searchData->positionBacktraceList[i].position, searchData->positionBacktraceList[i]._offset);
+            printf("pos: %zu, ",positionList[i]);
           }
           printf("\n");
 
           testAssertString(false, buffer);
           exit(-1);
         }
-        else if(!kmerFoundAtThisPosition && thisPositionInBacktraceList){
+        else if(!kmerFoundAtThisPosition && thisPositionInList){
           printf("kmer %zu has count %u\n", kmerIndex, searchData->count);
           printf("position list: ");
           for(size_t i = 0; i < searchData->count; i++){
-            printf("pos: %zu, off %zu, ", backtraceList[i].position, backtraceList[i]._offset);
+            printf("pos: %zu, ", positionList[i]);
           }
           printf("\n");
-          sprintf(buffer, "kmer %.*s was in the backtrace vector, but was not found at the expected sequence position %zu (%.*s found there instead).",
+          sprintf(buffer, "kmer %.*s was in the position list, but was not found at the expected sequence position %zu (%.*s found there instead).",
             (uint32_t)searchData->kmerLength, searchData->kmerString, sequencePosition, (uint32_t)searchData->kmerLength, &sequence[sequencePosition]);
           testAssertString(false, buffer);
           exit(-4);
@@ -182,7 +183,8 @@ void testParallelSearchAmino(void){
 void testParallelSearchNucleotide(){
   struct AwFmIndex *index;
   struct AwFmIndexMetadata metadata = {.versionNumber = 1, .suffixArrayCompressionRatio = 8,
-    .kmerLengthInSeedTable = 9, .alphabetType = AwFmAlphabetNucleotide};
+    .kmerLengthInSeedTable = 9, .alphabetType=AwFmAlphabetNucleotide,
+    .keepSuffixArrayInMemory=true, .storeOriginalSequence=false};
 
   const uint64_t sequenceLength = 5000 + rand()%5000;
   printf("creating nucleotide sequence of length %zu.\n", sequenceLength);
@@ -240,7 +242,7 @@ void testParallelSearchNucleotide(){
   for(size_t kmerIndex = 0; kmerIndex < searchList->count; kmerIndex++){
     const struct AwFmKmerSearchData *searchData = &searchList->kmerSearchData[kmerIndex];
 
-    sprintf(buffer, "backtrace vector's capacity was lower than it's count!\n");
+    sprintf(buffer, "position vector's capacity was lower than it's count!\n");
     testAssertString(searchData->capacity >= searchData->count, buffer);
 
 
@@ -250,44 +252,44 @@ void testParallelSearchNucleotide(){
     for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++){
       bool kmerFoundAtThisPosition = (strncmp((char*)&sequence[sequencePosition], searchData->kmerString, searchData->kmerLength)) == 0;
 
-      const struct AwFmBacktrace *backtraceList = searchData->positionBacktraceList;
-      bool thisPositionInBacktraceList = false;
-      for(size_t backtraceIndex = 0; backtraceIndex < searchData->count; backtraceIndex++){
-        const size_t realPosition = backtraceList[backtraceIndex].position;
-        thisPositionInBacktraceList |= (realPosition == sequencePosition);
+      const uint64_t *positionList = searchData->positionList;
+      bool thisPositionInList = false;
+      for(size_t positionIndexInList = 0; positionIndexInList < searchData->count; positionIndexInList++){
+        const size_t realPosition = positionList[positionIndexInList];
+        thisPositionInList |= (realPosition == sequencePosition);
       }
 
-      if(kmerFoundAtThisPosition && !thisPositionInBacktraceList){
+      if(kmerFoundAtThisPosition && !thisPositionInList){
         printf("kmer %zu has count %u\n", kmerIndex, searchData->count);
         printf("position list: ");
         for(size_t i = 0; i < searchData->count; i++){
-          printf("pos: %zu, off %zu, ", backtraceList[i].position, backtraceList[i]._offset);
+          printf("pos: %zu, ", positionList[i]);
         }
         printf("\n");
         printf("debug: ");
         printf("from seq: %.*s\n", (uint32_t)searchData->kmerLength, sequence+sequencePosition);
-        sprintf(buffer, "kmer %.*s (%.*s) was found at position %zu, but was not represented in the backtrace vector.",
+        sprintf(buffer, "kmer %.*s (%.*s) was found at position %zu, but was not represented in the position list.",
           (uint32_t)searchData->kmerLength, searchData->kmerString, (uint32_t)searchData->kmerLength,
           sequence+sequencePosition, sequencePosition);
         printf("kmer @ position %zu in range: %.*s. in sequence: %.*s\n", sequencePosition,
           (uint32_t)searchData->kmerLength, searchData->kmerString, (uint32_t)searchData->kmerLength, sequence+ sequencePosition);
         printf("(seq pos = %zu), pos list count %u\n", sequencePosition, searchData->count);
         for(size_t i = 0; i < searchData->count; i++){
-          printf("pos: [%zu, offset %zu], ",searchData->positionBacktraceList[i].position, searchData->positionBacktraceList[i]._offset);
+          printf("pos: %zu, ", positionList[i]);
         }
         printf("\n");
 
         testAssertString(false, buffer);
         exit(-2);
       }
-      else if(!kmerFoundAtThisPosition && thisPositionInBacktraceList){
+      else if(!kmerFoundAtThisPosition && thisPositionInList){
         printf("kmer %zu has count %u\n", kmerIndex, searchData->count);
         printf("position list: ");
         for(size_t i = 0; i < searchData->count; i++){
-          printf("pos: %zu, off %zu, ", backtraceList[i].position, backtraceList[i]._offset);
+          printf("pos: %zu, ", positionList[i]);
         }
         printf("\n");
-        sprintf(buffer, "kmer %.*s was in the backtrace vector, but was not found at the expected sequence position %zu (%.*s found there instead).",
+        sprintf(buffer, "kmer %.*s was in the position list, but was not found at the expected sequence position %zu (%.*s found there instead).",
           (uint32_t)searchData->kmerLength, searchData->kmerString, sequencePosition, (uint32_t)searchData->kmerLength, &sequence[sequencePosition]);
         testAssertString(false, buffer);
         exit(-3);
@@ -311,7 +313,8 @@ void testParallelSearchNucleotide(){
 void testParallelCount(void){
   struct AwFmIndex *index;
   struct AwFmIndexMetadata metadata = {.versionNumber = 1, .suffixArrayCompressionRatio = 8,
-    .kmerLengthInSeedTable = 5, .alphabetType = AwFmAlphabetAmino};
+    .kmerLengthInSeedTable = 5, .alphabetType = AwFmAlphabetAmino,
+    .keepSuffixArrayInMemory=true, .storeOriginalSequence = false};
 
   const uint64_t sequenceLength = 10000 + rand()%50000;
   printf("creating amino sequence of length %zu.\n", sequenceLength);
@@ -367,7 +370,7 @@ void testParallelCount(void){
   printf("par search data count %zu\n", searchList->count);
   for(size_t kmerIndex = 0; kmerIndex < searchList->count; kmerIndex++){
     const struct AwFmKmerSearchData *searchData = &searchList->kmerSearchData[kmerIndex];
-    sprintf(buffer, "backtrace vector's capacity was lower than it's count!\n");
+    sprintf(buffer, "position list's capacity was lower than it's count! cap: %u, count %u\n", searchData->capacity, searchData->count);
     testAssertString(searchData->capacity >= searchData->count, buffer);
 
 

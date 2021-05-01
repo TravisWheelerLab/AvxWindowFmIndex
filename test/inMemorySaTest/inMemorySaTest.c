@@ -50,7 +50,8 @@ void inMemorySaUncompressedTest(void){
 
     struct AwFmIndex *index;
     struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = 1,
-      .kmerLengthInSeedTable=8, .alphabetType=AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=true};
+      .kmerLengthInSeedTable=8, .alphabetType=AwFmAlphabetNucleotide,
+      .keepSuffixArrayInMemory=true, .storeOriginalSequence=true};
 
 
     enum AwFmReturnCode returnCode = awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
@@ -69,30 +70,30 @@ void inMemorySaUncompressedTest(void){
     awFmParallelSearchLocate(index, searchList, 4);
 
     for(size_t kmerIndex = 0; kmerIndex < numKmers; kmerIndex++){
-      struct AwFmBacktrace *backtraceList = searchList->kmerSearchData[kmerIndex].positionBacktraceList;
+      uint64_t *positionList = searchList->kmerSearchData[kmerIndex].positionList;
 
       for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++){
         bool kmerFoundAtPosition = strncmp(searchList->kmerSearchData[kmerIndex].kmerString, (char*)&sequence[sequencePosition], kmerLength) == 0;
-        bool positionInBacktraceList = false;
+        bool positionFoundInList = false;
         for(size_t backtraceIndex = 0; backtraceIndex < searchList->kmerSearchData[kmerIndex].count; backtraceIndex++){
-          if(backtraceList[backtraceIndex].position == sequencePosition){
-            positionInBacktraceList = true;
+          if(positionList[backtraceIndex] == sequencePosition){
+            positionFoundInList = true;
           }
         }
 
         sprintf(buffer, "kmer index %zu  (%.*s) at position %zu  (%.*s) found? %i. in backtraceVector? %i.",
           kmerIndex, kmerLength, &sequence[sequencePosition], sequencePosition,
-          kmerLength, searchList->kmerSearchData[kmerIndex].kmerString, kmerFoundAtPosition, positionInBacktraceList);
-          if(kmerFoundAtPosition != positionInBacktraceList){
+          kmerLength, searchList->kmerSearchData[kmerIndex].kmerString, kmerFoundAtPosition, positionFoundInList);
+          if(kmerFoundAtPosition != positionFoundInList){
             printf("not matched: position %zu,  backtrace count %u, backtrace vector:\n",
               sequencePosition, searchList->kmerSearchData[kmerIndex].count);
             for(size_t i = 0; i < searchList->kmerSearchData[kmerIndex].count; i++){
-              printf("[%zu, (%zu)], ", backtraceList[i].position, backtraceList[i]._offset);
+              printf("%zu, ", positionList[i]);
 
             }
             printf("\n");
           }
-        testAssertString(kmerFoundAtPosition == positionInBacktraceList, buffer);
+        testAssertString(kmerFoundAtPosition == positionFoundInList, buffer);
       }
     }
     free(sequence);
@@ -117,7 +118,8 @@ void inMemorySaCompressedTest(void){
     struct AwFmIndex *index;
     //as an extreme edge case, compress the SA to only one value.
     struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = sequenceLength-1,
-      .kmerLengthInSeedTable=8, .alphabetType=AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=true};
+      .kmerLengthInSeedTable=8, .alphabetType=AwFmAlphabetNucleotide,
+      .keepSuffixArrayInMemory=true, .storeOriginalSequence=true};
 
 
     awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
@@ -133,31 +135,32 @@ void inMemorySaCompressedTest(void){
     awFmParallelSearchLocate(index, searchList, 4);
 
     for(size_t kmerIndex = 0; kmerIndex < numKmers; kmerIndex++){
-      struct AwFmBacktrace *backtraceList = searchList->kmerSearchData[kmerIndex].positionBacktraceList;
+      const struct AwFmKmerSearchData *searchData = &searchList->kmerSearchData[kmerIndex];
+      uint64_t *positionList = searchData->positionList;
 
       for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++){
-        bool kmerFoundAtPosition = strncmp(searchList->kmerSearchData[kmerIndex].kmerString, (char*)&sequence[sequencePosition], kmerLength) == 0;
-        bool positionInBacktraceList = false;
-        for(size_t backtraceIndex = 0; backtraceIndex < searchList->kmerSearchData[kmerIndex].count; backtraceIndex++){
-          if(backtraceList[backtraceIndex].position == sequencePosition){
-            positionInBacktraceList = true;
+        bool kmerFoundAtPosition = strncmp(searchData->kmerString, (char*)&sequence[sequencePosition], kmerLength) == 0;
+        bool positionFoundInList = false;
+        for(size_t backtraceIndex = 0; backtraceIndex < searchData->count; backtraceIndex++){
+          if(positionList[backtraceIndex] == sequencePosition){
+            positionFoundInList = true;
           }
         }
 
         sprintf(buffer, "kmer index %zu  (%.*s) at position %zu  (%.*s) found? %i. in backtraceVector? %i.",
           kmerIndex, kmerLength, &sequence[sequencePosition], sequencePosition,
-          kmerLength, searchList->kmerSearchData[kmerIndex].kmerString, kmerFoundAtPosition, positionInBacktraceList);
+          kmerLength, searchList->kmerSearchData[kmerIndex].kmerString, kmerFoundAtPosition, positionFoundInList);
 
-        if(kmerFoundAtPosition != positionInBacktraceList){
+        if(kmerFoundAtPosition != positionFoundInList){
           printf("not matched: position %zu,  backtrace count %u, backtrace vector:\n",
             sequencePosition, searchList->kmerSearchData[kmerIndex].count);
           for(size_t i = 0; i < searchList->kmerSearchData[kmerIndex].count; i++){
-            printf("[%zu, (%zu)], ", backtraceList[i].position, backtraceList[i]._offset);
+            printf("%zu, ", positionList[i]);
           }
           printf("\n");
         }
 
-        testAssertString(kmerFoundAtPosition == positionInBacktraceList, buffer);
+        testAssertString(kmerFoundAtPosition == positionFoundInList, buffer);
       }
     }
     free(sequence);
@@ -179,7 +182,8 @@ void inMemoryFromFileTest(void){
 
     struct AwFmIndex *index;
     struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = 16,
-      .kmerLengthInSeedTable=8, .alphabetType=AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=true};
+      .kmerLengthInSeedTable=8, .alphabetType=AwFmAlphabetNucleotide,
+      .keepSuffixArrayInMemory=true, .storeOriginalSequence=true};
 
 
     awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
@@ -199,30 +203,30 @@ void inMemoryFromFileTest(void){
     awFmParallelSearchLocate(index, searchList, 4);
 
     for(size_t kmerIndex = 0; kmerIndex < numKmers; kmerIndex++){
-      struct AwFmBacktrace *backtraceList = searchList->kmerSearchData[kmerIndex].positionBacktraceList;
+      uint64_t *positionList = searchList->kmerSearchData[kmerIndex].positionList;
 
       for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++){
         bool kmerFoundAtPosition = strncmp(searchList->kmerSearchData[kmerIndex].kmerString, (char*)&sequence[sequencePosition], kmerLength) == 0;
-        bool positionInBacktraceList = false;
+        bool positionFoundInList = false;
         for(size_t backtraceIndex = 0; backtraceIndex < searchList->kmerSearchData[kmerIndex].count; backtraceIndex++){
-          if(backtraceList[backtraceIndex].position == sequencePosition){
-            positionInBacktraceList = true;
+          if(positionList[backtraceIndex] == sequencePosition){
+            positionFoundInList = true;
           }
         }
 
         sprintf(buffer, "kmer index %zu  (%.*s) at position %zu  (%.*s) found? %i. in backtraceVector? %i.",
           kmerIndex, kmerLength, &sequence[sequencePosition], sequencePosition,
-          kmerLength, searchList->kmerSearchData[kmerIndex].kmerString, kmerFoundAtPosition, positionInBacktraceList);
-          if(kmerFoundAtPosition != positionInBacktraceList){
+          kmerLength, searchList->kmerSearchData[kmerIndex].kmerString, kmerFoundAtPosition, positionFoundInList);
+          if(kmerFoundAtPosition != positionFoundInList){
             printf("not matched: position %zu,  backtrace count %u, backtrace vector:\n",
               sequencePosition, searchList->kmerSearchData[kmerIndex].count);
             for(size_t i = 0; i < searchList->kmerSearchData[kmerIndex].count; i++){
-              printf("[%zu, (%zu)], ", backtraceList[i].position, backtraceList[i]._offset);
+              printf("%zu, ", positionList[i]);
 
             }
             printf("\n");
           }
-        testAssertString(kmerFoundAtPosition == positionInBacktraceList, buffer);
+        testAssertString(kmerFoundAtPosition == positionFoundInList, buffer);
       }
     }
     free(sequence);

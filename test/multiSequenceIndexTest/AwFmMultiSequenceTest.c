@@ -117,7 +117,7 @@ void testAwFmIndexIdenticalForFastaVector(){
     const bool isAmino              = metadata.alphabetType == AwFmAlphabetAmino;
     const size_t numSequences       = (rand() % 10) + 1;
     const size_t maxSequenceLength  = 10000;
-    const char *fastaFileSrc        = "test.fasta";
+    const char *fastaFileSrc        = "sequences.fasta";
     const uint32_t fileLineLength   = (rand() % 522) + 1;
     fastaVector = generateMultiSequenceFastaVector(numSequences, maxSequenceLength, isAmino);
 
@@ -161,7 +161,7 @@ void testAwFmIndexFastaVectorDataMatchesExpected(void){
     const bool isAmino              = metadata.alphabetType == AwFmAlphabetAmino;
     const size_t numSequences       = (rand() % 10) + 1;
     const size_t maxSequenceLength  = 10000;
-    const char *fastaFileSrc        = "test.fasta";
+    const char *fastaFileSrc        = "sequences.fasta";
     const uint32_t fileLineLength   = (rand() % 522) + 1;
     fastaVector = generateMultiSequenceFastaVector(numSequences, maxSequenceLength, isAmino);
     printf("test fastaVector data # %zu, metadata generated: sacr %u, klist %u, alphabet %u, ksim %u\n", testNum, metadata.suffixArrayCompressionRatio, metadata.kmerLengthInSeedTable, metadata.alphabetType, metadata.keepSuffixArrayInMemory);
@@ -239,7 +239,7 @@ void testAwFmIndexGivesCorrectLocalPositions(void){
     const bool isAmino              = metadata.alphabetType == AwFmAlphabetAmino;
     const size_t numSequences       = (rand() % 10) + 1;
     const size_t maxSequenceLength  = 10000;
-    const char *fastaFileSrc        = "test.fasta";
+    const char *fastaFileSrc        = "sequences.fasta";
     const uint32_t fileLineLength   = (rand() % 522) + 1;
     fastaVector = generateMultiSequenceFastaVector(numSequences, maxSequenceLength, isAmino);
     printf("test gives correct locations # %zu, metadata generated: sacr %u, klist %u, alphabet %u, ksim %u\n", testNum, metadata.suffixArrayCompressionRatio, metadata.kmerLengthInSeedTable, metadata.alphabetType, metadata.keepSuffixArrayInMemory);
@@ -273,7 +273,7 @@ void testAwFmIndexGivesCorrectHeaders(void){
     const bool isAmino              = metadata.alphabetType == AwFmAlphabetAmino;
     const size_t numSequences       = (rand() % 10) + 1;
     const size_t maxSequenceLength  = 10000;
-    const char *fastaFileSrc        = "test.fasta";
+    const char *fastaFileSrc        = "sequences.fasta";
     const uint32_t fileLineLength   = (rand() % 522) + 1;
     fastaVector = generateMultiSequenceFastaVector(numSequences, maxSequenceLength, isAmino);
     printf("test gives correct headers # %zu, metadata generated: sacr %u, klist %u, alphabet %u, ksim %u\n", testNum, metadata.suffixArrayCompressionRatio, metadata.kmerLengthInSeedTable, metadata.alphabetType, metadata.keepSuffixArrayInMemory);

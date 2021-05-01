@@ -50,7 +50,8 @@ void sequenceRecallTest(void){
 
     struct AwFmIndex *index;
     struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = 240,
-      .kmerLengthInSeedTable=2, .alphabetType=AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=false};
+      .kmerLengthInSeedTable=2, .alphabetType=AwFmAlphabetNucleotide,
+      .keepSuffixArrayInMemory=false, .storeOriginalSequence=true};
     awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
 
     char sequenceBuffer[2048];
@@ -119,7 +120,8 @@ void suffixArrayTest(void){
     printf("    compression ratio %zu, nucleotide\n", compressionRatio);
     struct AwFmIndex *index;
     struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = compressionRatio,
-      .kmerLengthInSeedTable=2, .alphabetType=AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=false};
+      .kmerLengthInSeedTable=2, .alphabetType=AwFmAlphabetNucleotide,
+      .keepSuffixArrayInMemory=false, .storeOriginalSequence=true};
 
     const size_t sequenceLength = 4000 + rand()%2000;
     uint8_t *sequence = malloc((sequenceLength+1) * sizeof(uint8_t));
@@ -138,7 +140,7 @@ void suffixArrayTest(void){
     for(size_t i = 0; i < sequenceLength+1; i += compressionRatio){
       uint64_t positionFromSuffixArray = suffixArray[i];
 
-      struct AwFmBacktrace backtrace = {.position=i, ._offset=0};
+      struct AwFmBacktrace backtrace = {.position=i, .offset=0};
       enum AwFmReturnCode returnCode = awFmSuffixArrayReadPositionParallel(index, &backtrace);
       sprintf(buffer, "on position %zu, suffix array read position parallel returned error code %i.", i, returnCode);
       testAssertString(returnCode > 0, buffer);
@@ -164,7 +166,7 @@ void suffixArrayTest(void){
     for(size_t i = 0; i < sequenceLength+1; i += compressionRatio){
       uint64_t positionFromSuffixArray = suffixArray[i];
 
-      struct AwFmBacktrace backtrace = {.position=i, ._offset=0};
+      struct AwFmBacktrace backtrace = {.position=i, .offset=0};
       enum AwFmReturnCode returnCode = awFmSuffixArrayReadPositionParallel(index, &backtrace);
       sprintf(buffer, "on position %zu, suffix array read position parallel returned error code %i.", i, returnCode);
       testAssertString(returnCode > 0, buffer);
@@ -207,7 +209,8 @@ void indexReadTest(void){
 
   struct AwFmIndex *index;
   struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = 255,
-    .kmerLengthInSeedTable=kmerLengthInSeedTable, .alphabetType=alphabetType, .keepSuffixArrayInMemory=false};
+    .kmerLengthInSeedTable=kmerLengthInSeedTable, .alphabetType=alphabetType,
+    .keepSuffixArrayInMemory=false, .storeOriginalSequence=false};
 
     enum AwFmReturnCode returnCode = awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testindex.awfmi", true);
     if(returnCode < 0){
@@ -222,7 +225,6 @@ void indexReadTest(void){
     if(returnCode < 0){
       printf("ERROR: reading index copy returned error code %i\n", returnCode);
     }
-
 
     //compare the bwt lengths
     sprintf(buffer, "the bwt lengths of the original (%zu) and the one from file (%zu) did not match.",

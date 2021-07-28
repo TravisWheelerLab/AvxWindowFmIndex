@@ -4,14 +4,14 @@
 #include "AwFmIndex.h"
 
 struct AwFmCompressedSuffixArray{
-  uint8_t *values;
-  size_t length;
-  uint8_t valueBitWidth;
-  uint64_t compressedByteLength;
+  uint8_t   valueBitWidth;
+  bool      responsibleForArrayDeallocation;
+  uint8_t   *values;
+  uint64_t  compressedByteLength;
 };
 
-
-struct AwFmCompressedSuffixArray awFmInitSuffixArray(uint64_t *fullSa, size_t saLength);
+enum AwFmReturnCode awFmInitSuffixArray(uint64_t *fullSa, size_t saLength,
+  struct AwFmCompressedSuffixArray *compressedSuffixArray, bool buildSaInPlace);
 
 size_t awFmGetValueFromCompressedSuffixArray(struct AwFmCompressedSuffixArray suffixArray, size_t valuePosition);
 

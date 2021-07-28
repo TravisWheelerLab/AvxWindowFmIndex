@@ -20,15 +20,27 @@ size_t computeCompressedSaSizeInBytes(size_t saLength, uint8_t minWidth){
 
 
 //need to check for null Sa
-struct AwFmCompressedSuffixArray awFmInitSuffixArray(uint64_t *fullSa, size_t saLength){
+ enum AwFmReturnCode awFmInitSuffixArray(uint64_t *fullSa, size_t saLength, struct AwFmCompressedSuffixArray *compressedSuffixArray, bool buildSaInPlace){
+   if(fullSa == NULL || compressedSuffixArray == NULL){
+     return AwFmNullPtrError;
+   }
   uint8_t minimumBitWidth = log2Ceil(saLength);
   size_t compressedSaByteSize = computeCompressedSaSizeInBytes(saLength, minimumBitWidth);
-  struct AwFmCompressedSuffixArray compressedSuffixArray;
 
-  compressedSuffixArray.values = (uint8_t*)fullSa;
-  compressedSuffixArray.length = saLength;
-  compressedSuffixArray.valueBitWidth = minimumBitWidth;
-  compressedSuffixArray.compressedByteLength = compressedSaByteSize;
+  if(buildSaInPlace){
+    compressedSuffixArray->values = (uint8_t*)fullSa;
+    compressedSuffixArray->responsibleForArrayDeallocation = false;
+  }
+  else{
+    compressedSuffixArray->responsibleForArrayDeallocation = true;
+    compressedSuffixArray->values = malloc(compressedSaByteSize);
+    if(compressedSuffixArray->values == NULL){
+      return AwFmAllocationFailure;
+    }
+  }
+  compressedSuffixArray->numElements = saLength;
+  compressedSuffixArray->valueBitWidth = minimumBitWidth;
+  compressedSuffixArray->compressedByteLength = compressedSaByteSize;
 
   for(size_t i = 0; i < saLength; i++){
     uint64_t saValueBuffer = fullSa[i];
@@ -42,19 +54,20 @@ struct AwFmCompressedSuffixArray awFmInitSuffixArray(uint64_t *fullSa, size_t sa
 
     uint8_t byteToWrite = (saValueBuffer << bitPosition) & 0xFF;
     uint8_t bitmask = (1ULL << bitPosition) - 1; //zero out the bits we're going to set, since it's in-place
-    compressedSuffixArray.values[bytePosition]    &=  bitmask;
-    compressedSuffixArray.values[bytePosition++]  |= byteToWrite;
+    compressedSuffixArray->values[bytePosition]    &=  bitmask;
+    compressedSuffixArray->values[bytePosition++]  |= byteToWrite;
 
-    int16_t bitsRemaining = compressedSuffixArray.valueBitWidth - (8- bitPosition);
+    int16_t bitsRemaining = compressedSuffixArray->valueBitWidth - (8- bitPosition);
     saValueBuffer >>= (8 - bitPosition);
     while(bitsRemaining > 0){
-      compressedSuffixArray.values[bytePosition++] = saValueBuffer;
+      compressedSuffixArray->values[bytePosition++] = saValueBuffer;
       saValueBuffer >>= 8;
       bitsRemaining -= 8;
     }
   }
 
-  return compressedSuffixArray;
+  return AwFmSuccess;
+  // return compressedSuffixArray;
 }
 
 

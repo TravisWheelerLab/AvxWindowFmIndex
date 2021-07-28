@@ -32,10 +32,12 @@ void testSuffixArrayCompressionStaticLengths(){
     generateFabricatedSuffixArray(saLength, buffer);
     memcpy(referenceBuffer, buffer, saLength * sizeof(uint64_t));
 
-
-    struct AwFmCompressedSuffixArray  compressedSa = awFmInitSuffixArray(buffer, saLength);
-
-
+    struct AwFmCompressedSuffixArray  compressedSa;
+    enum AwFmReturnCode returnCode = awFmInitSuffixArray(buffer, saLength, &compressedSa, true);
+    if(returnCode != AwFmSuccess){
+      testAssertString(false, "awFmInitSuffixArray did not return AwFmSuccess.\n");
+      printf("initSuffixArray returned error code %d\n", returnCode);
+    }
 
     uint64_t necessaryBitWidth = 0;
     while((1LL << (++necessaryBitWidth)) <= saLength);
@@ -64,8 +66,13 @@ void testSuffixArrayCompressionRandomLengths(){
     referenceBuffer = realloc(referenceBuffer, suffixArrayLength * sizeof(uint64_t));
     generateFabricatedSuffixArray(suffixArrayLength, buffer);
     memcpy(referenceBuffer, buffer, suffixArrayLength * sizeof(uint64_t));
-    struct AwFmCompressedSuffixArray  compressedSa = awFmInitSuffixArray(buffer, suffixArrayLength);
 
+    struct AwFmCompressedSuffixArray  compressedSa;
+    enum AwFmReturnCode returnCode = awFmInitSuffixArray(buffer, suffixArrayLength, &compressedSa, true);
+    if(returnCode != AwFmSuccess){
+      testAssertString(false, "awFmInitSuffixArray did not return AwFmSuccess.\n");
+      printf("initSuffixArray returned error code %d\n", returnCode);
+    }
     uint64_t necessaryBitWidth = 0;
     while((1LL << (++necessaryBitWidth)) <= suffixArrayLength);
 

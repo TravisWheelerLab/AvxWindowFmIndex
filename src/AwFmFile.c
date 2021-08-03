@@ -5,6 +5,7 @@
 #include "AwFmFile.h"
 #include "AwFmIndexStruct.h"
 #include "AwFmIndex.h"
+#include "AwFmSuffixArray.h"
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -14,9 +15,7 @@
 static const uint8_t IndexFileFormatIdHeaderLength  = 10;
 static const char    IndexFileFormatIdHeader[11]    = "AwFmIndex\n\0";
 
-//TODO: update to conditionally use fastaVector (but the seq will still be passed in here as args)
-enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
-  const uint64_t *restrict const suffixArray, const uint8_t *restrict const sequence,
+enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index, const uint8_t *restrict const sequence,
   const uint64_t sequenceLength, const char *restrict const fileSrc, const bool allowOverwrite){
   if(__builtin_expect(fileSrc == NULL, 0)){
     return AwFmNoFileSrcGiven;
@@ -26,16 +25,12 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     return AwFmNullPtrError;
   }
 
-  if(__builtin_expect(suffixArray == NULL, 0)){
-    return AwFmNullPtrError;
-  }
-
   if(__builtin_expect(sequence == NULL, 0)){
     return AwFmNullPtrError;
   }
 
-  const bool indexContainsFastaVector = awFmIndexContainsFastaVector(index->metadata.versionNumber);
-  const bool storeOriginalSequence = index->metadata.storeOriginalSequence;
+  const bool indexContainsFastaVector = awFmIndexContainsFastaVector(index);
+  const bool storeOriginalSequence = index->config.storeOriginalSequence;
 
   //open the file
   char fileOpenMode[5] = {'w','+','b', (allowOverwrite? 0:'x'), 0};
@@ -52,24 +47,35 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     return AwFmFileWriteFail;
   }
 
-  //write the metadata, starting with the version number
-  elementsWritten = fwrite(&index->metadata.versionNumber, sizeof(uint16_t), 1, index->fileHandle);
+  //write the config, starting with the version number
+  elementsWritten = fwrite(&index->versionNumber, sizeof(uint32_t), 1, index->fileHandle);
   if(elementsWritten != 1){
     fclose(index->fileHandle);
     return AwFmFileWriteFail;
   }
-  elementsWritten = fwrite(&index->metadata.suffixArrayCompressionRatio, sizeof(uint8_t), 1, index->fileHandle);
+  //write the config, starting with the version number
+  elementsWritten = fwrite(&index->featureFlags, sizeof(uint32_t), 1, index->fileHandle);
   if(elementsWritten != 1){
     fclose(index->fileHandle);
     return AwFmFileWriteFail;
   }
-  elementsWritten = fwrite(&index->metadata.kmerLengthInSeedTable, sizeof(uint8_t), 1, index->fileHandle);
+  elementsWritten = fwrite(&index->config.suffixArrayCompressionRatio, sizeof(uint8_t), 1, index->fileHandle);
   if(elementsWritten != 1){
     fclose(index->fileHandle);
     return AwFmFileWriteFail;
   }
-  uint8_t alphabetType = index->metadata.alphabetType;
+  elementsWritten = fwrite(&index->config.kmerLengthInSeedTable, sizeof(uint8_t), 1, index->fileHandle);
+  if(elementsWritten != 1){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+  uint8_t alphabetType = index->config.alphabetType;
   elementsWritten = fwrite(&alphabetType, sizeof(uint8_t), 1, index->fileHandle);
+  if(elementsWritten != 1){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
+  }
+  elementsWritten = fwrite(&storeOriginalSequence, sizeof(uint8_t), 1, index->fileHandle);
   if(elementsWritten != 1){
     fclose(index->fileHandle);
     return AwFmFileWriteFail;
@@ -83,7 +89,7 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
   }
 
   const size_t numBlockInBwt = awFmNumBlocksFromBwtLength(index->bwtLength);
-  const size_t bytesPerBwtBlock = index->metadata.alphabetType == AwFmAlphabetNucleotide?
+  const size_t bytesPerBwtBlock = index->config.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
 
   elementsWritten = fwrite(index->bwtBlockList.asNucleotide, bytesPerBwtBlock, numBlockInBwt, index->fileHandle);
@@ -93,7 +99,7 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
   }
 
   //write the prefix sums table
-  const size_t prefixSumsLength = awFmGetPrefixSumsLength(index->metadata.alphabetType);
+  const size_t prefixSumsLength = awFmGetPrefixSumsLength(index->config.alphabetType);
   elementsWritten = fwrite(index->prefixSums, sizeof(uint64_t), prefixSumsLength, index->fileHandle);
   if(elementsWritten != prefixSumsLength){
     fclose(index->fileHandle);
@@ -117,15 +123,11 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
     }
   }
 
-  //write the compressed suffix array
-  for(size_t i = 0; i < index->bwtLength; i+= index->metadata.suffixArrayCompressionRatio){
-    //write the 'implicit' position of the sentinel character at the end in the first element of the SA
-    size_t valueToWrite = suffixArray[i];
-    size_t elementsWritten = fwrite(&valueToWrite, sizeof(uint64_t), 1, index->fileHandle);
-    if(elementsWritten != 1){
-      fclose(index->fileHandle);
-      return AwFmFileWriteFail;
-    }
+  size_t downsampledSuffixArrayLengthInBytes = index->suffixArray.compressedByteLength;
+  elementsWritten = fwrite(index->suffixArray.values, sizeof(uint8_t), downsampledSuffixArrayLengthInBytes, index->fileHandle);
+  if(elementsWritten != downsampledSuffixArrayLengthInBytes){
+    fclose(index->fileHandle);
+    return AwFmFileWriteFail;
   }
 
   if(indexContainsFastaVector){
@@ -189,18 +191,31 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   }
 
   //read in the metadata
-  struct AwFmIndexMetadata metadata;
-  elementsRead = fread(&metadata.versionNumber, sizeof(uint16_t), 1, fileHandle);
+  struct AwFmIndexConfiguration config;
+  uint32_t versionNumber;
+  elementsRead = fread(&versionNumber, sizeof(uint32_t), 1, fileHandle);
   if(elementsRead != 1){
     fclose(fileHandle);
     return AwFmFileReadFail;
   }
-  elementsRead = fread(&metadata.suffixArrayCompressionRatio, sizeof(uint8_t), 1, fileHandle);
+
+  //check to make sure the version is currently supported.
+  if(!awFmIndexIsVersionValid(versionNumber)){
+    fclose(fileHandle);
+    return AwFmUnsupportedVersionError;
+  }
+  uint32_t featureFlags;
+  elementsRead = fread(&featureFlags, sizeof(uint32_t), 1, fileHandle);
   if(elementsRead != 1){
     fclose(fileHandle);
     return AwFmFileReadFail;
   }
-  elementsRead = fread(&metadata.kmerLengthInSeedTable, sizeof(uint8_t), 1, fileHandle);
+  elementsRead = fread(&config.suffixArrayCompressionRatio, sizeof(uint8_t), 1, fileHandle);
+  if(elementsRead != 1){
+    fclose(fileHandle);
+    return AwFmFileReadFail;
+  }
+  elementsRead = fread(&config.kmerLengthInSeedTable, sizeof(uint8_t), 1, fileHandle);
   if(elementsRead != 1){
     fclose(fileHandle);
     return AwFmFileReadFail;
@@ -211,14 +226,19 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     fclose(fileHandle);
     return AwFmFileReadFail;
   }
-  metadata.alphabetType = alphabetType;
+  config.alphabetType = alphabetType;
 
-  //determine if the index stores the sequence
-  const bool storeOriginalSequence = !!(metadata.versionNumber & (1<< AW_FM_VERSION_NUMBER_BIT_STORE_ORIGINAL_SEQUENCE));
-  metadata.storeOriginalSequence = storeOriginalSequence;
 
-  //from the version number, determine if we expect to find FastaVector data.
-  const bool indexContainsFastaVector = awFmIndexContainsFastaVector(metadata.versionNumber);
+  uint8_t storeOriginalSequence;
+
+  elementsRead = fread(&storeOriginalSequence, sizeof(uint8_t), 1, fileHandle);
+  if(elementsRead != 1){
+    fclose(fileHandle);
+    return AwFmFileReadFail;
+  }
+  //boolean-ify the byte (should be 0 or 1 already, but just in case)
+  config.storeOriginalSequence = !!storeOriginalSequence;
+
 
   //read the bwt length
   uint64_t bwtLength;
@@ -229,15 +249,20 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   }
 
   //allocate the index
-  indexData = awFmIndexAlloc(&metadata, bwtLength);
+  indexData = awFmIndexAlloc(&config, bwtLength);
   if(indexData == NULL){
     fclose(fileHandle);
     return AwFmAllocationFailure;
   }
+  indexData->versionNumber = versionNumber;
+
+  indexData->featureFlags = featureFlags;
+  //from the version number, determine if we expect to find FastaVector data.
+  const bool indexContainsFastaVector = awFmIndexContainsFastaVector(indexData);
 
   //read the bwt block list
   const size_t numBlockInBwt = awFmNumBlocksFromBwtLength(indexData->bwtLength);
-  const size_t bytesPerBwtBlock = indexData->metadata.alphabetType == AwFmAlphabetNucleotide?
+  const size_t bytesPerBwtBlock = indexData->config.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
   elementsRead = fread(indexData->bwtBlockList.asNucleotide, bytesPerBwtBlock, numBlockInBwt, fileHandle);
   if(elementsRead != numBlockInBwt){
@@ -246,7 +271,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     return AwFmFileReadFail;
   }
   //read the prefix sums array
-  const size_t prefixSumsLength = awFmGetPrefixSumsLength(indexData->metadata.alphabetType);
+  const size_t prefixSumsLength = awFmGetPrefixSumsLength(indexData->config.alphabetType);
   elementsRead = fread(indexData->prefixSums, sizeof(uint64_t), prefixSumsLength, fileHandle);
   if(elementsRead != prefixSumsLength){
     fclose(fileHandle);
@@ -264,30 +289,34 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
   }
 
   //handle the in memory suffix array, if requested.
-  indexData->metadata.keepSuffixArrayInMemory = keepSuffixArrayInMemory;
-  indexData->inMemorySuffixArray = NULL;  //probably unnecessary, but here for safety.
+  indexData->config.keepSuffixArrayInMemory = keepSuffixArrayInMemory;
+  indexData->suffixArray.values = NULL;  //probably unnecessary, but here for safety.
 
-  size_t compressedSuffixArrayLength = awFmGetCompressedSuffixArrayLength(indexData);
+  size_t compressedSuffixArrayByteLength = awFmComputeCompressedSaSizeInBytes(bwtLength, config.suffixArrayCompressionRatio);
+  indexData->suffixArray.compressedByteLength = compressedSuffixArrayByteLength;
+  indexData->suffixArray.valueBitWidth = awFmComputeSuffixArrayValueMinWidth(bwtLength);
   if(keepSuffixArrayInMemory){
+
     //seek to the suffix array
     fseek(fileHandle, awFmGetSuffixArrayFileOffset(indexData), SEEK_SET);
-    indexData->inMemorySuffixArray = malloc(compressedSuffixArrayLength * sizeof(uint64_t));
+    indexData->suffixArray.values = malloc(compressedSuffixArrayByteLength);
 
-    if(indexData->inMemorySuffixArray == NULL){
+    if(indexData->suffixArray.values == NULL){
       fclose(fileHandle);
       awFmDeallocIndex(indexData);
       return AwFmAllocationFailure;
     }
     else{
-      elementsRead = fread(indexData->inMemorySuffixArray, sizeof(uint64_t), compressedSuffixArrayLength, fileHandle);
-      if(elementsRead != compressedSuffixArrayLength){
+      elementsRead = fread(indexData->suffixArray.values, 1, compressedSuffixArrayByteLength, fileHandle);
+      if(elementsRead != compressedSuffixArrayByteLength){
         fclose(fileHandle);
         awFmDeallocIndex(indexData);
         return AwFmFileReadFail;
       }
     }
   }
-  else if(indexContainsFastaVector){
+  if(indexContainsFastaVector){
+    fseek(fileHandle, awFmGetFastaVectorFileOffset(indexData), SEEK_SET);
     //allocate and init the fastaVector struct
     struct FastaVector *fastaVector = malloc(sizeof(fastaVector));
     if(!fastaVector){
@@ -308,7 +337,6 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     indexData->fastaVector = fastaVector;
     size_t fastaVectorHeaderLength;
     size_t fastaVectorMetadataLength;
-    fseek(fileHandle, awFmGetSuffixArrayFileOffset(indexData) + (compressedSuffixArrayLength * sizeof(uint64_t)), SEEK_SET);
     elementsRead = fread(&fastaVectorHeaderLength, sizeof(size_t), 1, fileHandle);
     if(elementsRead != 1){
       fclose(fileHandle);
@@ -339,9 +367,6 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
     fastaVector->header.capacity    = fastaVectorHeaderLength;
     fastaVector->metadata.count     = fastaVectorMetadataLength;
     fastaVector->metadata.capacity  = fastaVectorMetadataLength;
-
-    //read in the header and the metadata
-
   }
 
   indexData->suffixArrayFileOffset  = awFmGetSuffixArrayFileOffset(indexData);
@@ -357,24 +382,24 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
 enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *restrict const index,
   uint64_t *restrict const positionArray, const size_t positionArrayLength){
 
-  if(index->metadata.keepSuffixArrayInMemory){
+  if(index->config.keepSuffixArrayInMemory){
     for(size_t i = 0; i < positionArrayLength; i++){
-      size_t indexInSuffixArray = positionArray[i] / index->metadata.suffixArrayCompressionRatio;
-      positionArray[i] = index->inMemorySuffixArray[indexInSuffixArray];
+      size_t indexInSuffixArray = positionArray[i] / index->config.suffixArrayCompressionRatio;
+      size_t  position = awFmGetValueFromCompressedSuffixArray(index->suffixArray, indexInSuffixArray);
+      positionArray[i] = position;
     }
 
     return AwFmSuccess;
   }
   else{
     for(size_t i = 0; i < positionArrayLength; i++){
-      size_t indexInSuffixArray = positionArray[i] / index->metadata.suffixArrayCompressionRatio;
-      uint64_t seekPosition = index->suffixArrayFileOffset + (indexInSuffixArray * sizeof(uint64_t));
-
-      size_t bytesRead = pread(index->fileDescriptor, &(positionArray[i]), sizeof(uint64_t), seekPosition);
-      if(bytesRead != sizeof(uint64_t)){
-        return AwFmFileReadFail;
+      size_t indexInSuffixArray = positionArray[i] / index->config.suffixArrayCompressionRatio;
+      enum AwFmReturnCode rc = awFmGetSuffixArrayValueFromFile(index, indexInSuffixArray, &positionArray[i]);
+      if(rc != AwFmSuccess){
+        return rc;
       }
     }
+
     return AwFmFileReadOkay;
   }
 }
@@ -384,7 +409,7 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
   const size_t sequenceStartPosition, const size_t sequenceSegmentLength,
   char *const sequenceBuffer){
 
-  if(index->metadata.storeOriginalSequence){
+  if(index->config.storeOriginalSequence){
     if(__builtin_expect((sequenceStartPosition + sequenceSegmentLength) > index->bwtLength, 0)){
       return AwFmIllegalPositionError;
     }
@@ -412,53 +437,93 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
 enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *restrict const index,
   struct AwFmBacktrace *restrict const backtracePtr){
 
-  if(index->metadata.keepSuffixArrayInMemory){
-    uint64_t suffixArrayPosition = backtracePtr->position / index->metadata.suffixArrayCompressionRatio;
+  if(index->config.keepSuffixArrayInMemory){
+    uint64_t suffixArrayPosition = backtracePtr->position / index->config.suffixArrayCompressionRatio;
 
-    backtracePtr->position = index->inMemorySuffixArray[suffixArrayPosition] + backtracePtr->offset;
-    backtracePtr->position %= index->bwtLength; //handles the edge case of wrapping around the end of the suffix array.
+    size_t  saValue = awFmGetValueFromCompressedSuffixArray(index->suffixArray, suffixArrayPosition);
+    backtracePtr->position = saValue + backtracePtr->offset;
 
     return AwFmSuccess;
 
   }
   else{
-    uint64_t suffixArrayPosition = backtracePtr->position / index->metadata.suffixArrayCompressionRatio;
-    const size_t suffixArrayFileOffset = index->suffixArrayFileOffset + (suffixArrayPosition * sizeof(uint64_t));
+    uint64_t suffixArrayPosition = backtracePtr->position / index->config.suffixArrayCompressionRatio;
+    size_t saValue;
+    enum AwFmReturnCode rc = awFmGetSuffixArrayValueFromFile(index,suffixArrayPosition, &saValue);
 
-    ssize_t numBytesRead = pread(index->fileDescriptor, &suffixArrayPosition, sizeof(uint64_t), suffixArrayFileOffset);
-    if(numBytesRead == sizeof(uint64_t)){
-      backtracePtr->position = suffixArrayPosition + backtracePtr->offset;
-      backtracePtr->position %= index->bwtLength; //handles the edge case of wrapping around the end of the suffix array.
-      return AwFmFileReadOkay;
-    }
-    else{
-      backtracePtr->position = -1ULL;
-      return AwFmFileReadFail;
-    }
+    backtracePtr->position = saValue + backtracePtr->offset;
+    return rc;
   }
 }
 
 
+enum AwFmReturnCode awFmGetSuffixArrayValueFromFile(const struct AwFmIndex *restrict const index, const size_t positionInArray, size_t *valueOut){
+
+  //if we group up the non-standard bit width values into groups of 8, the lengths will always be a multiple of 8,
+  // thus aligning to a byte. Then, we can add the num bytes of the remainder of values, and then find the bit offset.
+  size_t alignedByteOffset = (positionInArray / 8) * index->suffixArray.valueBitWidth;
+  size_t numEndingBits = (positionInArray % 8) * index->suffixArray.valueBitWidth;
+  size_t bytePosition = alignedByteOffset + (numEndingBits / 8);
+  size_t bitPosition = numEndingBits % 8;
+
+  uint64_t buffer[2];
+  size_t fileOffset = index->suffixArrayFileOffset + bytePosition;
+  size_t numReadBytesRequired = (bitPosition + index->suffixArray.valueBitWidth + 7) / 8; //ceil to not round down
+  memset(buffer, 0, sizeof(uint64_t)*2);
+
+  ssize_t totalBytesRead = 0;
+  do{
+    //pread does not guarantee that it can read the entire pread request in a single transaction.
+    //thus, we may need to loop until all bytes are read, or until we hit an error (negative return value)
+
+    size_t currentReadFileOffset = fileOffset + totalBytesRead;
+    size_t bytesInThisReadRequest = numReadBytesRequired - totalBytesRead;
+    ssize_t bytesRead = pread(index->fileDescriptor, ((uint8_t*)buffer)+totalBytesRead, bytesInThisReadRequest, currentReadFileOffset);
+
+    if(bytesRead <= 0){
+      fclose(index->fileHandle);
+      *valueOut = 0;
+      return AwFmFileReadFail;
+    }
+    totalBytesRead += bytesRead;
+  }while(totalBytesRead < numReadBytesRequired);
+
+  //shift the bits of each element into place, and OR them together.
+  buffer[0] = buffer[0] >> bitPosition;
+  buffer[1] = buffer[1] << (64-bitPosition);
+  buffer[0] = buffer[0] | buffer[1];
+  uint64_t bitmask = (1 << index->suffixArray.valueBitWidth) - 1;
+
+  *valueOut = buffer[0] & bitmask;
+  return AwFmSuccess;
+}
+
+
 size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index){
-  const size_t metadataLength               = 5 * sizeof(uint8_t);
-  const size_t bytesPerBwtBlock             = index->metadata.alphabetType == AwFmAlphabetNucleotide?
+  const size_t configLength                 = 12 * sizeof(uint8_t);
+  const size_t bytesPerBwtBlock             = index->config.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
   const size_t bwtLengthDataLength          = sizeof(uint64_t);
   const size_t bwtLengthInBytes             = awFmNumBlocksFromBwtLength(index->bwtLength) * bytesPerBwtBlock;
-  const size_t prefixSumLengthInBytes       = awFmGetPrefixSumsLength(index->metadata.alphabetType) * sizeof(uint64_t);
+  const size_t prefixSumLengthInBytes       = awFmGetPrefixSumsLength(index->config.alphabetType) * sizeof(uint64_t);
   const size_t kmerSeedTableLength          = awFmGetKmerTableLength(index);
 
-  return IndexFileFormatIdHeaderLength + metadataLength +
+  return IndexFileFormatIdHeaderLength + configLength +
     bwtLengthDataLength + bwtLengthInBytes + prefixSumLengthInBytes +
     (kmerSeedTableLength * sizeof(struct AwFmSearchRange));
 }
 
 
 size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index){
-  if(index->metadata.storeOriginalSequence){
+  if(index->config.storeOriginalSequence){
     return awFmGetSequenceFileOffset(index) + ((index->bwtLength - 1) * sizeof(char));
   }
   else{
     return awFmGetSequenceFileOffset(index);
   }
+}
+
+size_t awFmGetFastaVectorFileOffset(const struct AwFmIndex *restrict const index){
+  size_t compressedSuffixArrayByteLength = index->suffixArray.compressedByteLength;
+  return awFmGetSuffixArrayFileOffset(index) + compressedSuffixArrayByteLength;
 }

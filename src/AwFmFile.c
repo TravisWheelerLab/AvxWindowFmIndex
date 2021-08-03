@@ -468,7 +468,7 @@ enum AwFmReturnCode awFmGetSuffixArrayValueFromFile(const struct AwFmIndex *rest
 
   uint64_t buffer[2];
   size_t fileOffset = index->suffixArrayFileOffset + bytePosition;
-  size_t numReadBytesRequired = (bitPosition + index->suffixArray.valueBitWidth + 7) / 8; //ceil to not round down
+  ssize_t numReadBytesRequired = (bitPosition + index->suffixArray.valueBitWidth + 7) / 8; //ceil to not round down
   memset(buffer, 0, sizeof(uint64_t)*2);
 
   ssize_t totalBytesRead = 0;

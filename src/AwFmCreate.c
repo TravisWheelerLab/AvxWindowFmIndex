@@ -6,6 +6,7 @@
 #include "AwFmSimdConfig.h"
 #include "AwFmFile.h"
 #include "AwFmIndexStruct.h"
+#include "AwFmSuffixArray.h"
 #include <stdlib.h>
 #include <string.h>
 #include "divsufsort64.h"
@@ -15,14 +16,13 @@
 
 /*private function prototypes*/
 void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t sequenceLength,
-  const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray);
+  const uint8_t *restrict const sequence, const uint64_t *restrict const unsampledSuffixArray);
 
 void populateKmerSeedTable(struct AwFmIndex *restrict const index);
 
 void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, struct AwFmSearchRange range,
   uint8_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier);
 
-void compressSuffixArrayInPlace(uint64_t *const suffixArray, uint64_t suffixArrayLength, const uint8_t compressionRatio);
 
 void fullSequenceSanitize(const uint8_t *const sequence, uint8_t *const sanitizedSequenceCopy,
   const size_t sequenceLength, const enum AwFmAlphabetType alphabetType);
@@ -30,11 +30,11 @@ void fullSequenceSanitize(const uint8_t *const sequence, uint8_t *const sanitize
 
 /*function implementations*/
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
-  struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
-  const char *restrict const fileSrc, const bool allowFileOverwrite){
+  struct AwFmIndexConfiguration *restrict const config, const uint8_t *restrict const sequence, const size_t sequenceLength,
+  const char *restrict const fileSrc, const bool allowFileOverwrite) {
 
   //first, do a sanity check on inputs
-  if(metadata == NULL){
+  if(config == NULL){
     return AwFmNullPtrError;
   }
   if(sequence == NULL){
@@ -43,9 +43,6 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   if(fileSrc == NULL){
     return AwFmNullPtrError;
   }
-
-  metadata->versionNumber = 1 | (metadata->storeOriginalSequence?
-    1 << AW_FM_VERSION_NUMBER_BIT_STORE_ORIGINAL_SEQUENCE: 0);  //sets the correct bit if we should store the original sequence
 
   //set the index out arg initally to NULL, if this function fully completes this will get overwritten
   *index = NULL;
@@ -59,22 +56,24 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 
   //sanitize the sequence, turning ambiguity characters into the singular ambiguity character
   //character (x for nucleotide, z for amino)
-  fullSequenceSanitize(sequence, sanitizedSequenceCopy, sequenceLength, metadata->alphabetType);
+  fullSequenceSanitize(sequence, sanitizedSequenceCopy, sequenceLength, config->alphabetType);
 
   // append the final sentinel character as a terminator.
   sanitizedSequenceCopy[suffixArrayLength - 1] = '$';
 
   //allocate the index and all internal arrays.
-  struct AwFmIndex *restrict indexData = awFmIndexAlloc(metadata, suffixArrayLength);
+  struct AwFmIndex *restrict indexData = awFmIndexAlloc(config, suffixArrayLength);
   if(indexData == NULL){
     return AwFmAllocationFailure;
   }
+  indexData->versionNumber = AW_FM_CURRENT_VERSION_NUMBER;
+  indexData->featureFlags = 0;
   indexData->fastaVector = NULL;  //set the fastaVector struct to null, since we aren't using it for this version.
-  memcpy(&indexData->metadata, metadata, sizeof(struct AwFmIndexMetadata));
+  memcpy(&indexData->config, config, sizeof(struct AwFmIndexConfiguration));
 
   //init the in memory suffix array to NULL, to be safe. this will get overwritten on success,
   //if the metadata demands in memory SA. If not, this will be left NULL.
-  indexData->inMemorySuffixArray = NULL;
+  indexData->suffixArray.values = NULL;
 
   //set the bwtLength
   indexData->bwtLength = suffixArrayLength;
@@ -104,38 +103,21 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 
   populateKmerSeedTable(indexData);
 
-
+  //initialize the compressed suffix array
+  enum AwFmReturnCode returnCode = awFmInitCompressedSuffixArray(suffixArray, suffixArrayLength, &indexData->suffixArray, config->suffixArrayCompressionRatio);
   indexData->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(indexData);
   indexData->sequenceFileOffset    = awFmGetSequenceFileOffset(indexData);
   //file descriptor will be set in awFmWriteIndexToFile
 
   //create the file
-  enum AwFmReturnCode returnCode = awFmWriteIndexToFile(indexData, suffixArray, sequence, sequenceLength,
+  returnCode = awFmWriteIndexToFile(indexData, sequence, sequenceLength,
     fileSrc, allowFileOverwrite);
-  //if suffix array was requested to be kept in memory, realloc it to it's compressed shape
-  if(metadata->keepSuffixArrayInMemory){
-    //if the suffix array is uncompressed, we get to skip the compression and realloc
-    if(metadata->suffixArrayCompressionRatio != 1){
-      compressSuffixArrayInPlace(suffixArray, suffixArrayLength,indexData->metadata.suffixArrayCompressionRatio);
-      uint64_t *compressedSuffixArray = realloc(suffixArray, awFmGetCompressedSuffixArrayLength(indexData) * sizeof(uint64_t));
 
-      //check for allocation failure in the realloc
-      if(compressedSuffixArray == NULL){
-        free(suffixArray);
-        awFmDeallocIndex(indexData);
-        return AwFmAllocationFailure;
-      }
-
-      suffixArray = compressedSuffixArray;
-    }
-
-    indexData->inMemorySuffixArray = suffixArray;
+  if(!config->keepSuffixArrayInMemory){
+    free(indexData->suffixArray.values);
+    indexData->suffixArray.values = NULL;
   }
-  else{
-    //if the suffix array isn't supposed to be kept in memory, there's no need to keep it, so it gets freed here.
-    indexData->inMemorySuffixArray = NULL;
-    free(suffixArray);
-  }
+
   //set the index as an out argument.
   *index = indexData;
 
@@ -144,11 +126,11 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 
 /*function implementations*/
 enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
-  struct AwFmIndexMetadata *restrict const metadata, const char *fastaSrc,
+  struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc,
   const char *restrict const indexFileSrc, const bool allowFileOverwrite){
 
   //first, do a sanity check on inputs
-  if(metadata == NULL){
+  if(config == NULL){
     return AwFmNullPtrError;
   }
   if(fastaSrc == NULL){
@@ -158,8 +140,6 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
     return AwFmNullPtrError;
   }
 
-  metadata->versionNumber = 2 | (metadata->storeOriginalSequence?
-    1 << AW_FM_VERSION_NUMBER_BIT_STORE_ORIGINAL_SEQUENCE: 0);  //sets the correct bit if we should store the original sequence
   //set the index out arg initally to NULL, if this function fully completes this will get overwritten
   *index = NULL;
 
@@ -193,101 +173,87 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
   //sanitize the sequence, turning ambiguity characters into the singular ambiguity character
   //character (x for nucleotide, z for amino)
   //giving the sequencePtr as the in and out arrays makes this an in-place algorithm
-  fullSequenceSanitize((uint8_t*)fullSequencePtr, sanitizedSequenceCopy, fullSequenceLength, metadata->alphabetType);
+  fullSequenceSanitize((uint8_t*)fullSequencePtr, sanitizedSequenceCopy, fullSequenceLength, config->alphabetType);
 
   // FastaVector will always have one extra storage at the end of the string, so this shouldn't ever
   // cause a buffer overflow
   sanitizedSequenceCopy[suffixArrayLength - 1] = '$';
 
   //allocate the index and all internal arrays.
-  struct AwFmIndex *restrict indexData = awFmIndexAlloc(metadata, suffixArrayLength);
+  struct AwFmIndex *restrict indexData = awFmIndexAlloc(config, suffixArrayLength);
   if(indexData == NULL){
     return AwFmAllocationFailure;
   }
+
+  indexData->versionNumber = AW_FM_CURRENT_VERSION_NUMBER;
+
+  indexData->featureFlags = 0 | (1<<AW_FM_FEATURE_FLAG_BIT_FASTA_VECTOR);
   indexData->fastaVector = fastaVector;
-  memcpy(&indexData->metadata, metadata, sizeof(struct AwFmIndexMetadata));
+  memcpy(&indexData->config, config, sizeof(struct AwFmIndexConfiguration));
 
+  //init the in memory suffix array to NULL, to be safe. this will get overwritten on success,
+  //if the metadata demands in memory SA. If not, this will be left NULL.
+  indexData->suffixArray.values = NULL;
 
-    //init the in memory suffix array to NULL, to be safe. this will get overwritten on success,
-    //if the metadata demands in memory SA. If not, this will be left NULL.
-    indexData->inMemorySuffixArray = NULL;
+  //set the bwtLength
+  indexData->bwtLength = suffixArrayLength;
 
-    //set the bwtLength
-    indexData->bwtLength = suffixArrayLength;
+  uint64_t *suffixArray = malloc((suffixArrayLength) * sizeof(uint64_t));
 
-    uint64_t *suffixArray = malloc((suffixArrayLength) * sizeof(uint64_t));
-
-    if(suffixArray == NULL){
-      free(sanitizedSequenceCopy);
-      awFmDeallocIndex(indexData);
-      return AwFmAllocationFailure;
-    }
-
-    //create the suffix array, storing it starting in the second element of the suffix array we allocated.
-    //this doesn't clobber the sentinel we added earlier, and makes for easier bwt creation.
-    int64_t divSufSortReturnCode = divsufsort64(sanitizedSequenceCopy, (int64_t*)(suffixArray), suffixArrayLength);
-    if(divSufSortReturnCode < 0){
-      free(sanitizedSequenceCopy);
-      free(suffixArray);
-      awFmDeallocIndex(indexData);
-      return AwFmSuffixArrayCreationFailure;
-    }
-
-    //set the bwt and prefix sums
-    setBwtAndPrefixSums(indexData, indexData->bwtLength, sanitizedSequenceCopy, suffixArray);
-
-
-    //after generating the bwt, the sequence copy is no longer needed.
+  if(suffixArray == NULL){
     free(sanitizedSequenceCopy);
+    awFmDeallocIndex(indexData);
+    return AwFmAllocationFailure;
+  }
 
-    populateKmerSeedTable(indexData);
+  //create the suffix array, storing it starting in the second element of the suffix array we allocated.
+  //this doesn't clobber the sentinel we added earlier, and makes for easier bwt creation.
+  int64_t divSufSortReturnCode = divsufsort64(sanitizedSequenceCopy, (int64_t*)(suffixArray), suffixArrayLength);
+  if(divSufSortReturnCode < 0){
+    free(sanitizedSequenceCopy);
+    free(suffixArray);
+    awFmDeallocIndex(indexData);
+    return AwFmSuffixArrayCreationFailure;
+  }
 
+  //set the bwt and prefix sums
+  setBwtAndPrefixSums(indexData, indexData->bwtLength, sanitizedSequenceCopy, suffixArray);
 
-    indexData->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(indexData);
-    indexData->sequenceFileOffset    = awFmGetSequenceFileOffset(indexData);
-    //file descriptor will be set in awFmWriteIndexToFile
+  //after generating the bwt, the sequence copy is no longer needed.
+  free(sanitizedSequenceCopy);
 
-    //create the file
-    enum AwFmReturnCode returnCode = awFmWriteIndexToFile(indexData, suffixArray, (uint8_t*)fullSequencePtr, fullSequenceLength,
-      fastaSrc, allowFileOverwrite);
-    //if suffix array was requested to be kept in memory, realloc it to it's compressed shape
-    if(metadata->keepSuffixArrayInMemory){
-      //if the suffix array is uncompressed, we get to skip the compression and realloc
-      if(metadata->suffixArrayCompressionRatio != 1){
-        compressSuffixArrayInPlace(suffixArray, suffixArrayLength,indexData->metadata.suffixArrayCompressionRatio);
-        uint64_t *compressedSuffixArray = realloc(suffixArray, awFmGetCompressedSuffixArrayLength(indexData) * sizeof(uint64_t));
-
-        //check for allocation failure in the realloc
-        if(compressedSuffixArray == NULL){
-          free(suffixArray);
-          awFmDeallocIndex(indexData);
-          return AwFmAllocationFailure;
-        }
-
-        suffixArray = compressedSuffixArray;
-      }
-
-      indexData->inMemorySuffixArray = suffixArray;
-    }
-    else{
-      //if the suffix array isn't supposed to be kept in memory, there's no need to keep it, so it gets freed here.
-      indexData->inMemorySuffixArray = NULL;
-      free(suffixArray);
-    }
-
-
-
-//TODO: populate the member data of the AwFmIndex struct with the FastaVector header and metadata.
-
-    //set the index as an out argument.
-    *index = indexData;
-
+  populateKmerSeedTable(indexData);
+  //initialize the compressed suffix array
+  enum AwFmReturnCode returnCode = awFmInitCompressedSuffixArray(suffixArray, suffixArrayLength, &indexData->suffixArray, config->suffixArrayCompressionRatio);
+  if(returnCode != AwFmSuccess){
     return returnCode;
+  }
+
+  indexData->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(indexData);
+  indexData->sequenceFileOffset    = awFmGetSequenceFileOffset(indexData);
+  //file descriptor will be set in awFmWriteIndexToFile
+
+  //create the file
+  returnCode = awFmWriteIndexToFile(indexData, (uint8_t*)fullSequencePtr, fullSequenceLength,
+    fastaSrc, allowFileOverwrite);
+
+
+  if(!config->keepSuffixArrayInMemory){
+    //if it's kept in memory, the suffixArray array is now used in the compressedSuffixArray.
+    //so, don't free() it now, but it'll need to be free()d at dealloc time.
+    free(suffixArray);
+    indexData->suffixArray.values = NULL;
+  }
+
+  //set the index as an out argument.
+  *index = indexData;
+
+  return returnCode;
 }
 
 void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bwtLength,
-  const uint8_t *restrict const sequence, const uint64_t *restrict const suffixArray){
-  if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+  const uint8_t *restrict const sequence, const uint64_t *restrict const unsampledSuffixArray){
+  if(index->config.alphabetType == AwFmAlphabetNucleotide){
     uint64_t baseOccurrences[8] = {0};
     //baseOccurrences is length 8 because that's how long the signpost baseOccurrences in
     //each window need to be to keep alignment to 32B AVX2 boundries.
@@ -308,7 +274,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         memset(nucleotideBlockPtr->letterBitVectors, 0, sizeof(AwFmSimdVec256) * AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW);
       }
 
-      uint64_t sequencePositionInSuffixArray = suffixArray[suffixArrayPosition];
+      uint64_t sequencePositionInSuffixArray = unsampledSuffixArray[suffixArrayPosition];
       uint8_t letterIndex;
       if(__builtin_expect(sequencePositionInSuffixArray == 0, 0)){
         //set to the sentinel value (index 5) if we're looking at the letter before the first character.
@@ -354,7 +320,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
         memset(aminoBlockPointer->letterBitVectors, 0, sizeof(AwFmSimdVec256) * AW_FM_AMINO_VECTORS_PER_WINDOW);
       }
 
-      uint64_t sequencePositionInSuffixArray = suffixArray[suffixArrayPosition];
+      uint64_t sequencePositionInSuffixArray = unsampledSuffixArray[suffixArrayPosition];
       uint8_t letterIndex;
       if(__builtin_expect(sequencePositionInSuffixArray != 0, 1)){
         uint64_t positionInBwt = sequencePositionInSuffixArray - 1;
@@ -384,7 +350,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 }
 
 void populateKmerSeedTable( struct AwFmIndex *restrict const index){
-  const uint8_t alphabetCardinality = awFmGetAlphabetCardinality(index->metadata.alphabetType);
+  const uint8_t alphabetCardinality = awFmGetAlphabetCardinality(index->config.alphabetType);
   for(uint8_t i = 0; i < alphabetCardinality; i++){
     struct AwFmSearchRange range = {
       .startPtr=  index->prefixSums[i],
@@ -397,9 +363,9 @@ void populateKmerSeedTable( struct AwFmIndex *restrict const index){
 
 void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, struct AwFmSearchRange range,
   uint8_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier){
-  const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->metadata.alphabetType);
+  const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->config.alphabetType);
 
-  const uint8_t kmerLength  = index->metadata.kmerLengthInSeedTable;
+  const uint8_t kmerLength  = index->config.kmerLengthInSeedTable;
 
   //base case
   if(kmerLength == currentKmerLength){
@@ -410,7 +376,7 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
   //recursive case
   for(uint8_t extendedLetter = 0; extendedLetter < alphabetSize; extendedLetter++){
     struct AwFmSearchRange newRange = range;
-    if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+    if(index->config.alphabetType == AwFmAlphabetNucleotide){
       awFmNucleotideIterativeStepBackwardSearch(index, &newRange, extendedLetter);
     }
     else{
@@ -422,12 +388,6 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, stru
   }
 }
 
-//copies the compressed suffix array over the full suffix array.
-void compressSuffixArrayInPlace(uint64_t *const suffixArray, uint64_t suffixArrayLength, const uint8_t compressionRatio){
-  for(size_t i = 1; i * compressionRatio < suffixArrayLength; i++){
-    suffixArray[i] = suffixArray[i*compressionRatio];
-  }
-}
 
 inline void fullSequenceSanitize(const uint8_t *const sequence, uint8_t *const sanitizedSequenceCopy,
   const size_t sequenceLength, const enum AwFmAlphabetType alphabetType){

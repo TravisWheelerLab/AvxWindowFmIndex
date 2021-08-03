@@ -73,6 +73,12 @@ struct AwFmIndexMetadata{
   bool                  storeOriginalSequence;
 };
 
+struct AwFmCompressedSuffixArray{
+  uint8_t   valueBitWidth;
+  uint8_t   *values;
+  uint64_t  compressedByteLength;
+};
+
 struct AwFmSearchRange{
   uint64_t startPtr;
   uint64_t endPtr;

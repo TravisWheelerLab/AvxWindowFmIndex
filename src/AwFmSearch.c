@@ -7,7 +7,7 @@ struct AwFmSearchRange awFmCreateInitialQueryRange(const struct AwFmIndex *restr
   const char *restrict const query, const uint8_t queryLength){
 
   uint8_t finalLetterIndexInQuery;
-  if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+  if(index->config.alphabetType == AwFmAlphabetNucleotide){
     finalLetterIndexInQuery = awFmAsciiNucleotideToLetterIndex(query[queryLength - 1]);
   }
   else{
@@ -145,7 +145,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
   }
 
   //call a prefetch for each block that contains the positions that we need to start querying
-  const uint_fast16_t blockWidth = index->metadata.alphabetType == AwFmAlphabetNucleotide?
+  const uint_fast16_t blockWidth = index->config.alphabetType == AwFmAlphabetNucleotide?
     sizeof(struct AwFmNucleotideBlock): sizeof(struct AwFmAminoBlock);
 
   for(uint64_t i = searchRange->startPtr; i < searchRange->endPtr; i += AW_FM_POSITIONS_PER_FM_BLOCK){
@@ -157,7 +157,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
     uint64_t databaseSequenceOffset = 0;
     uint64_t backtracePosition      = searchRange->startPtr + i;
 
-    if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+    if(index->config.alphabetType == AwFmAlphabetNucleotide){
       while(!awFmBwtPositionIsSampled(index, backtracePosition)){
         backtracePosition = awFmNucleotideBacktraceBwtPosition(index, backtracePosition);
         databaseSequenceOffset++;
@@ -171,7 +171,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
     }
 
     //position is divided by compression ratio to get the index in the suffix array
-    positionArray[i]  = backtracePosition / index->metadata.suffixArrayCompressionRatio;
+    positionArray[i]  = backtracePosition / index->config.suffixArrayCompressionRatio;
     offsetArray[i]    = databaseSequenceOffset;
   }
 
@@ -247,7 +247,7 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *
   uint16_t bwtBlockWidth;
   uint8_t kmerLetterIndex;
 
-  if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+  if(index->config.alphabetType == AwFmAlphabetNucleotide){
     bwtBlockWidth = sizeof(struct AwFmNucleotideBlock);
     kmerLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[kmerLetterPosition]);
   }
@@ -262,7 +262,7 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(const struct AwFmIndex *
 
   //start by prefetching the endptr
   awFmBlockPrefetch(index->bwtBlockList.asNucleotide, bwtBlockWidth, range.endPtr);
-  if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+  if(index->config.alphabetType == AwFmAlphabetNucleotide){
     while(__builtin_expect(awFmSearchRangeIsValid(&range) && (kmerLetterPosition--), 1)){
         kmerLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[kmerLetterPosition]);
         awFmNucleotideIterativeStepBackwardSearch(index, &range, kmerLetterIndex);

@@ -49,12 +49,12 @@ void inMemorySaUncompressedTest(void){
     memset(sequence + sequenceLength, 0, 100);
 
     struct AwFmIndex *index;
-    struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = 1,
+    struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 1,
       .kmerLengthInSeedTable=8, .alphabetType=AwFmAlphabetNucleotide,
       .keepSuffixArrayInMemory=true, .storeOriginalSequence=true};
 
 
-    enum AwFmReturnCode returnCode = awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
+    enum AwFmReturnCode returnCode = awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
 
     if(returnCode < 0){
       printf("error: create returned code %i!!!\n", returnCode);
@@ -117,12 +117,12 @@ void inMemorySaCompressedTest(void){
 
     struct AwFmIndex *index;
     //as an extreme edge case, compress the SA to only one value.
-    struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = sequenceLength-1,
+    struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = sequenceLength-1,
       .kmerLengthInSeedTable=8, .alphabetType=AwFmAlphabetNucleotide,
       .keepSuffixArrayInMemory=true, .storeOriginalSequence=true};
 
 
-    awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
+    awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
     size_t numKmers = 100;
     uint8_t kmerLength = 8;
     struct AwFmKmerSearchList *searchList = awFmCreateKmerSearchList(numKmers);
@@ -181,12 +181,12 @@ void inMemoryFromFileTest(void){
     memset(sequence + sequenceLength, 0, 100);
 
     struct AwFmIndex *index;
-    struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = 16,
+    struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 16,
       .kmerLengthInSeedTable=8, .alphabetType=AwFmAlphabetNucleotide,
       .keepSuffixArrayInMemory=true, .storeOriginalSequence=true};
 
 
-    awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
+    awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
     awFmDeallocIndex(index);
 
     awFmReadIndexFromFile(&index, "testIndex.awfmi", true);

@@ -61,11 +61,9 @@ union AwFmBwtBlockList{
   struct AwFmAminoBlock       *asAmino;
 };
 
-/*Struct for the metadata in the AwFmIndex struct.
-* This contains data that helps to build the index, or to determine how the index
-* will function.*/
-struct AwFmIndexMetadata{
-  uint16_t              versionNumber;
+/*Struct for the configuration in the AwFmIndex struct.
+* This contains data that may be set by the user toconfigure the index.*/
+struct AwFmIndexConfiguration{
   uint8_t               suffixArrayCompressionRatio;
   uint8_t               kmerLengthInSeedTable;
   enum AwFmAlphabetType alphabetType;
@@ -84,19 +82,22 @@ struct AwFmSearchRange{
   uint64_t endPtr;
 };
 
+  //feature flags, hardcode version
 struct AwFmIndex{
-          uint64_t          bwtLength;
-  union   AwFmBwtBlockList  bwtBlockList;
-          uint64_t          *prefixSums;
-  struct  AwFmSearchRange   *kmerSeedTable;
-          uint64_t          *inMemorySuffixArray;
-          FILE              *fileHandle;
-  struct  AwFmIndexMetadata metadata;
-          int               fileDescriptor;
-          size_t            suffixArrayFileOffset;
-          size_t            sequenceFileOffset;
+          uint32_t                  versionNumber;
+          uint32_t                  featureFlags;   //for non user-customizable options.
+          uint64_t                  bwtLength;
+  union   AwFmBwtBlockList          bwtBlockList;
+          uint64_t                  *prefixSums;
+  struct  AwFmSearchRange           *kmerSeedTable;
+          FILE                      *fileHandle;
+  struct  AwFmIndexConfiguration    config;
+          int                       fileDescriptor;
+          size_t                    suffixArrayFileOffset;
+          size_t                    sequenceFileOffset;
   //optional member data, dependant on the index version.
-  struct  FastaVector       *fastaVector; // ptr should be null if not in use.
+  struct  FastaVector               *fastaVector; // ptr should be null if not in use.
+  struct  AwFmCompressedSuffixArray suffixArray;
 };
 
 
@@ -120,7 +121,7 @@ struct AwFmBacktrace{
   uint64_t offset;
 };
 
-//todo: remove unused return codes
+
 enum AwFmReturnCode{
   AwFmSuccess             = 1,    AwFmFileReadOkay                = 2,    AwFmFileWriteOkay         = 3,
   AwFmGeneralFailure      = -1,   AwFmUnsupportedVersionError     = -2,   AwFmAllocationFailure     = -3,
@@ -133,12 +134,12 @@ enum AwFmReturnCode{
 /*
  * Function:  awFmCreateIndex
  * --------------------
- * Allocates a new AwFmIndex from the sequence using the given metadata configuration.
+ * Allocates a new AwFmIndex from the sequence using the given configuration.
  *
  *  Inputs:
  *    index:          Double pointer to a AwFmIndex struct to be allocated and constructed.
- *    metadata:       Fully initialized metadata to construct the index with.
- *      This metadata will be memcpy'd into the created index.
+ *    configuration:       Fully initialized index config to construct the index with.
+ *      This configuration will be memcpy'd into the created index.
  *    sequence:       Database sequence that the AwFmIndex is built from.
  *    sequenceLength: Length of the sequence.
  *    fileSrc:        File path to write the Index file to.
@@ -155,7 +156,7 @@ enum AwFmReturnCode{
  *      AwFmFileWriteFail if a file write failed.
  */
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
-  struct AwFmIndexMetadata *restrict const metadata, const uint8_t *restrict const sequence, const size_t sequenceLength,
+  struct AwFmIndexConfiguration *restrict const config, const uint8_t *restrict const sequence, const size_t sequenceLength,
   const char *restrict const fileSrc, const bool allowFileOverwrite);
 
 
@@ -163,12 +164,12 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
  * Function:  awFmCreateIndexFromFasta
  * --------------------
  * Loads the sequence and header data from the given fasta, and a allocates a new
- *  AwFmIndex from the sequence using the given metadata configuration.
+ *  AwFmIndex from the sequence using the given configuration.
  *
  *  Inputs:
  *    index:          Double pointer to a AwFmIndex struct to be allocated and constructed.
- *    metadata:       Fully initialized metadata to construct the index with.
- *      This metadata will be memcpy'd into the created index.
+ *    configuration:       Fully initialized config struct to construct the index with.
+ *      This config will be memcpy'd into the created index.
  *    fastaSrc:       File source of the fasta to use to generate the index.
  *      Every sequence in the fasta file will be included in the index.
  *    indexFileSrc:        File path to write the Index file to.
@@ -186,7 +187,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
  *      AwFmFileWriteFail if a file write failed.
  */
 enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
-  struct AwFmIndexMetadata *restrict const metadata, const char *fastaSrc,
+  struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc,
   const char *restrict const indexFileSrc, const bool allowFileOverwrite);
 
 
@@ -224,8 +225,7 @@ void awFmDeallocIndex(struct AwFmIndex *index);
  *      AwFmFileAlreadyExists if a file exists at the given fileSrc, but allowOverwite was false.
  *      AwFmFileWriteFail if a file write failed.
  */
-enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
-  const uint64_t *restrict const suffixArray, const uint8_t *restrict const sequence,
+enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index, const uint8_t *restrict const sequence,
   const uint64_t sequenceLength, const char *restrict const fileSrc, const bool allowOverwrite);
 
 

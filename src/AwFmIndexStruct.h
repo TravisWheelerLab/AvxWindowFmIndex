@@ -16,15 +16,15 @@
  * Dynamically allocates memory for the AwFmIndex struct and all internally stored arrays.
  *
  *  Inputs:
- *    metadata:         metadata struct that describes the format and parameters of the index.
- *      The metadata struct will be memcpy'd directly into the index.
+ *    config:         configuration struct that describes the format and parameters of the index.
+ *      The config struct will be memcpy'd directly into the index.
  *    bwtLength:   Length of the BWT, in positions, that the index will hold
  *
  *  Returns:
  *    Allocated AwFmIndex struct, or NULL on an allocation failure.
  *      If any dynamic allocation fails, all data used in the AwFmIndex will be deallocated, too.
  */
-struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexMetadata *restrict const metadata,
+struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexConfiguration *restrict const config,
   const size_t bwtLength);
 
 /*
@@ -47,8 +47,8 @@ uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
  * --------------------
  * Computes the number of AwFmSearchRange structs in the kmerSeedTable.
  *  This value is equal to |A|^k, where |A| is the cardinalty of the alphabet as
- *    set in the given metadata, and k is the length of the kmers in the lookup table,
- *    also as set in the metadata.
+ *    set in the given configuration, and k is the length of the kmers in the lookup table,
+ *    also as set in the config.
  *  Inputs:
  *    index: AwFmIndex struct that contains the kmerSeedTable.
  *
@@ -107,7 +107,7 @@ bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, cons
 /*
  * Function:  awFmGetCompressedSuffixArrayLength
  * --------------------
- * Calculates the length of the compressed suffix array.
+ * Calculates the number of elements in the the sampled suffix array.
  *
  *  Inputs:
  *    index: AwFmIndex struct representing the BWT and suffix array.
@@ -196,7 +196,7 @@ size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range)
 *   The supported version numbers are enumerated at the top of this header (AwFmIndexStruct.h)
 *
 *  Inputs:
-*    versionNumber: version number from the AwFmIndex struct's metadata.
+*    versionNumber: version number from the AwFmIndex struct's config.
 *
 *  Returns:
 *    true if the versionNumber is one of the supported versions.
@@ -211,11 +211,11 @@ bool awFmIndexIsVersionValid(const uint16_t versionNumber);
 *   time a new version is added.
 *
 *  Inputs:
-*    versionNumber: version number from the AwFmIndex struct's metadata.
+*    index: allocated and constructed index to check if it contains fastaVector information
 *
 *  Returns:
 *    True if the given version contains a FastaVector struct
 */
-bool awFmIndexContainsFastaVector(const uint16_t versionNumber);
+bool awFmIndexContainsFastaVector(const struct AwFmIndex * restrict const index);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCT_H */

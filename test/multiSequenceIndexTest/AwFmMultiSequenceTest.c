@@ -7,6 +7,7 @@
 #include "../../src/AwFmKmerTable.h"
 #include "../../src/AwFmLetter.h"
 #include "../../src/AwFmParallelSearch.h"
+#include "../../src/AwFmSuffixArray.h"
 #include "../test.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,7 +34,7 @@ void randomizeSequenceBuffer(char *sequenceBuffer, size_t sequenceLength, bool i
 void getRawSequenceFromFastaVector(const struct FastaVector *const fastaVector,
   char **compositeSequenceBufferPtr, size_t *compositeSequenceLength);
 
-struct AwFmIndexMetadata generateReasonableRandomMetadata();
+struct AwFmIndexConfiguration generateReasonableRandomMetadata();
 
 void testAwFmIndexIdenticalForFastaVector(void);
 void testAwFmIndexFastaVectorDataMatchesExpected(void);
@@ -65,7 +66,7 @@ struct FastaVector* generateMultiSequenceFastaVector(const size_t numSequences,
     size_t thisSequenceLength = (rand()% maxSequenceLength) + 1;
     char *sequenceBuffer = malloc(thisSequenceLength * sizeof(char));
     randomizeSequenceBuffer(sequenceBuffer, thisSequenceLength, isAmino);
-    sprintf(headerBuffer, "header%zu| metadata", sequenceIndex);
+    sprintf(headerBuffer, "header%zu| config", sequenceIndex);
     rc = fastaVectorAddSequenceToList(fastaVector, headerBuffer,
       strlen(headerBuffer), sequenceBuffer, thisSequenceLength);
     testAssertString(rc == FASTA_VECTOR_OK, "in generateMultiSequenceFastaVector, fastaVector adding sequence to list did not return OK.");
@@ -94,27 +95,27 @@ void getRawSequenceFromFastaVector(const struct FastaVector *const fastaVector,
 }
 
 
-struct AwFmIndexMetadata generateReasonableRandomMetadata(){
-  struct AwFmIndexMetadata metadata;
-  metadata.suffixArrayCompressionRatio = (rand() % 20) + 1;
-  metadata.alphabetType = (rand() % 2) == 0? AwFmAlphabetAmino : AwFmAlphabetNucleotide;
-  metadata.kmerLengthInSeedTable = metadata.alphabetType == AwFmAlphabetNucleotide?
+struct AwFmIndexConfiguration generateReasonableRandomMetadata(){
+  struct AwFmIndexConfiguration config;
+  config.suffixArrayCompressionRatio = (rand() % 20) + 1;
+  config.alphabetType = (rand() % 2) == 0? AwFmAlphabetAmino : AwFmAlphabetNucleotide;
+  config.kmerLengthInSeedTable = config.alphabetType == AwFmAlphabetNucleotide?
     (rand()%10) + 2:
     (rand()%4) + 1;
-  metadata.keepSuffixArrayInMemory = true;
+  config.keepSuffixArrayInMemory = true;
 
-  return metadata;
+  return config;
 }
 
 void testAwFmIndexIdenticalForFastaVector(){
   for(size_t testNum = 0; testNum < 10; testNum++){
     struct FastaVector *fastaVector = NULL;
-    //generating the metadata also sets the test's alphabet type.
-    struct AwFmIndexMetadata metadata = generateReasonableRandomMetadata();
-    printf("test identical # %zu, metadata generated: sacr %u, klist %u, alphabet %u, ksim %u\n", testNum, metadata.suffixArrayCompressionRatio, metadata.kmerLengthInSeedTable, metadata.alphabetType, metadata.keepSuffixArrayInMemory);
+    //generating the config also sets the test's alphabet type.
+    struct AwFmIndexConfiguration config = generateReasonableRandomMetadata();
+    printf("test identical # %zu, config generated: sacr %u, klist %u, alphabet %u, ksim %u\n", testNum, config.suffixArrayCompressionRatio, config.kmerLengthInSeedTable, config.alphabetType, config.keepSuffixArrayInMemory);
 
 
-    const bool isAmino              = metadata.alphabetType == AwFmAlphabetAmino;
+    const bool isAmino              = config.alphabetType == AwFmAlphabetAmino;
     const size_t numSequences       = (rand() % 10) + 1;
     const size_t maxSequenceLength  = 10000;
     const char *fastaFileSrc        = "sequences.fasta";
@@ -136,10 +137,10 @@ void testAwFmIndexIdenticalForFastaVector(){
   struct AwFmIndex* defaultIndex      = NULL;
   struct AwFmIndex* fastaVectorIndex  = NULL;
 
-  enum AwFmReturnCode awFmRc = awFmCreateIndex(&defaultIndex, &metadata, (uint8_t*)sequenceCollectionPtr,
+  enum AwFmReturnCode awFmRc = awFmCreateIndex(&defaultIndex, &config, (uint8_t*)sequenceCollectionPtr,
     sequenceCollectionLength, defaultIndexFileSrc, true);
   testAssertString(awFmRc == AwFmFileWriteOkay, "creating default index did not return AwFmSuccess.");
-  awFmRc = awFmCreateIndexFromFasta(&fastaVectorIndex, &metadata, fastaFileSrc, fastaVectorIndexFileSrc, true);
+  awFmRc = awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc, true);
   testAssertString(awFmRc == AwFmFileWriteOkay, "creating fastaVector index did not return AwFmSuccess");
 
   compareIndicesForEqualityIgnoreVersion(defaultIndex, fastaVectorIndex);
@@ -156,15 +157,15 @@ void testAwFmIndexIdenticalForFastaVector(){
 void testAwFmIndexFastaVectorDataMatchesExpected(void){
   for(size_t testNum = 0; testNum < 10; testNum++){
     struct FastaVector *fastaVector = NULL;
-    //generating the metadata also sets the test's alphabet type.
-    struct AwFmIndexMetadata metadata = generateReasonableRandomMetadata();
-    const bool isAmino              = metadata.alphabetType == AwFmAlphabetAmino;
+    //generating the config also sets the test's alphabet type.
+    struct AwFmIndexConfiguration config = generateReasonableRandomMetadata();
+    const bool isAmino              = config.alphabetType == AwFmAlphabetAmino;
     const size_t numSequences       = (rand() % 10) + 1;
     const size_t maxSequenceLength  = 10000;
     const char *fastaFileSrc        = "sequences.fasta";
     const uint32_t fileLineLength   = (rand() % 522) + 1;
     fastaVector = generateMultiSequenceFastaVector(numSequences, maxSequenceLength, isAmino);
-    printf("test fastaVector data # %zu, metadata generated: sacr %u, klist %u, alphabet %u, ksim %u\n", testNum, metadata.suffixArrayCompressionRatio, metadata.kmerLengthInSeedTable, metadata.alphabetType, metadata.keepSuffixArrayInMemory);
+    printf("test fastaVector data # %zu, config generated: sacr %u, klist %u, alphabet %u, ksim %u\n", testNum, config.suffixArrayCompressionRatio, config.kmerLengthInSeedTable, config.alphabetType, config.keepSuffixArrayInMemory);
 
 
 
@@ -174,7 +175,7 @@ void testAwFmIndexFastaVectorDataMatchesExpected(void){
   char *fastaVectorIndexFileSrc       = "fastaVectorIndex.awfmi";
   struct AwFmIndex* fastaVectorIndex  = NULL;
 
-  enum AwFmReturnCode awFmRc = awFmCreateIndexFromFasta(&fastaVectorIndex, &metadata, fastaFileSrc, fastaVectorIndexFileSrc, true);
+  enum AwFmReturnCode awFmRc = awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc, true);
   testAssertString(awFmRc == AwFmFileWriteOkay, "creating fastaVector index did not return AwFmSuccess.");
 
   //compare the fasta sequence
@@ -202,21 +203,21 @@ void testAwFmIndexFastaVectorDataMatchesExpected(void){
   }
 
 
-  //compare the metadata
-  sprintf(buffer, "metadata count %zu did not match original fastaVector count %zu.", fastaVectorIndex->fastaVector->metadata.count, fastaVector->metadata.count);
+  //compare the config
+  sprintf(buffer, "config count %zu did not match original fastaVector count %zu.", fastaVectorIndex->fastaVector->metadata.count, fastaVector->metadata.count);
   testAssertString(fastaVectorIndex->fastaVector->metadata.count == fastaVector->metadata.count, buffer);
 
-  sprintf(buffer, "metadata count %zu greater than capacity %zu", fastaVectorIndex->fastaVector->metadata.count, fastaVectorIndex->fastaVector->metadata.capacity);
+  sprintf(buffer, "config count %zu greater than capacity %zu", fastaVectorIndex->fastaVector->metadata.count, fastaVectorIndex->fastaVector->metadata.capacity);
   testAssertString(fastaVectorIndex->fastaVector->metadata.capacity >= fastaVectorIndex->fastaVector->metadata.count, buffer);
 
-  for(size_t metadataIndex = 0; metadataIndex < fastaVector->metadata.count; metadataIndex++){
-    size_t indexMetadataHeaderEnd = fastaVectorIndex->fastaVector->metadata.data[metadataIndex].headerEndPosition;
-    size_t indexMetadataSequenceEnd = fastaVectorIndex->fastaVector->metadata.data[metadataIndex].sequenceEndPosition;
-    size_t originalMetadataHeaderEnd = fastaVector->metadata.data[metadataIndex].headerEndPosition;
-    size_t originalMetadataSequenceEnd = fastaVector->metadata.data[metadataIndex].sequenceEndPosition;
-    sprintf(buffer, "header end position in metadata at index %zu from index %zu did not match from fastaVector %zu", metadataIndex, indexMetadataHeaderEnd, originalMetadataHeaderEnd);
+  for(size_t configIndex = 0; configIndex < fastaVector->metadata.count; configIndex++){
+    size_t indexMetadataHeaderEnd = fastaVectorIndex->fastaVector->metadata.data[configIndex].headerEndPosition;
+    size_t indexMetadataSequenceEnd = fastaVectorIndex->fastaVector->metadata.data[configIndex].sequenceEndPosition;
+    size_t originalMetadataHeaderEnd = fastaVector->metadata.data[configIndex].headerEndPosition;
+    size_t originalMetadataSequenceEnd = fastaVector->metadata.data[configIndex].sequenceEndPosition;
+    sprintf(buffer, "header end position in config at index %zu from index %zu did not match from fastaVector %zu", configIndex, indexMetadataHeaderEnd, originalMetadataHeaderEnd);
     testAssertString(indexMetadataHeaderEnd == originalMetadataHeaderEnd, buffer);
-    sprintf(buffer, "sequence end position in metadata at index %zu from index %zu did not match from fastaVector %zu", metadataIndex, indexMetadataSequenceEnd, originalMetadataSequenceEnd);
+    sprintf(buffer, "sequence end position in config at index %zu from index %zu did not match from fastaVector %zu", configIndex, indexMetadataSequenceEnd, originalMetadataSequenceEnd);
     testAssertString(indexMetadataSequenceEnd == originalMetadataSequenceEnd, buffer);
   }
 
@@ -234,15 +235,15 @@ void testAwFmIndexGivesCorrectLocalPositions(void){
   // gives the correct local position + sequence.
   for(size_t testNum = 0; testNum < 10; testNum++){
     struct FastaVector *fastaVector = NULL;
-    //generating the metadata also sets the test's alphabet type.
-    struct AwFmIndexMetadata metadata = generateReasonableRandomMetadata();
-    const bool isAmino              = metadata.alphabetType == AwFmAlphabetAmino;
+    //generating the config also sets the test's alphabet type.
+    struct AwFmIndexConfiguration config = generateReasonableRandomMetadata();
+    const bool isAmino              = config.alphabetType == AwFmAlphabetAmino;
     const size_t numSequences       = (rand() % 10) + 1;
     const size_t maxSequenceLength  = 10000;
     const char *fastaFileSrc        = "sequences.fasta";
     const uint32_t fileLineLength   = (rand() % 522) + 1;
     fastaVector = generateMultiSequenceFastaVector(numSequences, maxSequenceLength, isAmino);
-    printf("test gives correct locations # %zu, metadata generated: sacr %u, klist %u, alphabet %u, ksim %u\n", testNum, metadata.suffixArrayCompressionRatio, metadata.kmerLengthInSeedTable, metadata.alphabetType, metadata.keepSuffixArrayInMemory);
+    printf("test gives correct locations # %zu, config generated: sacr %u, klist %u, alphabet %u, ksim %u\n", testNum, config.suffixArrayCompressionRatio, config.kmerLengthInSeedTable, config.alphabetType, config.keepSuffixArrayInMemory);
 
 
     enum FastaVectorReturnCode rc = fastaVectorWriteFasta(fastaFileSrc, fastaVector, fileLineLength);
@@ -252,7 +253,7 @@ void testAwFmIndexGivesCorrectLocalPositions(void){
     char *fastaVectorIndexFileSrc       = "fastaVectorIndex.awfmi";
     struct AwFmIndex* fastaVectorIndex  = NULL;
 
-    enum AwFmReturnCode awFmRc = awFmCreateIndexFromFasta(&fastaVectorIndex, &metadata, fastaFileSrc, fastaVectorIndexFileSrc, true);
+    enum AwFmReturnCode awFmRc = awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc, true);
     testAssertString(awFmRc == AwFmFileWriteOkay, "creating fastaVector index did not return AwFmSuccess.");
 
     checkAllGlobalPositionsForCorrectLocalPositions(fastaVector, fastaVectorIndex);
@@ -268,15 +269,15 @@ void testAwFmIndexGivesCorrectLocalPositions(void){
 void testAwFmIndexGivesCorrectHeaders(void){
   for(size_t testNum = 0; testNum < 10; testNum++){
     struct FastaVector *fastaVector = NULL;
-    //generating the metadata also sets the test's alphabet type.
-    struct AwFmIndexMetadata metadata = generateReasonableRandomMetadata();
-    const bool isAmino              = metadata.alphabetType == AwFmAlphabetAmino;
+    //generating the config also sets the test's alphabet type.
+    struct AwFmIndexConfiguration config = generateReasonableRandomMetadata();
+    const bool isAmino              = config.alphabetType == AwFmAlphabetAmino;
     const size_t numSequences       = (rand() % 10) + 1;
     const size_t maxSequenceLength  = 10000;
     const char *fastaFileSrc        = "sequences.fasta";
     const uint32_t fileLineLength   = (rand() % 522) + 1;
     fastaVector = generateMultiSequenceFastaVector(numSequences, maxSequenceLength, isAmino);
-    printf("test gives correct headers # %zu, metadata generated: sacr %u, klist %u, alphabet %u, ksim %u\n", testNum, metadata.suffixArrayCompressionRatio, metadata.kmerLengthInSeedTable, metadata.alphabetType, metadata.keepSuffixArrayInMemory);
+    printf("test gives correct headers # %zu, config generated: sacr %u, klist %u, alphabet %u, ksim %u\n", testNum, config.suffixArrayCompressionRatio, config.kmerLengthInSeedTable, config.alphabetType, config.keepSuffixArrayInMemory);
 
     enum FastaVectorReturnCode rc = fastaVectorWriteFasta(fastaFileSrc, fastaVector, fileLineLength);
     testAssertString(rc == FASTA_VECTOR_OK, "writing fasta vector to file did not return FASTA_VECTOR_OK.");
@@ -285,7 +286,7 @@ void testAwFmIndexGivesCorrectHeaders(void){
     char *fastaVectorIndexFileSrc       = "fastaVectorIndex.awfmi";
     struct AwFmIndex* fastaVectorIndex  = malloc(sizeof(struct AwFmIndex));
 
-    enum AwFmReturnCode awFmRc = awFmCreateIndexFromFasta(&fastaVectorIndex, &metadata, fastaFileSrc, fastaVectorIndexFileSrc, true);
+    enum AwFmReturnCode awFmRc = awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc, true);
     testAssertString(awFmRc == AwFmSuccess, "creating fastaVector index did not return AwFmSuccess.");
 
     for(size_t sequenceIndex = 0; sequenceIndex < fastaVector->metadata.count; sequenceIndex++){
@@ -335,20 +336,20 @@ void compareIndicesForEqualityIgnoreVersion(const struct AwFmIndex *index1, cons
   sprintf(buffer, "index 1 bwt length %zu did not match index 2 length %zu.", index1->bwtLength, index2->bwtLength);
   testAssertString(index1->bwtLength == index2->bwtLength, buffer);
 
-  sprintf(buffer,  "index 1 SA compression ratio %i did not match index 2 ratio %i.", index1->metadata.suffixArrayCompressionRatio, index2->metadata.suffixArrayCompressionRatio);
-  testAssertString(index1->metadata.suffixArrayCompressionRatio == index2->metadata.suffixArrayCompressionRatio, buffer);
+  sprintf(buffer,  "index 1 SA compression ratio %i did not match index 2 ratio %i.", index1->config.suffixArrayCompressionRatio, index2->config.suffixArrayCompressionRatio);
+  testAssertString(index1->config.suffixArrayCompressionRatio == index2->config.suffixArrayCompressionRatio, buffer);
 
 
-  sprintf(buffer,  "index 1 SA kmer table len %i did not match index 2 len %i.", index1->metadata.kmerLengthInSeedTable, index2->metadata.kmerLengthInSeedTable);
-  testAssertString(index1->metadata.kmerLengthInSeedTable == index2->metadata.kmerLengthInSeedTable, buffer);
+  sprintf(buffer,  "index 1 SA kmer table len %i did not match index 2 len %i.", index1->config.kmerLengthInSeedTable, index2->config.kmerLengthInSeedTable);
+  testAssertString(index1->config.kmerLengthInSeedTable == index2->config.kmerLengthInSeedTable, buffer);
 
 
-  sprintf(buffer,  "index 1 alphabet type %i did not match index 2 alphabet %i.", index1->metadata.alphabetType, index2->metadata.alphabetType);
-  testAssertString(index1->metadata.alphabetType == index2->metadata.alphabetType, buffer);
+  sprintf(buffer,  "index 1 alphabet type %i did not match index 2 alphabet %i.", index1->config.alphabetType, index2->config.alphabetType);
+  testAssertString(index1->config.alphabetType == index2->config.alphabetType, buffer);
 
 
-  sprintf(buffer,  "index 1 SA in mem bool %i did not match index 2 bool %i.", index1->metadata.keepSuffixArrayInMemory, index2->metadata.keepSuffixArrayInMemory);
-  testAssertString(index1->metadata.keepSuffixArrayInMemory == index2->metadata.keepSuffixArrayInMemory, buffer);
+  sprintf(buffer,  "index 1 SA in mem bool %i did not match index 2 bool %i.", index1->config.keepSuffixArrayInMemory, index2->config.keepSuffixArrayInMemory);
+  testAssertString(index1->config.keepSuffixArrayInMemory == index2->config.keepSuffixArrayInMemory, buffer);
 
   sprintf(buffer,  "index 1 SA file offset %zu did not match index 2 file offset %zu.", index1->suffixArrayFileOffset, index2->suffixArrayFileOffset);
   testAssertString(index1->suffixArrayFileOffset == index2->suffixArrayFileOffset, buffer);
@@ -360,7 +361,7 @@ void compareIndicesForEqualityIgnoreVersion(const struct AwFmIndex *index1, cons
   //compare bwts
   const size_t numBwtBlocks = index1->bwtLength / 256;
   for(size_t blockIndex = 0; blockIndex < numBwtBlocks; blockIndex++){
-    if(index1->metadata.alphabetType == AwFmAlphabetNucleotide){
+    if(index1->config.alphabetType == AwFmAlphabetNucleotide){
       bool blocksAreEqual = memcmp(&index1->bwtBlockList.asNucleotide[blockIndex], &index2->bwtBlockList.asNucleotide[blockIndex], sizeof(struct AwFmNucleotideBlock)) == 0;
       sprintf(buffer, "index 1 bwt block %zu did not compare equal to matching index 2 block.", blockIndex);
       testAssertString(blocksAreEqual, buffer);
@@ -387,7 +388,7 @@ void compareIndicesForEqualityIgnoreVersion(const struct AwFmIndex *index1, cons
   }
 
   //compare prefix sums
-  const size_t numPrefixSums = index1->metadata.alphabetType == AwFmAlphabetNucleotide? 6 :22;
+  const size_t numPrefixSums = index1->config.alphabetType == AwFmAlphabetNucleotide? 6 :22;
   for(size_t prefixSumIndex = 0; prefixSumIndex < numPrefixSums; prefixSumIndex++){
     sprintf(buffer, "index 1 prefix sum #%zu (%zu) did not compare equal to matching index 2 prefix sum (%zu).", prefixSumIndex, index1->prefixSums[prefixSumIndex], index2->prefixSums[prefixSumIndex]);
     testAssertString(index1->prefixSums[prefixSumIndex] == index2->prefixSums[prefixSumIndex], buffer);
@@ -406,10 +407,12 @@ void compareIndicesForEqualityIgnoreVersion(const struct AwFmIndex *index1, cons
   // }
 
   //compare the suffix arrays
-  size_t compressedSaLength = index1->bwtLength / index1->metadata.suffixArrayCompressionRatio;
+  size_t compressedSaLength = index1->bwtLength / index1->config.suffixArrayCompressionRatio;
   for(size_t saIndex = 0; saIndex < compressedSaLength; saIndex++){
-    sprintf(buffer, "suffix array at position %zu did not match (index 1 %zu, index 2 %zu)", saIndex, index1->inMemorySuffixArray[saIndex], index2->inMemorySuffixArray[saIndex]);
-    bool saElementMatches = index1->inMemorySuffixArray[saIndex] == index2->inMemorySuffixArray[saIndex];
+    size_t index1Position = awFmGetValueFromCompressedSuffixArray(index1->suffixArray, saIndex);
+    size_t index2Position = awFmGetValueFromCompressedSuffixArray(index2->suffixArray, saIndex);
+    sprintf(buffer, "suffix array at position %zu did not match (index 1 %zu, index 2 %zu)", saIndex, index1Position, index2Position);
+    bool saElementMatches = index1Position == index2Position;
     testAssertString(saElementMatches, buffer);
   }
 }

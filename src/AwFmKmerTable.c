@@ -6,7 +6,7 @@
 struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength){
 
-  const uint8_t kmerSeedStartPosition = kmerLength - index->metadata.kmerLengthInSeedTable;
+  const uint8_t kmerSeedStartPosition = kmerLength - index->config.kmerLengthInSeedTable;
   uint64_t kmerTableIndex = 0;
   for(int_fast16_t i = kmerSeedStartPosition; i < kmerLength; i++){
     uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(kmer[i]);
@@ -20,7 +20,7 @@ struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(const struct AwFmInd
 struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength){
 
-  const uint8_t kmerSeedStartPosition = kmerLength - index->metadata.kmerLengthInSeedTable;
+  const uint8_t kmerSeedStartPosition = kmerLength - index->config.kmerLengthInSeedTable;
   uint64_t kmerTableIndex = 0;
   for(int_fast16_t i = kmerSeedStartPosition; i < kmerLength; i++){
     uint8_t letterIndex = awFmAsciiAminoAcidToLetterIndex(kmer[i]);
@@ -77,7 +77,7 @@ Ideas as to how to fix this and get it working:
   Another future update: reverse the direction that the kmerSeedTable index is generated.
   instead of having the left-most character contribute the largest bits, the right-most
   have the largest bits. I think this would result in more contiguous memory writes during
-  index creation, but might also help with the indexing for ideas listed above. 
+  index creation, but might also help with the indexing for ideas listed above.
 
 */
 static inline struct AwFmSearchRange awFmNucleotidePartialKmerSeedRangeFromTable(const struct AwFmIndex *restrict const index,
@@ -95,7 +95,7 @@ static inline struct AwFmSearchRange awFmNucleotidePartialKmerSeedRangeFromTable
   else{
 
     const uint64_t endSequenceKmerTableIndex = 0;// index->endSequenceKmerTableIndex;
-    const uint8_t kmerLengthInSeedTable = index->metadata.kmerLengthInSeedTable;
+    const uint8_t kmerLengthInSeedTable = index->config.kmerLengthInSeedTable;
     const uint8_t nucleotideBitOffset = 2;
     uint64_t queryKmerStartTableIndex = 0;
     uint64_t queryKmerEndTableIndex = 0;
@@ -136,7 +136,6 @@ static inline struct AwFmSearchRange awFmNucleotidePartialKmerSeedRangeFromTable
 
 inline struct AwFmSearchRange awFmAminoPartialKmerSeedRangeFromTable(const struct AwFmIndex *restrict const index,
   const char *restrict const kmer, const uint8_t kmerLength){
-    //todo: use bitpacked 5 bit encodings for partial
   struct AwFmSearchRange range = {0,0};
 
   if(__builtin_expect((kmer[kmerLength-1] | 0x20) == 'y', 0)){
@@ -146,7 +145,7 @@ inline struct AwFmSearchRange awFmAminoPartialKmerSeedRangeFromTable(const struc
   else{
 
     const uint64_t endSequenceKmerTableIndex  = 0;//index->endSequenceKmerTableIndex;
-    const uint8_t kmerLengthInSeedTable       = index->metadata.kmerLengthInSeedTable;
+    const uint8_t kmerLengthInSeedTable       = index->config.kmerLengthInSeedTable;
     uint64_t queryKmerStartTableIndex         = 0;
     uint64_t queryKmerEndTableIndex           = 0;
     uint64_t indexModFactor                   = 1;

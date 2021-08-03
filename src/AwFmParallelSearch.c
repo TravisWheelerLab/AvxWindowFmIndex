@@ -171,9 +171,9 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const 
     const char    *kmerString = searchData->kmerString;
 
     const uint64_t rangesIndex = kmerIndex - threadBlockStartIndex;
-    if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
-      //TODO: reimplement partial seeded search
-      if(kmerLength < index->metadata.kmerLengthInSeedTable){
+    if(index->config.alphabetType == AwFmAlphabetNucleotide){
+      //TODO: reimplement partial seeded search when it's implementable
+      if(kmerLength < index->config.kmerLengthInSeedTable){
         awFmNucleotideNonSeededSearch(index, kmerString, kmerLength, &ranges[rangesIndex]);
       }
       else{
@@ -181,7 +181,7 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const 
       }
     }
     else{
-      if(kmerLength < index->metadata.kmerLengthInSeedTable){
+      if(kmerLength < index->config.kmerLengthInSeedTable){
         awFmAminoNonSeededSearch(index, kmerString, kmerLength, &ranges[rangesIndex]);
 
       }
@@ -197,7 +197,7 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
   struct AwFmKmerSearchList *restrict const searchList, struct AwFmSearchRange *restrict const ranges,
   const size_t threadBlockStartIndex, const size_t threadBlockEndIndex){
   bool hasActiveQueries = true;
-  uint8_t currentKmerLetterIndex = index->metadata.kmerLengthInSeedTable;
+  uint8_t currentKmerLetterIndex = index->config.kmerLengthInSeedTable;
 
   while(hasActiveQueries){
     currentKmerLetterIndex++;
@@ -213,7 +213,7 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
         hasActiveQueries = true;
         const uint8_t currentQueryLetterIndex = kmerLength - currentKmerLetterIndex;
 
-        if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+        if(index->config.alphabetType == AwFmAlphabetNucleotide){
           const uint8_t queryLetterIndex = awFmAsciiNucleotideToLetterIndex(kmerString[currentQueryLetterIndex]);
           awFmNucleotideIterativeStepBackwardSearch(index, &ranges[rangesIndex], queryLetterIndex);
         }
@@ -251,7 +251,7 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
       // uint64_t offset = 0;
       // uint64_t position = ranges[rangesIndex].startPtr + positionInRangeToBacktrace;
 
-      if(index->metadata.alphabetType == AwFmAlphabetNucleotide){
+      if(index->config.alphabetType == AwFmAlphabetNucleotide){
         while(!awFmBwtPositionIsSampled(index, backtrace.position)){
           backtrace.position = awFmNucleotideBacktraceBwtPosition(index, backtrace.position);
           backtrace.offset++;

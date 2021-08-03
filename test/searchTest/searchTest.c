@@ -72,8 +72,8 @@ void generateRandomIndex(struct AwFmIndex  **index, uint8_t **sequence, size_t s
   printf("generating random index.\n");
   //decide if we're building a nucleotide or amino index.
   enum AwFmAlphabetType alphabetType = (rand()&1) ? AwFmAlphabetNucleotide: AwFmAlphabetAmino;
-  struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio = 200,
-    .kmerLengthInSeedTable = 4, .alphabetType = alphabetType, .keepSuffixArrayInMemory=rand()&1};
+  struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 200,
+    .kmerLengthInSeedTable = 4, .alphabetType = alphabetType, .keepSuffixArrayInMemory=rand()&1, .storeOriginalSequence=false};
 
   //allocate sequence and suffix array
   *sequence = realloc((*sequence), (sequenceLength+100) * sizeof(uint8_t)); //+11 is added for padding when using strcmp
@@ -101,7 +101,7 @@ void generateRandomIndex(struct AwFmIndex  **index, uint8_t **sequence, size_t s
     printf("critical failure: divsufsort returned error code %li\n", divSufSortReturnCode);
     exit(-3);
   }
-  enum AwFmReturnCode awFmReturnCode = awFmCreateIndex(index, &metadata, *sequence, sequenceLength, "testIndex.awfmi", true);
+  enum AwFmReturnCode awFmReturnCode = awFmCreateIndex(index, &config, *sequence, sequenceLength, "testIndex.awfmi", true);
   if(awFmReturnCode < 0){
     printf("critical failure: create index returned error code %i\n", awFmReturnCode);
     exit(-4);
@@ -118,8 +118,8 @@ uint8_t *sequence, size_t sequenceLength, uint64_t *suffixArray){
 
     //build the kmer.
     // printf("nuclookup ptr %p, amino %p, index p: %p\n", nucleotideLookup, aminoLookup, index);
-    uint8_t *characterLookupTable = (index->metadata.alphabetType == AwFmAlphabetNucleotide)? &nucleotideLookup[0]: &aminoLookup[0];
-    uint8_t alphabetCardinalty = awFmGetAlphabetCardinality(index->metadata.alphabetType);
+    uint8_t *characterLookupTable = (index->config.alphabetType == AwFmAlphabetNucleotide)? &nucleotideLookup[0]: &aminoLookup[0];
+    uint8_t alphabetCardinalty = awFmGetAlphabetCardinality(index->config.alphabetType);
     for(size_t i = 0; i < kmerLength; i++){
       kmer[i] = characterLookupTable[rand()%alphabetCardinalty];
     }

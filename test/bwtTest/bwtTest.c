@@ -90,8 +90,10 @@ void testNucletotideBwtGeneration(void){
 
 
     struct AwFmIndex *index;
-    struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio=240, .kmerLengthInSeedTable=2, .alphabetType = AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=false};
-    awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
+    struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio=240,
+      .kmerLengthInSeedTable=2, .alphabetType = AwFmAlphabetNucleotide, .keepSuffixArrayInMemory=false,
+    .storeOriginalSequence=true};
+    awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
 
     for(size_t i = 0; i <= sequenceLength; i++){
       uint64_t suffixArrayValue = suffixArray[i];
@@ -175,8 +177,9 @@ void testAminoBwtGeneration(void){
     // printf("\n");
 
     struct AwFmIndex *index;
-    struct AwFmIndexMetadata metadata = {.versionNumber=1, .suffixArrayCompressionRatio=240, .kmerLengthInSeedTable=4, .alphabetType = AwFmAlphabetAmino, .keepSuffixArrayInMemory=false};
-    awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
+    struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio=240, .kmerLengthInSeedTable=4,
+      .alphabetType = AwFmAlphabetAmino, .keepSuffixArrayInMemory=false, .storeOriginalSequence=false};
+    awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
 
 
     for(size_t i = 0; i <= sequenceLength; i++){

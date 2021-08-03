@@ -103,32 +103,33 @@ struct AwFmIndex *testCreateNucleotideIndex(const uint8_t *sequence, const size_
 
   const bool keepSuffixArrayInMemory = false;
   //not using initilize because valgrind complains about the padding bytes when I do it.
-  struct AwFmIndexMetadata metadata = {0};
-  metadata.versionNumber = 1;
-  metadata.suffixArrayCompressionRatio = 1;
-  metadata.kmerLengthInSeedTable = 4;
-  metadata.alphabetType = AwFmAlphabetNucleotide;
-  metadata.keepSuffixArrayInMemory=false;
+  struct AwFmIndexConfiguration config = {0};
+  config.suffixArrayCompressionRatio = 1;
+  config.kmerLengthInSeedTable = 4;
+  config.alphabetType = AwFmAlphabetNucleotide;
+  config.keepSuffixArrayInMemory = false;
+  config.storeOriginalSequence = false;
 
+  const uint32_t expectedVersionNumber = AW_FM_CURRENT_VERSION_NUMBER;
   struct AwFmIndex *restrict index;
-  enum AwFmReturnCode returnCode = awFmCreateIndex(&index, &metadata, sequence, sequenceLength, fileSrc, true);
+  enum AwFmReturnCode returnCode = awFmCreateIndex(&index, &config, sequence, sequenceLength, fileSrc, true);
   sprintf(buffer, "return code was not successful, returned %d", returnCode);
   testAssertString(returnCode >= 0, buffer);
 
-  sprintf(buffer, "version number expected %d, got %d", metadata.versionNumber, index->metadata.versionNumber);
-  testAssertString(metadata.versionNumber == index->metadata.versionNumber, buffer);
+  sprintf(buffer, "version number expected %d, got %d", index->versionNumber, expectedVersionNumber);
+  testAssertString(index->versionNumber == expectedVersionNumber, buffer);
 
-  sprintf(buffer, "suffix array compression ratio expected %d, got %d", metadata.suffixArrayCompressionRatio, index->metadata.suffixArrayCompressionRatio);
-  testAssertString(metadata.suffixArrayCompressionRatio == index->metadata.suffixArrayCompressionRatio, buffer);
+  sprintf(buffer, "suffix array compression ratio expected %d, got %d", config.suffixArrayCompressionRatio, index->config.suffixArrayCompressionRatio);
+  testAssertString(config.suffixArrayCompressionRatio == index->config.suffixArrayCompressionRatio, buffer);
 
-  sprintf(buffer, "kmerLengthInSeedTable expected %d, got %d", metadata.kmerLengthInSeedTable, index->metadata.kmerLengthInSeedTable);
-  testAssertString(metadata.kmerLengthInSeedTable == index->metadata.kmerLengthInSeedTable, buffer);
+  sprintf(buffer, "kmerLengthInSeedTable expected %d, got %d", config.kmerLengthInSeedTable, index->config.kmerLengthInSeedTable);
+  testAssertString(config.kmerLengthInSeedTable == index->config.kmerLengthInSeedTable, buffer);
 
-  sprintf(buffer, "alphabetType expected %d, got %d", metadata.alphabetType, index->metadata.alphabetType);
-  testAssertString(metadata.alphabetType == index->metadata.alphabetType, buffer);
+  sprintf(buffer, "alphabetType expected %d, got %d", config.alphabetType, index->config.alphabetType);
+  testAssertString(config.alphabetType == index->config.alphabetType, buffer);
 
-  sprintf(buffer, "in memory suffix array flag should be (%u), but was %u", keepSuffixArrayInMemory, index->metadata.keepSuffixArrayInMemory);
-  testAssertString(index->metadata.keepSuffixArrayInMemory == keepSuffixArrayInMemory, buffer);
+  sprintf(buffer, "in memory suffix array flag should be (%u), but was %u", keepSuffixArrayInMemory, index->config.keepSuffixArrayInMemory);
+  testAssertString(index->config.keepSuffixArrayInMemory == keepSuffixArrayInMemory, buffer);
 
   sprintf(buffer, "bwt length should be equal to sequence length + 1 (%zu), got %zu", sequenceLength+1, index->bwtLength);
   testAssertString(index->bwtLength == sequenceLength + 1, buffer);
@@ -139,7 +140,7 @@ struct AwFmIndex *testCreateNucleotideIndex(const uint8_t *sequence, const size_
 
 
 void testPrefixSums(const struct AwFmIndex *restrict const index, const uint8_t *sequence, const size_t sequenceLength){
-  const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->metadata.alphabetType);
+  const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->config.alphabetType);
   size_t *letterCounts = malloc((alphabetSize+2) * sizeof(size_t));
   memset(letterCounts, 0, alphabetSize * sizeof(size_t));
 
@@ -150,7 +151,7 @@ void testPrefixSums(const struct AwFmIndex *restrict const index, const uint8_t 
   printf("\n");
 
   for(size_t seqPos = 0; seqPos < sequenceLength; seqPos++){
-    uint8_t letterAsIndex = index->metadata.alphabetType == AwFmAlphabetNucleotide?
+    uint8_t letterAsIndex = index->config.alphabetType == AwFmAlphabetNucleotide?
       awFmAsciiNucleotideToLetterIndex(sequence[seqPos]):
       awFmAsciiAminoAcidToLetterIndex(sequence[seqPos]);
     letterCounts[letterAsIndex]++;
@@ -172,7 +173,7 @@ void testPrefixSums(const struct AwFmIndex *restrict const index, const uint8_t 
 
 void testKmerTableLengths(const struct AwFmIndex *restrict const index, const uint8_t *sequence, const size_t sequenceLength){
   printf("beginning kmer table lengths test\n");
-  const uint8_t kmerLength = index->metadata.kmerLengthInSeedTable;
+  const uint8_t kmerLength = index->config.kmerLengthInSeedTable;
   for(size_t sequencePosition = 0; sequencePosition <= sequenceLength - kmerLength; sequencePosition++){
     const uint8_t *kmerPtr1 = &sequence[sequencePosition];
     size_t kmerCount = 0;
@@ -194,7 +195,7 @@ void testKmerTableLengths(const struct AwFmIndex *restrict const index, const ui
     }
 
     // printf("for kmer %.*s, found %zu.\n", kmerLength, kmerPtr1, kmerCount);
-    const struct AwFmSearchRange rangeInTable = index->metadata.alphabetType == AwFmAlphabetNucleotide?
+    const struct AwFmSearchRange rangeInTable = index->config.alphabetType == AwFmAlphabetNucleotide?
       awFmNucleotideKmerSeedRangeFromTable(index, (char*)kmerPtr1, kmerLength):
       awFmAminoKmerSeedRangeFromTable(index,      (char*)kmerPtr1, kmerLength);
 
@@ -223,10 +224,10 @@ void testCreateAminoIndex(void){
   suffixArray[0] = sequenceLength;
 
 
-  struct AwFmIndexMetadata metadata = {.versionNumber = 1, .suffixArrayCompressionRatio = 100,
-    .kmerLengthInSeedTable = 3, .alphabetType = AwFmAlphabetAmino, .keepSuffixArrayInMemory=false};
+  struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 100, .kmerLengthInSeedTable = 3,
+    .alphabetType = AwFmAlphabetAmino, .keepSuffixArrayInMemory=false, .storeOriginalSequence=false};
   struct AwFmIndex *index;
-  awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
+  awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
 
   size_t numSentinelsEncountered = 0;
   for(size_t i = 0; i < sequenceLength+1; i++){

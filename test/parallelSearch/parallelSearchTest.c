@@ -42,7 +42,7 @@ int main(int argc, char **argv){
 
 void testParallelSearchAmino(void){
     struct AwFmIndex *index;
-    struct AwFmIndexMetadata metadata = {.versionNumber = 1, .suffixArrayCompressionRatio = 8,
+    struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 8,
       .kmerLengthInSeedTable = 5, .alphabetType = AwFmAlphabetAmino,
       .keepSuffixArrayInMemory=true, .storeOriginalSequence = false};
 
@@ -60,7 +60,7 @@ void testParallelSearchAmino(void){
     //null terminate the sequence for easy printing
     sequence[sequenceLength] = 0;
 
-    awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
+    awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
     printf("index generated\n");
 
     const size_t kmerSearchListCapacity = 1000 + (rand()%6000);
@@ -182,7 +182,7 @@ void testParallelSearchAmino(void){
 
 void testParallelSearchNucleotide(){
   struct AwFmIndex *index;
-  struct AwFmIndexMetadata metadata = {.versionNumber = 1, .suffixArrayCompressionRatio = 8,
+  struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 8,
     .kmerLengthInSeedTable = 9, .alphabetType=AwFmAlphabetNucleotide,
     .keepSuffixArrayInMemory=true, .storeOriginalSequence=false};
 
@@ -200,7 +200,7 @@ void testParallelSearchNucleotide(){
   //null terminate the sequence for easy printing
   sequence[sequenceLength] = 0;
 
-  awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
+  awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
 
 
   const size_t kmerSearchListCapacity = 100 + (rand()%10000);
@@ -312,7 +312,7 @@ void testParallelSearchNucleotide(){
 
 void testParallelCount(void){
   struct AwFmIndex *index;
-  struct AwFmIndexMetadata metadata = {.versionNumber = 1, .suffixArrayCompressionRatio = 8,
+  struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 8,
     .kmerLengthInSeedTable = 5, .alphabetType = AwFmAlphabetAmino,
     .keepSuffixArrayInMemory=true, .storeOriginalSequence = false};
 
@@ -330,7 +330,7 @@ void testParallelCount(void){
   //null terminate the sequence for easy printing
   sequence[sequenceLength] = 0;
 
-  awFmCreateIndex(&index, &metadata, sequence, sequenceLength, "testIndex.awfmi", true);
+  awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
   printf("index generated\n");
 
   const size_t kmerSearchListCapacity = 1000 + (rand()%6000);

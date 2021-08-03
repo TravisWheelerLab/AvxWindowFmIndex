@@ -26,14 +26,14 @@ void generateFabricatedSuffixArray(uint64_t length, uint64_t *buffer){
 
 
 void testSuffixArrayCompressionStaticLengths(){
-  uint64_t buffer[512];
-  uint64_t referenceBuffer[512];
-    for(uint64_t saLength = 4; saLength  < 512; saLength++){
+  for(uint64_t saLength = 4; saLength  < 512; saLength++){
+    uint64_t *buffer = malloc(512 * sizeof(uint64_t));
+    uint64_t *referenceBuffer = malloc(512 * sizeof(uint64_t));
     generateFabricatedSuffixArray(saLength, buffer);
     memcpy(referenceBuffer, buffer, saLength * sizeof(uint64_t));
 
     struct AwFmCompressedSuffixArray  compressedSa;
-    enum AwFmReturnCode returnCode = awFmInitSuffixArray(buffer, saLength, &compressedSa, true);
+    enum AwFmReturnCode returnCode = awFmInitCompressedSuffixArray(buffer, saLength, &compressedSa, true);
     if(returnCode != AwFmSuccess){
       testAssertString(false, "awFmInitSuffixArray did not return AwFmSuccess.\n");
       printf("initSuffixArray returned error code %d\n", returnCode);
@@ -53,6 +53,8 @@ void testSuffixArrayCompressionStaticLengths(){
       testAssertString(restoredValue == referenceBuffer[i], messageBuffer);
 
     }
+    free(compressedSa.values);
+    free(referenceBuffer);
   }
 }
 
@@ -68,11 +70,14 @@ void testSuffixArrayCompressionRandomLengths(){
     memcpy(referenceBuffer, buffer, suffixArrayLength * sizeof(uint64_t));
 
     struct AwFmCompressedSuffixArray  compressedSa;
-    enum AwFmReturnCode returnCode = awFmInitSuffixArray(buffer, suffixArrayLength, &compressedSa, true);
+    enum AwFmReturnCode returnCode = awFmInitCompressedSuffixArray(buffer, suffixArrayLength, &compressedSa, true);
     if(returnCode != AwFmSuccess){
       testAssertString(false, "awFmInitSuffixArray did not return AwFmSuccess.\n");
       printf("initSuffixArray returned error code %d\n", returnCode);
     }
+
+    //re-set the buffer pointer, so we can realloc it again
+    buffer = (uint64_t*)compressedSa.values;
     uint64_t necessaryBitWidth = 0;
     while((1LL << (++necessaryBitWidth)) <= suffixArrayLength);
 

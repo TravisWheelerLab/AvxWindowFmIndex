@@ -6,9 +6,8 @@
 #include <stdio.h>
 #include "AwFmIndex.h"
 
-#define AW_FM_VERSION_NUMBER_DEFAULT 1
-#define AW_FM_VERSION_NUMBER_INCLUDE_FASTA_VECTOR 2
-#define AW_FM_VERSION_NUMBER_BIT_STORE_ORIGINAL_SEQUENCE 7
+#define AW_FM_CURRENT_VERSION_NUMBER 8
+#define AW_FM_FEATURE_FLAG_BIT_FASTA_VECTOR 0
 
 /*
  * Function:  awFmIndexAlloc

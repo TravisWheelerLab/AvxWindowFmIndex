@@ -26,7 +26,7 @@ void testNucletotideBwtGeneration(void);
 void testAminoBwtGeneration(void);
 
 int main (int argc, char **argv){
-  srand(8);
+  srand(time(NULL));
 
   testNucletotideBwtGeneration();
   testAminoBwtGeneration();

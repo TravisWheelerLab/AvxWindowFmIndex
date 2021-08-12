@@ -409,8 +409,8 @@ void compareIndicesForEqualityIgnoreVersion(const struct AwFmIndex *index1, cons
   //compare the suffix arrays
   size_t compressedSaLength = index1->bwtLength / index1->config.suffixArrayCompressionRatio;
   for(size_t saIndex = 0; saIndex < compressedSaLength; saIndex++){
-    size_t index1Position = awFmGetValueFromCompressedSuffixArray(index1->suffixArray, saIndex);
-    size_t index2Position = awFmGetValueFromCompressedSuffixArray(index2->suffixArray, saIndex);
+    size_t index1Position = awFmGetValueFromCompressedSuffixArray(&index1->suffixArray, saIndex);
+    size_t index2Position = awFmGetValueFromCompressedSuffixArray(&index2->suffixArray, saIndex);
     sprintf(buffer, "suffix array at position %zu did not match (index 1 %zu, index 2 %zu)", saIndex, index1Position, index2Position);
     bool saElementMatches = index1Position == index2Position;
     testAssertString(saElementMatches, buffer);

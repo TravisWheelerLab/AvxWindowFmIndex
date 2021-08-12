@@ -26,9 +26,9 @@ void generateFabricatedSuffixArray(uint64_t length, uint64_t *buffer){
 
 
 void testSuffixArrayCompressionStaticLengths(){
-  for(uint64_t saLength = 4; saLength  < 512; saLength++){
-    uint64_t *buffer = malloc(512 * sizeof(uint64_t));
-    uint64_t *referenceBuffer = malloc(512 * sizeof(uint64_t));
+  for(uint64_t saLength = 4; saLength  < 1024; saLength++){
+    uint64_t *buffer = malloc(saLength * sizeof(uint64_t));
+    uint64_t *referenceBuffer = malloc(saLength * sizeof(uint64_t));
     generateFabricatedSuffixArray(saLength, buffer);
     memcpy(referenceBuffer, buffer, saLength * sizeof(uint64_t));
 
@@ -40,17 +40,18 @@ void testSuffixArrayCompressionStaticLengths(){
     }
 
     uint64_t necessaryBitWidth = 0;
-    while((1LL << (++necessaryBitWidth)) <= saLength);
+    while((1LL << (++necessaryBitWidth)) < saLength);
 
     sprintf(messageBuffer, "sa length %zu expected bit width %zu, but SA said bit width %d.\n",
       saLength, necessaryBitWidth, compressedSa.valueBitWidth);
     testAssertString(necessaryBitWidth == compressedSa.valueBitWidth, messageBuffer);
 
-    for(uint64_t i = 0; i < saLength; i++){
-      uint64_t restoredValue = awFmGetValueFromCompressedSuffixArray(compressedSa, i);
+    for(uint64_t i = 1; i < saLength; i++){
+      uint64_t restoredValue = awFmGetValueFromCompressedSuffixArray(&compressedSa, i);
+      uint64_t referenceValue = referenceBuffer[i];
       sprintf(messageBuffer, "at index %zu  of length %zu SA, compressed value %zu did not match reference val %zu.\n",
-        i, saLength, restoredValue, referenceBuffer[i]);
-      testAssertString(restoredValue == referenceBuffer[i], messageBuffer);
+        i, saLength, restoredValue, referenceValue);
+      testAssertString(restoredValue == referenceValue, messageBuffer);
 
     }
     free(compressedSa.values);
@@ -62,8 +63,9 @@ void testSuffixArrayCompressionStaticLengths(){
 void testSuffixArrayCompressionRandomLengths(){
   uint64_t *buffer = NULL;
   uint64_t *referenceBuffer = NULL;
-  for(uint64_t testNum = 0; testNum < 40; testNum++){
+  for(uint64_t testNum = 0; testNum < 80; testNum++){
     uint64_t suffixArrayLength = (rand() >> 12);  //only testing to 2^20 because of memory limitations on my machine.
+    printf("test num %zu, SA len %zu.\n", testNum, suffixArrayLength);
     buffer          = realloc(buffer, suffixArrayLength * sizeof(uint64_t));
     referenceBuffer = realloc(referenceBuffer, suffixArrayLength * sizeof(uint64_t));
     generateFabricatedSuffixArray(suffixArrayLength, buffer);
@@ -86,7 +88,7 @@ void testSuffixArrayCompressionRandomLengths(){
     testAssertString(necessaryBitWidth == compressedSa.valueBitWidth, messageBuffer);
 
     for(uint64_t i = 0; i < suffixArrayLength; i++){
-      uint64_t restoredValue = awFmGetValueFromCompressedSuffixArray(compressedSa, i);
+      uint64_t restoredValue = awFmGetValueFromCompressedSuffixArray(&compressedSa, i);
       sprintf(messageBuffer, "at index %zu  of length %zu SA, compressed value %zu did not match reference val %zu.\n",
         i, suffixArrayLength,restoredValue, referenceBuffer[i]);
       testAssertString(restoredValue == referenceBuffer[i], messageBuffer);
@@ -99,8 +101,7 @@ void testSuffixArrayCompressionRandomLengths(){
 }
 
 int main(int argc, char **argv){
-  srand(2);
-  //srand(time(NULL));
+  srand(time(NULL));
   testSuffixArrayCompressionStaticLengths();
   testSuffixArrayCompressionRandomLengths();
 }

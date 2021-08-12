@@ -6,6 +6,7 @@
 #include "../../src/AwFmKmerTable.h"
 #include "../../src/AwFmLetter.h"
 #include "../../src/AwFmParallelSearch.h"
+#include "../../src/AwFmSuffixArray.h"
 #include "../test.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,7 +15,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <string.h>
-// #include "divsufsort64.h"
+#include "divsufsort64.h"
 
 char buffer[2048];
 uint8_t aminoLookup[21]     = {'a','c','d','e','f',
@@ -27,10 +28,14 @@ void testParallelSearchNucleotide();
 void testParallelSearchAmino();
 void testParallelCount();
 
+
+
+const uint8_t saCompressionRatio = 8;
+
 int main(int argc, char **argv){
   size_t seedTime = time(NULL);
-  // size_t seedTime = 1582842257;
-  // printf("seed time: %zu\n", seedTime);
+  // printf("***seed time %zu\n", seedTime);
+  // size_t seedTime = 1628294143;
   srand(seedTime);
   testParallelCount();
   testParallelSearchNucleotide();
@@ -42,7 +47,7 @@ int main(int argc, char **argv){
 
 void testParallelSearchAmino(void){
     struct AwFmIndex *index;
-    struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 8,
+    struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = saCompressionRatio,
       .kmerLengthInSeedTable = 5, .alphabetType = AwFmAlphabetAmino,
       .keepSuffixArrayInMemory=true, .storeOriginalSequence = false};
 
@@ -60,34 +65,58 @@ void testParallelSearchAmino(void){
     //null terminate the sequence for easy printing
     sequence[sequenceLength] = 0;
 
+    //create a reference Suffix Array
+    uint64_t *referenceSuffixArray = malloc((sequenceLength+1)* sizeof(uint64_t));
+    int64_t divSufSortReturnCode = divsufsort64(sequence, (int64_t*)(referenceSuffixArray), sequenceLength+1);
+    if(divSufSortReturnCode < 0){
+      free(referenceSuffixArray);
+      sprintf(buffer, "reference suffix array could not be generated, error code %zi.\n", divSufSortReturnCode);
+      testAssertString(false, buffer);
+    }
+
+
     awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
     printf("index generated\n");
 
+
+    for(size_t saIndex = 0; saIndex < sequenceLength+1; saIndex+=saCompressionRatio){
+      uint64_t refValue = referenceSuffixArray[saIndex];
+      uint64_t position = saIndex;
+      enum AwFmReturnCode rc = awFmReadPositionsFromSuffixArray(index, &position, 1);
+      testAssertString(rc == AwFmSuccess || rc == AwFmFileReadOkay, "reading value from index SA failed.");
+      sprintf(buffer, "index compressed SA value @ index %zu (%zu) did not match reference val %zu.",
+        saIndex, position, refValue);
+      testAssertString(refValue == position, buffer);
+
+      sprintf(buffer, "suffix array value %zu was greater than sequence length %zu\n.", position, sequenceLength);
+      testAssertString(position <= sequenceLength, buffer);
+    }
+
+
     const size_t kmerSearchListCapacity = 1000 + (rand()%6000);
     for(uint8_t numThreads = 1; numThreads < 16; numThreads++){
+    struct AwFmKmerSearchList *searchList = awFmCreateKmerSearchList(kmerSearchListCapacity);
 
+    if(searchList == NULL){
+      printf("critical error: parallel search data could not be allocated\n");
+      exit(-2);
+    }
 
-      struct AwFmKmerSearchList *searchList = awFmCreateKmerSearchList(kmerSearchListCapacity);
+    //fill the search data struct
+    searchList->count = kmerSearchListCapacity - (rand()%200);
+    printf("beginning test with  %zu kmers, with %d threads.\n", searchList->count, numThreads);
+    for(size_t i = 0; i < searchList->count; i++){
+      uint16_t kmerLength = 4 + rand()%20;
+      searchList->kmerSearchData[i].kmerLength = kmerLength;
 
-      if(searchList == NULL){
-        printf("critical error: parallel search data could not be allocated\n");
-        exit(-2);
+      char *const kmer = malloc(kmerLength * sizeof(char));
+       searchList->kmerSearchData[i].kmerString = kmer;
+
+      for(uint16_t kmerLetterIndex = 0; kmerLetterIndex < kmerLength; kmerLetterIndex++){
+        kmer[kmerLetterIndex] = aminoLookup[rand()%20];
       }
+    }
 
-      //fill the search data struct
-      searchList->count = kmerSearchListCapacity - (rand()%200);
-      printf("beginning test with  %zu kmers, with %d threads.\n", searchList->count, numThreads);
-      for(size_t i = 0; i < searchList->count; i++){
-        uint16_t kmerLength = 4 + rand()%20;
-        searchList->kmerSearchData[i].kmerLength = kmerLength;
-
-        char *const kmer = malloc(kmerLength * sizeof(char));
-         searchList->kmerSearchData[i].kmerString = kmer;
-
-        for(uint16_t kmerLetterIndex = 0; kmerLetterIndex < kmerLength; kmerLetterIndex++){
-          kmer[kmerLetterIndex] = aminoLookup[rand()%20];
-        }
-      }
 
     //query for the sequence positions
     clock_t startTime = clock();
@@ -95,21 +124,20 @@ void testParallelSearchAmino(void){
     clock_t endTime = clock();
     clock_t totalTime = ((endTime-startTime));
     printf("total time: %zu ticks\n",totalTime);
-    // printf("parallel search completed, checking answers...\n");
 
     printf("par search data count %zu\n", searchList->count);
     for(size_t kmerIndex = 0; kmerIndex < searchList->count; kmerIndex++){
       const struct AwFmKmerSearchData *searchData = &searchList->kmerSearchData[kmerIndex];
-      // printf("kmerind %zu, backtrace vector count: %zu\n", kmerIndex, positionList->count);
-      // for(size_t i = 0; i < positionList->count; i++){
-      //   printf("pos list i= %zu, pos = %zu\n", i, positionList->backtraceArray[i].position);
-      // }
+      for(size_t hit = 0; hit <searchData->count; hit++){
+        if(searchData->positionList[hit] > sequenceLength){
+          sprintf(buffer, "position %zu was greater than the sequenceLength %zu!\n",
+          searchData->positionList[hit], sequenceLength);
+            testAssertString(searchData->positionList[hit] < sequenceLength, buffer);
+        }
+      }
 
       sprintf(buffer, "backtrace vector's capacity was lower than it's count!\n");
       testAssertString(searchData->capacity >= searchData->count, buffer);
-      // if(positionList->count != 0){
-      //   printf("kmer index %zu contains %zu matches\n", kmerIndex, positionList->count);
-      // }
 
 
       //search the sequence, and at each position, ensure:
@@ -127,27 +155,9 @@ void testParallelSearchAmino(void){
 
         if(kmerFoundAtThisPosition && !thisPositionInList){
 
-          printf("\n\n!!!!!\n\n");
-          printf("test failure: returned positions are: ");
-          printf("kmer %zu has count %u\n", kmerIndex, searchData->count);
-          printf("position list: ");
-          for(size_t i = 0; i < searchData->count; i++){
-            printf("pos: %zu, ", positionList[i]);
-          }
-          printf("\n");
-          printf("debug: ");
-          printf("from seq: %.*s\n", (uint32_t)searchData->kmerLength, sequence+sequencePosition);
           sprintf(buffer, "kmer %.*s (%.*s) was found at position %zu, but was not represented in the position list.",
             (uint32_t)searchData->kmerLength, searchData->kmerString, (uint32_t)searchData->kmerLength,
             sequence+sequencePosition, sequencePosition);
-          printf("kmer @ position %zu in range: %.*s. in sequence: %.*s\n", sequencePosition,
-            (uint32_t)searchData->kmerLength, searchData->kmerString, (uint32_t)searchData->kmerLength, sequence+ sequencePosition);
-          printf("(seq pos = %zu), pos list count %u\n", sequencePosition, searchData->count);
-          for(size_t i = 0; i < searchData->count; i++){
-            printf("pos: %zu, ",positionList[i]);
-          }
-          printf("\n");
-
           testAssertString(false, buffer);
           exit(-1);
         }
@@ -165,7 +175,6 @@ void testParallelSearchAmino(void){
         printf("sequence length: %zu\n", sequenceLength);
         }
       }
-      // printf("done going through all sequence positions\n");
     }
 
     //deallocate the kmer strings
@@ -175,6 +184,7 @@ void testParallelSearchAmino(void){
      //check the search data to make sure it was accurate.
       awFmDeallocKmerSearchList(searchList);
     }
+    free(referenceSuffixArray);
     free(sequence);
     awFmDeallocIndex(index);
 }
@@ -182,7 +192,7 @@ void testParallelSearchAmino(void){
 
 void testParallelSearchNucleotide(){
   struct AwFmIndex *index;
-  struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 8,
+  struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = saCompressionRatio,
     .kmerLengthInSeedTable = 9, .alphabetType=AwFmAlphabetNucleotide,
     .keepSuffixArrayInMemory=true, .storeOriginalSequence=false};
 
@@ -265,8 +275,6 @@ void testParallelSearchNucleotide(){
         for(size_t i = 0; i < searchData->count; i++){
           printf("pos: %zu, ", positionList[i]);
         }
-        printf("\n");
-        printf("debug: ");
         printf("from seq: %.*s\n", (uint32_t)searchData->kmerLength, sequence+sequencePosition);
         sprintf(buffer, "kmer %.*s (%.*s) was found at position %zu, but was not represented in the position list.",
           (uint32_t)searchData->kmerLength, searchData->kmerString, (uint32_t)searchData->kmerLength,
@@ -312,7 +320,7 @@ void testParallelSearchNucleotide(){
 
 void testParallelCount(void){
   struct AwFmIndex *index;
-  struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 8,
+  struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = saCompressionRatio,
     .kmerLengthInSeedTable = 5, .alphabetType = AwFmAlphabetAmino,
     .keepSuffixArrayInMemory=true, .storeOriginalSequence = false};
 
@@ -367,12 +375,9 @@ void testParallelCount(void){
   printf("total time: %zu ticks\n",totalTime);
   // printf("parallel search completed, checking answers...\n");
 
-  printf("par search data count %zu\n", searchList->count);
   for(size_t kmerIndex = 0; kmerIndex < searchList->count; kmerIndex++){
-    const struct AwFmKmerSearchData *searchData = &searchList->kmerSearchData[kmerIndex];
-    sprintf(buffer, "position list's capacity was lower than it's count! cap: %u, count %u\n", searchData->capacity, searchData->count);
-    testAssertString(searchData->capacity >= searchData->count, buffer);
 
+    const struct AwFmKmerSearchData *searchData = &searchList->kmerSearchData[kmerIndex];
 
     //search the sequence, and at each position, ensure:
     // if the kmer is at this location, make sure it's in the kmer list.

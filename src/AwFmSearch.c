@@ -180,9 +180,15 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
   *fileAccessResult = awFmReadPositionsFromSuffixArray(index, positionArray,
     numPositionsInRange);
 
+  //make sure that reading from the suffix array actually succeeded
+  if(*fileAccessResult == AwFmFileReadFail){
+    return positionArray;
+  }
+
   //add the offsets to the returned positions to get the actual positions of the hits
   for(size_t i = 0; i < numPositionsInRange; i++){
     positionArray[i] += offsetArray[i];
+    positionArray[i] %= index->bwtLength; //mod by the length so that the sentinel wraps to zero.
   }
   free(offsetArray);
 

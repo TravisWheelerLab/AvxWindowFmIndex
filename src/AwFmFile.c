@@ -379,31 +379,6 @@ enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict i
 }
 
 
-enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *restrict const index,
-  uint64_t *restrict const positionArray, const size_t positionArrayLength){
-
-  if(index->config.keepSuffixArrayInMemory){
-    for(size_t i = 0; i < positionArrayLength; i++){
-      size_t indexInSuffixArray = positionArray[i] / index->config.suffixArrayCompressionRatio;
-      size_t  position = awFmGetValueFromCompressedSuffixArray(index->suffixArray, indexInSuffixArray);
-      positionArray[i] = position;
-    }
-
-    return AwFmSuccess;
-  }
-  else{
-    for(size_t i = 0; i < positionArrayLength; i++){
-      size_t indexInSuffixArray = positionArray[i] / index->config.suffixArrayCompressionRatio;
-      enum AwFmReturnCode rc = awFmGetSuffixArrayValueFromFile(index, indexInSuffixArray, &positionArray[i]);
-      if(rc != AwFmSuccess){
-        return rc;
-      }
-    }
-
-    return AwFmFileReadOkay;
-  }
-}
-
 
 enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
   const size_t sequenceStartPosition, const size_t sequenceSegmentLength,
@@ -434,67 +409,34 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
 }
 
 
-enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *restrict const index,
-  struct AwFmBacktrace *restrict const backtracePtr){
-
-  if(index->config.keepSuffixArrayInMemory){
-    uint64_t suffixArrayPosition = backtracePtr->position / index->config.suffixArrayCompressionRatio;
-
-    size_t  saValue = awFmGetValueFromCompressedSuffixArray(index->suffixArray, suffixArrayPosition);
-    backtracePtr->position = saValue + backtracePtr->offset;
-
-    return AwFmSuccess;
-
-  }
-  else{
-    uint64_t suffixArrayPosition = backtracePtr->position / index->config.suffixArrayCompressionRatio;
-    size_t saValue;
-    enum AwFmReturnCode rc = awFmGetSuffixArrayValueFromFile(index,suffixArrayPosition, &saValue);
-
-    backtracePtr->position = saValue + backtracePtr->offset;
-    return rc;
-  }
-}
-
 
 enum AwFmReturnCode awFmGetSuffixArrayValueFromFile(const struct AwFmIndex *restrict const index, const size_t positionInArray, size_t *valueOut){
 
-  //if we group up the non-standard bit width values into groups of 8, the lengths will always be a multiple of 8,
-  // thus aligning to a byte. Then, we can add the num bytes of the remainder of values, and then find the bit offset.
-  size_t alignedByteOffset = (positionInArray / 8) * index->suffixArray.valueBitWidth;
-  size_t numEndingBits = (positionInArray % 8) * index->suffixArray.valueBitWidth;
-  size_t bytePosition = alignedByteOffset + (numEndingBits / 8);
-  size_t bitPosition = numEndingBits % 8;
+  struct AwFmSuffixArrayOffset offset = awFmGetOffsetIntoSuffixArrayByteArray(
+    index->suffixArray.valueBitWidth, positionInArray);
 
-  uint64_t buffer[2];
-  size_t fileOffset = index->suffixArrayFileOffset + bytePosition;
-  ssize_t numReadBytesRequired = (bitPosition + index->suffixArray.valueBitWidth + 7) / 8; //ceil to not round down
-  memset(buffer, 0, sizeof(uint64_t)*2);
+  const size_t suffixArrayFileOffset = index->suffixArrayFileOffset;
+  uint8_t valueBuffer[9] = {0}; //9 bytes are required for this buffer, since ceil(((bitOffset=7) + (valBitWidth=64)) / 8) = 9
+  int8_t bytesToRead  = (offset.bitOffset + index->suffixArray.valueBitWidth + 7) / 8;  //rounded up.
+  int8_t totalBytesRead = 0;
 
-  ssize_t totalBytesRead = 0;
-  do{
-    //pread does not guarantee that it can read the entire pread request in a single transaction.
-    //thus, we may need to loop until all bytes are read, or until we hit an error (negative return value)
-
-    size_t currentReadFileOffset = fileOffset + totalBytesRead;
-    size_t bytesInThisReadRequest = numReadBytesRequired - totalBytesRead;
-    ssize_t bytesRead = pread(index->fileDescriptor, ((uint8_t*)buffer)+totalBytesRead, bytesInThisReadRequest, currentReadFileOffset);
-
+  while(bytesToRead > totalBytesRead){
+    int8_t bytesLeft = bytesToRead - totalBytesRead;
+    size_t readPosition = suffixArrayFileOffset + offset.byteOffset + totalBytesRead;
+    ssize_t bytesRead = pread(index->fileDescriptor, valueBuffer+totalBytesRead, bytesLeft, readPosition);
     if(bytesRead <= 0){
-      fclose(index->fileHandle);
-      *valueOut = 0;
-      return AwFmFileReadFail;
+      return AwFmFileWriteFail;
     }
     totalBytesRead += bytesRead;
-  }while(totalBytesRead < numReadBytesRequired);
+  }
 
-  //shift the bits of each element into place, and OR them together.
-  buffer[0] = buffer[0] >> bitPosition;
-  buffer[1] = buffer[1] << (64-bitPosition);
-  buffer[0] = buffer[0] | buffer[1];
-  uint64_t bitmask = (1 << index->suffixArray.valueBitWidth) - 1;
-
-  *valueOut = buffer[0] & bitmask;
+  //reconstruct the size_t valueOut from the valueBuffer.
+  //first memcpy the first 8 bytes into valueOut
+  memcpy(valueOut, valueBuffer, 8);
+  *valueOut >>=  offset.bitOffset;
+  *valueOut |= ((uint64_t)valueBuffer[8]) << (64-offset.bitOffset);
+  size_t bitmask = (1 << index->suffixArray.valueBitWidth) - 1;
+  *valueOut &= bitmask;
   return AwFmSuccess;
 }
 

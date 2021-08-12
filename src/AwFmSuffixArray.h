@@ -3,6 +3,11 @@
 
 #include "AwFmIndex.h"
 
+struct AwFmSuffixArrayOffset{
+  size_t byteOffset;
+  uint8_t bitOffset;
+};
+
 /*
  * Function:  awFmInitCompressedSuffixArray
  * --------------------
@@ -45,7 +50,7 @@ enum AwFmReturnCode awFmInitCompressedSuffixArray(uint64_t *fullSa, size_t saLen
    *  Returns:
    *    Value at the given position in the compressed suffix array.
    */
-size_t awFmGetValueFromCompressedSuffixArray(struct AwFmCompressedSuffixArray suffixArray, size_t positionInArray);
+size_t awFmGetValueFromCompressedSuffixArray(const struct AwFmCompressedSuffixArray *suffixArray, size_t positionInArray);
 // to use SA value from file (if SA isn't being stored in memory), use awFmGetSuffixArrayValueFromFile in AwFmFile.h
 
 
@@ -63,6 +68,7 @@ size_t awFmGetValueFromCompressedSuffixArray(struct AwFmCompressedSuffixArray su
  */
 size_t awFmComputeCompressedSaSizeInBytes(size_t saLength, uint8_t samplingRatio);
 
+
 /*
  * Function:  awFmComputeCompressedSaSizeInBytes
  * --------------------
@@ -77,5 +83,71 @@ size_t awFmComputeCompressedSaSizeInBytes(size_t saLength, uint8_t samplingRatio
  */
 uint8_t awFmComputeSuffixArrayValueMinWidth(const size_t saLength);
 
+
+/*
+ * Function:  awFmGetSampledSuffixArrayLength
+ * --------------------
+ * Returns the number of samples in a downsampled suffix array.
+ *
+ *  Inputs:
+ *  bwtLength: number of elements in the bwt. This value is equal to 1 + the sequence length.
+ *    This value can also be considered the length of the unsampled suffix array.
+ *  compressionRatio: how often the suffix array is sampled.
+ *
+ *  Returns:
+ *    Number of elements in the downsampled suffix array.
+ */
+size_t awFmGetSampledSuffixArrayLength(uint64_t bwtLength, uint64_t compressionRatio);
+
+
+/*
+ * Function:  awFmReadPositionsFromSuffixArray
+ * --------------------
+ * Given an array of positions in the compressed suffix array, replaces each element in the positionArray
+ *  with the sequence position found at that location in the compressed suffix array.
+ *  Note that the positions in the position array are positions into the 'unsampled' suffix array,
+ *  and will be divided by the compression ratio to find the index into the compressed
+ *  suffix array stored in the file.
+ *
+ *  Inputs:
+ *    index:          Pointer to the AwFmIndex struct that corresponds to the
+ *      index file that stores the compressed suffix array.
+ *    positionArray:  Array of indices in the compressed suffix array. The data
+ *      at each index in this array will be replaced with the value stored at that
+ *      position in the suffix array.
+ *    positionArrayLength: number of values in the positionArray
+ *
+ *  Returns:
+ *    AwFmReturnCode represnting the result of the read. Possible returns are:
+ *      AwFmSuccess as long as the suffix array is stored in memory, not on disk.
+ *      AwFmFileReadOkay on success.
+ *      AwFmFileReadFail if the file could not be read sucessfully.
+ */
+enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *const index,
+  uint64_t *restrict const positionArray, const size_t positionArrayLength);
+
+
+struct AwFmSuffixArrayOffset awFmGetOffsetIntoSuffixArrayByteArray(const uint8_t compressedValueBitWidth,
+  const size_t indexOfValueInCompressedSa);
+
+
+/*
+ * Function:  awFmSuffixArrayReadPositionParallel
+ * --------------------
+ * Reads the database sequence position from the suffix array using a backtrace.
+ *  The backtrace contains the position in the full suffix array and the offset from backtracing.
+ *
+ *
+ *  Inputs:
+ *    index:   AwFmIndex struct containing the suffix array.
+ *    backtracePtr: struct containing the Position and offset to look up in the suffix array.
+ *
+ *  Returns:
+ *    AwFmReturnCode represnting the result of the read. Possible returns are:
+ *      AwFmFileReadOkay on success.
+ *      AwFmFileReadFail if the file could not be read sucessfully.
+ */
+enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *restrict const index,
+ struct AwFmBacktrace *restrict const backtracePtr);
 
 #endif

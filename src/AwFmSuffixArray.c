@@ -1,4 +1,5 @@
 #include "AwFmSuffixArray.h"
+#include "AwFmFile.h"
 #include <assert.h>
 
 //simple log2 ceiling implementation, thanks builtin clzll!
@@ -8,24 +9,38 @@ uint8_t log2Ceil(const uint64_t a){
 
 //the number of bits required to store the suffix array values is just log2ceil of the highest val.
 uint8_t awFmComputeSuffixArrayValueMinWidth(const size_t saLength){
-  return log2Ceil(saLength);
+  return log2Ceil(saLength-1);
 }
+
+
+//TODO: use this to eliminate code redundency in figuring out which byte/bit a value should start on.
+struct AwFmSuffixArrayOffset awFmGetOffsetIntoSuffixArrayByteArray(const uint8_t compressedValueBitWidth, const size_t indexOfValueInCompressedSa){
+  struct AwFmSuffixArrayOffset offset  = {0,0};
+
+  //if we group up the non-standard bit width values into groups of 8, the lengths will always be a multiple of 8,
+  // thus aligning to a byte. Then, we can add the num bytes of the remainder of values, and then find the bit offset.
+  size_t alignedByteOffset  = (indexOfValueInCompressedSa / 8) * compressedValueBitWidth;
+  size_t numEndingBits      = (indexOfValueInCompressedSa % 8) * compressedValueBitWidth;
+  offset.byteOffset         = alignedByteOffset + (numEndingBits / 8);
+  offset.bitOffset          = numEndingBits % 8;
+
+  return offset;
+}
+
 
 size_t awFmComputeCompressedSaSizeInBytes(size_t saLength, uint8_t samplingRatio){
-  uint8_t minimumBitWidth = log2Ceil(saLength);
-  uint64_t sampledSaLength = saLength / ((size_t)samplingRatio);
-  uint8_t saLengthRemainder       = sampledSaLength % 8;
-  //if each int is 'minWidth' wide, then each 8 values should require 'minWidth' bytes.
-  //this division should also round down, so it automatically removes the remainder.
-  size_t totalBytes               = (sampledSaLength/8) * minimumBitWidth;
-  size_t remainingBits            = saLengthRemainder * minimumBitWidth;
-  totalBytes += (remainingBits + 7) / 8;  //ceiling, since we need AT LEAST that many bits
+  uint64_t sampledSaLength = awFmGetSampledSuffixArrayLength(saLength, samplingRatio);
+  uint8_t valueMinBitWidth = awFmComputeSuffixArrayValueMinWidth(saLength);
+  struct AwFmSuffixArrayOffset offset = awFmGetOffsetIntoSuffixArrayByteArray(valueMinBitWidth, sampledSaLength);
+  if(offset.bitOffset != 0){
+    offset.byteOffset++;
+  }
 
-  return totalBytes;
+  return offset.byteOffset;
 }
 
 
-//note: fullSA MUST be dynamically allocated, this reallocs the array and claims ownership.
+//note: fullSa MUST be dynamically allocated, this reallocs the array and claims ownership.
 //the reallocated array will be freed when awFmDeallocIndex() is called.
  enum AwFmReturnCode awFmInitCompressedSuffixArray(uint64_t *fullSa, size_t saLength,
   struct AwFmCompressedSuffixArray *compressedSuffixArray, uint8_t samplingRatio){
@@ -33,66 +48,113 @@ size_t awFmComputeCompressedSaSizeInBytes(size_t saLength, uint8_t samplingRatio
   if(fullSa == NULL || compressedSuffixArray == NULL){
     return AwFmNullPtrError;
   }
-  uint8_t minimumBitWidth = log2Ceil(saLength);
+  uint8_t minimumBitWidth     = awFmComputeSuffixArrayValueMinWidth(saLength);
   size_t compressedSaByteSize = awFmComputeCompressedSaSizeInBytes(saLength, samplingRatio);
 
   compressedSuffixArray->values = (uint8_t*)fullSa;
   compressedSuffixArray->valueBitWidth = minimumBitWidth;
   compressedSuffixArray->compressedByteLength = compressedSaByteSize;
 
-  const size_t numSaSamples = saLength / samplingRatio;
+  const size_t numSaSamples = awFmGetSampledSuffixArrayLength(saLength, samplingRatio);
   for(size_t i = 0; i < numSaSamples; i++){
-    uint64_t saValueBuffer = fullSa[i * samplingRatio];
-    //the following finds the byte and bit that the element will start on.
-    //this is written weirdly to avoid integer overflow for large saLengths near 2^64.
-    size_t alignedByteOffset = (i / 8) * minimumBitWidth; //every 8 positions consumes 'bitWidth' number of bytes.
-    size_t numEndingBits = (i % 8) * minimumBitWidth;
-    size_t bytePosition = alignedByteOffset + (numEndingBits / 8);
-    size_t bitPosition = numEndingBits % 8;
+    uint64_t saValue = fullSa[i * samplingRatio];
 
-    uint8_t byteToWrite = (saValueBuffer << bitPosition) & 0xFF;
-    uint8_t bitmask = (1ULL << bitPosition) - 1; //zero out the bits we're going to set, since it's in-place
-    compressedSuffixArray->values[bytePosition]    &=  bitmask;
-    compressedSuffixArray->values[bytePosition++]  |= byteToWrite;
+    struct AwFmSuffixArrayOffset offset = awFmGetOffsetIntoSuffixArrayByteArray(minimumBitWidth, i);
 
-    int16_t bitsRemaining = compressedSuffixArray->valueBitWidth - (8- bitPosition);
-    saValueBuffer >>= (8 - bitPosition);
+    uint8_t byteToWrite = (saValue << offset.bitOffset) & 0xFF;
+
+    uint8_t bitmask = (1ULL << offset.bitOffset) - 1; //zero out the bits we're going to set, since it's in-place
+    compressedSuffixArray->values[offset.byteOffset]  &=  bitmask;
+    compressedSuffixArray->values[offset.byteOffset++]  |= byteToWrite;
+    int8_t bitsWrittenOnFirstWriteAction = 8 - offset.bitOffset;
+    int8_t bitsRemaining = compressedSuffixArray->valueBitWidth - bitsWrittenOnFirstWriteAction;
+
+    saValue >>= bitsWrittenOnFirstWriteAction;
     while(bitsRemaining > 0){
-      compressedSuffixArray->values[bytePosition++] = saValueBuffer;
-      saValueBuffer >>= 8;
+      compressedSuffixArray->values[offset.byteOffset++] = saValue;
+      saValue >>= 8;
       bitsRemaining -= 8;
     }
   }
 
   //reallocate the suffix array to save space.
   assert(fullSa != NULL);
-  compressedSuffixArray->values = realloc(fullSa, compressedSuffixArray->compressedByteLength);
+  compressedSuffixArray->values = realloc(compressedSuffixArray->values, compressedSuffixArray->compressedByteLength);
 
-  if(fullSa == NULL){
-    printf("FULL SA WAS NULL after realloc\n");
-  }
   if(compressedSuffixArray->values == NULL){
     return AwFmAllocationFailure;
   }
+
   return AwFmSuccess;
 }
 
+size_t awFmGetValueFromCompressedSuffixArray(const struct AwFmCompressedSuffixArray *suffixArray, size_t positionInArray){
+  struct AwFmSuffixArrayOffset offset = awFmGetOffsetIntoSuffixArrayByteArray(suffixArray->valueBitWidth, positionInArray);
 
-size_t awFmGetValueFromCompressedSuffixArray(struct AwFmCompressedSuffixArray suffixArray, size_t positionInArray){
-  size_t alignedByteOffset = (positionInArray / 8) * suffixArray.valueBitWidth;
-  size_t numEndingBits = (positionInArray % 8) * suffixArray.valueBitWidth;
-  size_t bytePosition = alignedByteOffset + (numEndingBits / 8);
-  size_t bitPosition = numEndingBits % 8;
+  size_t value = suffixArray->values[offset.byteOffset++] >> offset.bitOffset;
+  uint8_t bitsFromFirstByte = 8 - offset.bitOffset;
 
-  size_t value = 0;
-  value = suffixArray.values[bytePosition++] >> bitPosition;
-  uint8_t bitsFromFirstByte = 8 - bitPosition;
-  for(int_fast16_t bitOffset = bitsFromFirstByte;
-    bitOffset < suffixArray.valueBitWidth; bitOffset += 8){
-      value |= ((uint64_t)suffixArray.values[bytePosition++]) << bitOffset;
+  for(int_fast16_t bitOffset = bitsFromFirstByte; bitOffset < suffixArray->valueBitWidth; bitOffset += 8){
+      uint8_t newByteValue = suffixArray->values[offset.byteOffset++];
+      uint64_t byteValueShiftedIntoPlace = ((uint64_t)newByteValue) << bitOffset;
+      value |= byteValueShiftedIntoPlace;
   }
 
   //create and apply a bitmask to remove any extra bits at the end.
-  uint64_t bitmask =  (1 << suffixArray.valueBitWidth) - 1;
+  uint64_t bitmask =  (1ULL << suffixArray->valueBitWidth) - 1;
   return value & bitmask;
+}
+
+
+inline size_t awFmGetSampledSuffixArrayLength(uint64_t bwtLength, uint64_t compressionRatio){
+  return (bwtLength + compressionRatio-1) / compressionRatio;
+}
+
+
+enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *restrict const index,
+  uint64_t *restrict const positionArray, const size_t positionArrayLength){
+
+  if(index->config.keepSuffixArrayInMemory){
+    for(size_t i = 0; i < positionArrayLength; i++){
+      size_t indexInSuffixArray = positionArray[i] / index->config.suffixArrayCompressionRatio;
+      size_t  position = awFmGetValueFromCompressedSuffixArray(&index->suffixArray, indexInSuffixArray);
+      positionArray[i] = position;
+    }
+
+    return AwFmSuccess;
+  }
+  else{
+    for(size_t i = 0; i < positionArrayLength; i++){
+      size_t indexInSuffixArray = positionArray[i] / index->config.suffixArrayCompressionRatio;
+      enum AwFmReturnCode rc = awFmGetSuffixArrayValueFromFile(index, indexInSuffixArray, &positionArray[i]);
+      if(rc != AwFmSuccess){
+        return rc;
+      }
+    }
+
+    return AwFmFileReadOkay;
+  }
+}
+
+
+
+enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *restrict const index,
+  struct AwFmBacktrace *restrict const backtracePtr){
+
+  if(index->config.keepSuffixArrayInMemory){
+    uint64_t suffixArrayPosition = backtracePtr->position / index->config.suffixArrayCompressionRatio;
+
+    size_t  saValue = awFmGetValueFromCompressedSuffixArray(&index->suffixArray, suffixArrayPosition);
+    backtracePtr->position = (saValue + backtracePtr->offset) % index->bwtLength;
+    return AwFmSuccess;
+
+  }
+  else{
+    uint64_t suffixArrayPosition = backtracePtr->position / index->config.suffixArrayCompressionRatio;
+    size_t saValue;
+    enum AwFmReturnCode rc = awFmGetSuffixArrayValueFromFile(index,suffixArrayPosition, &saValue);
+
+    backtracePtr->position = (saValue + backtracePtr->offset) % index->bwtLength;
+    return rc;
+  }
 }

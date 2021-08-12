@@ -1,6 +1,7 @@
 #include "AwFmSearch.h"
 #include "AwFmOccurrence.h"
 #include "AwFmLetter.h"
+#include "AwFmSuffixArray.h"
 
 
 struct AwFmSearchRange awFmCreateInitialQueryRange(const struct AwFmIndex *restrict const index,

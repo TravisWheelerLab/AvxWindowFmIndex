@@ -5,6 +5,7 @@
 #include "AwFmKmerTable.h"
 #include "AwFmFile.h"
 #include "AwFmLetter.h"
+#include "AwFmSuffixArray.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -243,13 +244,12 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
 
     size_t indexOfPositionToBacktrace = 0;
     while(indexOfPositionToBacktrace < rangeLength){
+
       //initialize the offset.
       struct AwFmBacktrace backtrace = {
         .position = ranges[rangesIndex].startPtr + indexOfPositionToBacktrace,
         .offset = 0
       };
-      // uint64_t offset = 0;
-      // uint64_t position = ranges[rangesIndex].startPtr + positionInRangeToBacktrace;
 
       if(index->config.alphabetType == AwFmAlphabetNucleotide){
         while(!awFmBwtPositionIsSampled(index, backtrace.position)){

@@ -96,12 +96,12 @@ size_t awFmGetValueFromCompressedSuffixArray(const struct AwFmCompressedSuffixAr
   struct AwFmSuffixArrayOffset offset = awFmGetOffsetIntoSuffixArrayByteArray(suffixArray->valueBitWidth, positionInArray);
 
   //if we can  ignore the last byte of the SA memcpy'd buffer, thanks strategy pattern!
-  if(__builtin_expect(suffixArray->valueBitWidth> 58, 1)){
+  if(__builtin_expect(suffixArray->valueBitWidth <= 57, 1)){
     //memcpy the data containing the value into a buffer (that's aligned like uint64_t's need to be.)
     uint64_t buffer;
     memcpy(&buffer, &suffixArray->values[offset.byteOffset], 8);
 
-    //shifts the 8-byte int into place. This can only work if the valueBitWidth is less than 64-7=58,
+    //shifts the 8-byte int into place. This can only work if the valueBitWidth is less than 64-7=57,
     //as long as the value can fit into (64-7) bytes, we know the last byte won't matter.
     buffer >>= offset.bitOffset;
     const uint64_t bitmask =  (1ULL << suffixArray->valueBitWidth) - 1;

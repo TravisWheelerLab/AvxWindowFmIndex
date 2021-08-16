@@ -1,6 +1,10 @@
 #include "AwFmSuffixArray.h"
 #include "AwFmFile.h"
 #include <assert.h>
+#include <string.h>
+
+//adding padding bytes prevents buffer overflow problems recalling values from the suffix array.
+#define AW_FM_SUFFIX_ARRAY_END_PADDING_BYTES 8
 
 //simple log2 ceiling implementation, thanks builtin clzll!
 uint8_t log2Ceil(const uint64_t a){
@@ -36,7 +40,7 @@ size_t awFmComputeCompressedSaSizeInBytes(size_t saLength, uint8_t samplingRatio
     offset.byteOffset++;
   }
 
-  return offset.byteOffset;
+  return offset.byteOffset + AW_FM_SUFFIX_ARRAY_END_PADDING_BYTES;
 }
 
 
@@ -91,19 +95,35 @@ size_t awFmComputeCompressedSaSizeInBytes(size_t saLength, uint8_t samplingRatio
 size_t awFmGetValueFromCompressedSuffixArray(const struct AwFmCompressedSuffixArray *suffixArray, size_t positionInArray){
   struct AwFmSuffixArrayOffset offset = awFmGetOffsetIntoSuffixArrayByteArray(suffixArray->valueBitWidth, positionInArray);
 
-  size_t value = suffixArray->values[offset.byteOffset++] >> offset.bitOffset;
-  uint8_t bitsFromFirstByte = 8 - offset.bitOffset;
+  //if we can  ignore the last byte of the SA memcpy'd buffer, thanks strategy pattern!
+  if(__builtin_expect(suffixArray->valueBitWidth> 58, 1)){
+    //memcpy the data containing the value into a buffer (that's aligned like uint64_t's need to be.)
+    uint64_t buffer;
+    memcpy(&buffer, &suffixArray->values[offset.byteOffset], 8);
 
-  for(int_fast16_t bitOffset = bitsFromFirstByte; bitOffset < suffixArray->valueBitWidth; bitOffset += 8){
-      uint8_t newByteValue = suffixArray->values[offset.byteOffset++];
-      uint64_t byteValueShiftedIntoPlace = ((uint64_t)newByteValue) << bitOffset;
-      value |= byteValueShiftedIntoPlace;
+    //shifts the 8-byte int into place. This can only work if the valueBitWidth is less than 64-7=58,
+    //as long as the value can fit into (64-7) bytes, we know the last byte won't matter.
+    buffer >>= offset.bitOffset;
+    const uint64_t bitmask =  (1ULL << suffixArray->valueBitWidth) - 1;
+    return buffer & bitmask;
+  }
+  else{
+    //memcpy the data containing the value into a buffer (that's aligned like uint64_t's need to be.)
+    uint64_t buffer;
+    memcpy(&buffer, &suffixArray->values[offset.byteOffset], 8);
+
+    buffer >>= offset.bitOffset;
+    uint64_t lastByte = suffixArray->values[offset.byteOffset+8];
+    //shift the lastByte first by 1, then the rest of the way. This needs to be done because
+    //shifting an int by its bitLength is undefined behavior in GCC.
+    lastByte <<= 1;
+    lastByte <<= (63- offset.bitOffset);
+    const uint64_t bitmask =  (1ULL << suffixArray->valueBitWidth) - 1;
+    return (buffer | lastByte) & bitmask;
   }
 
-  //create and apply a bitmask to remove any extra bits at the end.
-  uint64_t bitmask =  (1ULL << suffixArray->valueBitWidth) - 1;
-  return value & bitmask;
 }
+
 
 
 inline size_t awFmGetSampledSuffixArrayLength(uint64_t bwtLength, uint64_t compressionRatio){
@@ -141,7 +161,7 @@ enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *res
 enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(const struct AwFmIndex *restrict const index,
   struct AwFmBacktrace *restrict const backtracePtr){
 
-  if(index->config.keepSuffixArrayInMemory){
+  if(__builtin_expect(index->config.keepSuffixArrayInMemory, 1)){
     uint64_t suffixArrayPosition = backtracePtr->position / index->config.suffixArrayCompressionRatio;
 
     size_t  saValue = awFmGetValueFromCompressedSuffixArray(&index->suffixArray, suffixArrayPosition);

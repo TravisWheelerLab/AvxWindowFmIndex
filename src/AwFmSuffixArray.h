@@ -58,6 +58,8 @@ size_t awFmGetValueFromCompressedSuffixArray(const struct AwFmCompressedSuffixAr
  * Function:  awFmComputeCompressedSaSizeInBytes
  * --------------------
  * computes the number of bytes required to store the bit-compressed, downsampled suffix array.
+ *  Note that the suffix array adds 8 bytes to the end to act as padding to prevent buffer overflows,
+ *  so this value will be 8 bytes larger than is directly needed to store all values.
  *
  *  Inputs:
  *  saLength: length of the unsampled suffix array, aka, the bwtLength.

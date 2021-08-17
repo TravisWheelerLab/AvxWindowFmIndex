@@ -19,7 +19,7 @@ uint8_t awFmComputeSuffixArrayValueMinWidth(const size_t saLength){
 
 //TODO: use this to eliminate code redundency in figuring out which byte/bit a value should start on.
 struct AwFmSuffixArrayOffset awFmGetOffsetIntoSuffixArrayByteArray(const uint8_t compressedValueBitWidth, const size_t indexOfValueInCompressedSa){
-  struct AwFmSuffixArrayOffset offset  = {0,0};
+  struct AwFmSuffixArrayOffset offset;
 
   //if we group up the non-standard bit width values into groups of 8, the lengths will always be a multiple of 8,
   // thus aligning to a byte. Then, we can add the num bytes of the remainder of values, and then find the bit offset.
@@ -94,36 +94,26 @@ size_t awFmComputeCompressedSaSizeInBytes(size_t saLength, uint8_t samplingRatio
 
 size_t awFmGetValueFromCompressedSuffixArray(const struct AwFmCompressedSuffixArray *suffixArray, size_t positionInArray){
   struct AwFmSuffixArrayOffset offset = awFmGetOffsetIntoSuffixArrayByteArray(suffixArray->valueBitWidth, positionInArray);
+  //memcpy the data containing the value into a uint64_t so we can shift the data.
+  uint64_t buffer;
+  memcpy(&buffer, &suffixArray->values[offset.byteOffset], 8);
+  const uint64_t bitmask =  (1ULL << suffixArray->valueBitWidth) - 1;
+
+  //shifts the 8-byte int into place. if this leaves some bits off the end, we'll handle it in a bit.
+  buffer >>= offset.bitOffset;
 
   //if we can  ignore the last byte of the SA memcpy'd buffer, thanks strategy pattern!
-  if(__builtin_expect(suffixArray->valueBitWidth <= 57, 1)){
-    //memcpy the data containing the value into a buffer (that's aligned like uint64_t's need to be.)
-    uint64_t buffer;
-    memcpy(&buffer, &suffixArray->values[offset.byteOffset], 8);
-
-    //shifts the 8-byte int into place. This can only work if the valueBitWidth is less than 64-7=57,
-    //as long as the value can fit into (64-7) bytes, we know the last byte won't matter.
-    buffer >>= offset.bitOffset;
-    const uint64_t bitmask =  (1ULL << suffixArray->valueBitWidth) - 1;
-    return buffer & bitmask;
-  }
-  else{
-    //memcpy the data containing the value into a buffer (that's aligned like uint64_t's need to be.)
-    uint64_t buffer;
-    memcpy(&buffer, &suffixArray->values[offset.byteOffset], 8);
-
-    buffer >>= offset.bitOffset;
+  if(__builtin_expect(suffixArray->valueBitWidth > 57, 0)){
     uint64_t lastByte = suffixArray->values[offset.byteOffset+8];
     //shift the lastByte first by 1, then the rest of the way. This needs to be done because
     //shifting an int by its bitLength is undefined behavior in GCC.
     lastByte <<= 1;
     lastByte <<= (63- offset.bitOffset);
-    const uint64_t bitmask =  (1ULL << suffixArray->valueBitWidth) - 1;
-    return (buffer | lastByte) & bitmask;
+    buffer |= lastByte;
   }
 
+  return buffer & bitmask;
 }
-
 
 
 inline size_t awFmGetSampledSuffixArrayLength(uint64_t bwtLength, uint64_t compressionRatio){

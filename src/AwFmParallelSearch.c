@@ -242,8 +242,7 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
     //   .position = searchList->kmerSearchData[kmerIndex].positionList;
     // };searchList->kmerSearchData[kmerIndex].positionBacktraceList;
 
-    size_t indexOfPositionToBacktrace = 0;
-    while(indexOfPositionToBacktrace < rangeLength){
+    for(size_t indexOfPositionToBacktrace = 0; indexOfPositionToBacktrace < rangeLength; indexOfPositionToBacktrace++){
 
       //initialize the offset.
       struct AwFmBacktrace backtrace = {
@@ -266,8 +265,6 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
 
       awFmSuffixArrayReadPositionParallel(index, &backtrace);
       searchData->positionList[indexOfPositionToBacktrace] = backtrace.position;
-
-      indexOfPositionToBacktrace++;
     }
   }
 }

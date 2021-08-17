@@ -74,9 +74,9 @@ FASTA_VECTOR_INSTALL_METADATA_HEADER_FILE	=	$(AWFMINDEX_INSTALL_INCLUDE_DIR)/$(F
 ARCH = $(shell uname -m)
 CC 			= gcc
 ifeq ($(ARCH),x86_64)
-CFLAGS 	= -std=gnu11 -fpic -O3 -mtune=native -Wall -Wextra -fopenmp -mavx2
+CFLAGS 	= -std=gnu11 -fpic -O3 -mtune=native -march=native -Wall -Wextra -fopenmp -mavx2
 else
-CFLAGS 	= -std=gnu11 -fpic -O3 -mtune=native -Wall -Wextra -fopenmp
+CFLAGS 	= -std=gnu11 -fpic -O3 -mtune=native -march=native -Wall -Wextra -fopenmp
 endif
 
 

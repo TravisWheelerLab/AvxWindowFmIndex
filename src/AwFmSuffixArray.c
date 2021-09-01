@@ -7,13 +7,13 @@
 #define AW_FM_SUFFIX_ARRAY_END_PADDING_BYTES 8
 
 //simple log2 ceiling implementation, thanks builtin clzll!
-uint8_t log2Ceil(const uint64_t a){
+uint8_t log2Floor(const uint64_t a){
     return 64 - __builtin_clzll(a);
 }
 
-//the number of bits required to store the suffix array values is just log2ceil of the highest val.
+//the number of bits required to store the suffix array values is just log2Floor of the highest val.
 uint8_t awFmComputeSuffixArrayValueMinWidth(const size_t saLength){
-  return log2Ceil(saLength-1);
+  return log2Floor(saLength-1);
 }
 
 

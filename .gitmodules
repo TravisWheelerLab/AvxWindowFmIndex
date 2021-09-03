@@ -1,6 +1,6 @@
 [submodule "libdivsufsort"]
-	path = libdivsufsort
+	path = lib/libdivsufsort
 	url = https://github.com/y-256/libdivsufsort.git
 [submodule "FastaVector"]
-	path = FastaVector
+	path = lib/FastaVector
 	url = https://github.com/TravisWheelerLab/FastaVector.git

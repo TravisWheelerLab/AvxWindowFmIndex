@@ -78,18 +78,22 @@
   }
 
   uint32_t AwFmMaskedVectorPopcount(const AwFmSimdVec256 vec, const uint8_t localQueryPosition){
-    uint64_t bitmasks[4] = {0};
+    uint64_t bitmasks[3] = {(~0UL >> (63 - (localQueryPosition % 64))), ~0UL, 0UL};
     uint8_t  bitmaskedQuadWordIndex = localQueryPosition / 64;
 
-    for(int8_t i = 0; i < bitmaskedQuadWordIndex; i++){
-        bitmasks[i] = ~0UL;
-    }
-    bitmasks[bitmaskedQuadWordIndex] = ~0UL >> (63 - (localQueryPosition % 64));
+    //manually unrolled loop, because the _mm256_extract_epi64 function requires a
+    //compile-time constant word index as argument 2.
+    uint_fast8_t bitmaskIndex = bitmaskedQuadWordIndex != 0;
+    uint32_t popcount = _mm_popcnt_u64(_mm256_extract_epi64(vec, 0) & bitmasks[bitmaskIndex]);
 
-    uint32_t popcount = _mm_popcnt_u64(_mm256_extract_epi64(vec, 0) & bitmasks[0]);
-     popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(vec, 1) & bitmasks[1]);
-     popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(vec, 2) & bitmasks[2]);
-     popcount +=        _mm_popcnt_u64(_mm256_extract_epi64(vec, 3) & bitmasks[3]);
+    bitmaskIndex = (bitmaskedQuadWordIndex != 1) + (bitmaskedQuadWordIndex < 1);
+    popcount += _mm_popcnt_u64(_mm256_extract_epi64(vec, 1) & bitmasks[bitmaskIndex]);
+
+    bitmaskIndex = (bitmaskedQuadWordIndex != 2) + (bitmaskedQuadWordIndex < 2);
+    popcount += _mm_popcnt_u64(_mm256_extract_epi64(vec, 2) & bitmasks[bitmaskIndex]);
+
+    bitmaskIndex = (bitmaskedQuadWordIndex != 3) + (bitmaskedQuadWordIndex < 3);
+    popcount += _mm_popcnt_u64(_mm256_extract_epi64(vec, 3) & bitmasks[bitmaskIndex]);
 
     return popcount;
   }

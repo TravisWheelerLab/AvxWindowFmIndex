@@ -64,6 +64,24 @@ set_target_properties(
         PUBLIC_HEADER ${PUBLIC_H_FILES}
 )
 
+target_compile_options(
+        awfmindex_static
+
+        PRIVATE
+        -mtune=native
+        -march=native
+        -mavx2
+)
+
+target_compile_options(
+        awfmindex
+
+        PRIVATE
+        -mtune=native
+        -march=native
+        -mavx2
+)
+
 install(
         TARGETS awfmindex awfmindex_static
 )

@@ -58,7 +58,7 @@ add_library(
 )
 
 set_target_properties(
-        awfmindex awfmindex_static
+        awfmindex_static awfmindex
 
         PROPERTIES
         PUBLIC_HEADER ${PUBLIC_H_FILES}
@@ -70,7 +70,8 @@ target_compile_options(
         PRIVATE
         -mtune=native
         -march=native
-        -mavx2
+        -Wall
+        -Wextra
 )
 
 target_compile_options(
@@ -79,7 +80,8 @@ target_compile_options(
         PRIVATE
         -mtune=native
         -march=native
-        -mavx2
+        -Wall
+        -Wextra
 )
 
 install(

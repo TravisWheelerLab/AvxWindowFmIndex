@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.21)
 project(
         AWFMIndex
-        VERSION 1.0.0
         HOMEPAGE_URL https://github.com/TravisWheelerLab/AvxWindowFmIndex
 )
 
 set(CMAKE_C_STANDARD 17)
+
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY build)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY build)
+
 set(
         H_FILES
 
@@ -36,25 +39,49 @@ set(
         src/AwFmSuffixArray.c
 )
 
-add_subdirectory(lib/FastaVector)
-
-find_package(OpenMP REQUIRED)
-
 add_library(
-        awfmindex STATIC
+        awfmindex_static STATIC
 
         ${C_FILES}
 )
 
-target_link_libraries(awfmindex PRIVATE OpenMP)
+add_library(
+        awfmindex SHARED
 
+        ${C_FILES}
+)
+install(TARGETS awfmindex LIBRARY)
+
+# ------------
+# Dependencies
+# ------------
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/)
+
+# FastaVector
+
+target_include_directories(
+        awfmindex_static PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/FastaVector/src/
+)
+target_include_directories(
+        awfmindex PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/FastaVector/src/
+)
+
+target_link_libraries(awfmindex_static PRIVATE fastavector_static)
 target_link_libraries(awfmindex PRIVATE fastavector)
 
-#target_link_directories(awfmindex PRIVATE lib/FastaVector/src/)
-#target_include_directories(awfmindex PRIVATE lib/FastaVector/src/)
+# libdivsufsort
 
-target_link_directories(awfmindex PRIVATE lib/libdivsufsort/lib/)
-target_include_directories(awfmindex PRIVATE lib/libdivsufsort/lib/)
+target_include_directories(
+        awfmindex PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libdivsufsort/include/
+)
+target_include_directories(
+        awfmindex_static PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/libdivsufsort/include/
+)
 
-install(TARGETS awfmindex ARCHIVE)
-
+target_link_libraries(awfmindex_static PRIVATE divsufsort64)
+target_link_libraries(awfmindex PRIVATE divsufsort64)

@@ -10,6 +10,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY build)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY build)
 
 set(
+        PUBLIC_H_FILES
+
+        src/AwFmIndex.h
+)
+
+set(
         H_FILES
 
         src/AwFmCreate.h
@@ -50,7 +56,17 @@ add_library(
 
         ${C_FILES}
 )
-install(TARGETS awfmindex LIBRARY)
+
+set_target_properties(
+        awfmindex awfmindex_static
+
+        PROPERTIES
+        PUBLIC_HEADER ${PUBLIC_H_FILES}
+)
+
+install(
+        TARGETS awfmindex awfmindex_static
+)
 
 # ------------
 # Dependencies

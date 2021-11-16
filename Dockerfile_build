@@ -1,0 +1,14 @@
+FROM debian:bullseye-slim
+
+RUN apt-get update && apt-get -y install \
+        build-essential \
+        clang-format \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
+ADD https://github.com/Kitware/CMake/releases/download/v3.21.4/cmake-3.21.4-linux-x86_64.sh cmake.sh
+RUN sh cmake.sh --skip-license --prefix=/usr \
+    && rm cmake.sh
+
+VOLUME [ "/code" ]
+WORKDIR /code

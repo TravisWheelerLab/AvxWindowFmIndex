@@ -11,7 +11,7 @@ jobs:
         - ${{ github.workspace }}:/code
     steps:
       - uses: actions/checkout@v1
-      - run: cmake . && make
+      - run: git submodule update --init && cmake . && make
   
   check-legacy-build:
     runs-on: ubuntu-20.04

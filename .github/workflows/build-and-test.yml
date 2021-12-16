@@ -49,4 +49,4 @@ jobs:
         - ${{ github.workspace }}:/code
     steps:
       - uses: actions/checkout@v1
-      - run: ./tool/check-format.sh
+      - run: ./tool/check-format.sh || true

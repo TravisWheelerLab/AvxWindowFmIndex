@@ -41,6 +41,8 @@ git submodule update
 Now the project is ready to build.
 
 ## CMake Build
+### WARNING
+Building with Cmake is currently unsupported on MacOS, and will result in errors. Instead, please use the legacy makefile system on MacOS.
 
 The default way to build AwFmIndex is to use CMake. The usual CMake incantations
 will work. This will result in both shared and static libraries written to the

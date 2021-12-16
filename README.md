@@ -80,14 +80,14 @@ To build and install the AwFmIndex shared library into the default install
 location:
 
 ```
-make
+make -f Makefile_legacy
 ```
 
 To point the build at a specific version of GCC, which is necessary on a Mac,
 use the following:
 
 ```
-make CC=/path/to/gcc
+make -f Makefile_legacy CC=/path/to/gcc
 ```
 
 ### Static Library
@@ -95,7 +95,7 @@ make CC=/path/to/gcc
 To build a static library, just use the `static` target:
 
 ```
-make static
+make -f Makefile_legacy static
 ```
 
 This will generate two static libraries, `libawfmindex.a` and
@@ -105,7 +105,7 @@ To point the build at a specific version of GCC, which is necessary on a Mac,
 use the following:
 
 ```
-make static CC=/path/to/gcc
+make -f Makefile_legacy static CC=/path/to/gcc
 ```
 
 ### Install
@@ -115,13 +115,13 @@ so that your compiler can find them. To install into the default location
 (`/usr/local/`):
 
 ```
-sudo make install
+sudo -f Makefile_legacy make install
 ```
 
 To specify a custom install location:
 
 ```
-make install PREFIX=~/usr/local
+make -f Makefile_legacy install PREFIX=~/usr/local
 ```
 
 If AwFmIndex is installed to a non-default location, you may need to set

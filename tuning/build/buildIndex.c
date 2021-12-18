@@ -55,7 +55,8 @@ int main(int argc, char **argv) {
 	if(chromosomeNumber == -1 && !fullGenomeIndexRequested) {
 		printf("no chromosome or full genome specified, defaulting to chromosome 21.\n");
 		chromosomeNumber = 21;
-	} else if(chromosomeNumber != -1 && fullGenomeIndexRequested) {
+	}
+	else if(chromosomeNumber != -1 && fullGenomeIndexRequested) {
 		printf(
 				"the full genome flag was set, but a specific chromosome was also requested. Ignoring full genome and making "
 				"index on chromosome %i\n",
@@ -67,7 +68,8 @@ int main(int argc, char **argv) {
 	// build the index using the parsed settings
 	if(fullGenomeIndexRequested) {
 		buildFullGenomeIndex(suffixArrayCompressionRatio, kmerLengthInSeedTable, indexFilenameBuffer);
-	} else {
+	}
+	else {
 		buildChromosomeIndex(chromosomeNumber, suffixArrayCompressionRatio, kmerLengthInSeedTable, indexFilenameBuffer);
 	}
 }
@@ -111,8 +113,8 @@ void buildChromosomeIndex(
 	if(sequenceLength > 1000) {
 		printf("for reference, here's the first 1000 characters in the sequence: %.*s\n", 1000, sequenceBuffer);
 		printf("...and the last 10 characters: %.*s\n", 10, &sequenceBuffer[sequenceLength - 10]);
-
-	} else {
+	}
+	else {
 		printf("for reference, here's all %zu characters in the sequence: %.*s\n", sequenceLength, (int)sequenceLength,
 				sequenceBuffer);
 	}

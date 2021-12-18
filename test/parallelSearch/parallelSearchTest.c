@@ -161,7 +161,8 @@ void testParallelSearchAmino(void) {
 							sequence + sequencePosition, sequencePosition);
 					testAssertString(false, buffer);
 					exit(-1);
-				} else if(!kmerFoundAtThisPosition && thisPositionInList) {
+				}
+				else if(!kmerFoundAtThisPosition && thisPositionInList) {
 					printf("kmer %zu has count %u\n", kmerIndex, searchData->count);
 					printf("position list: ");
 					for(size_t i = 0; i < searchData->count; i++) {
@@ -296,7 +297,8 @@ void testParallelSearchNucleotide() {
 
 					testAssertString(false, buffer);
 					exit(-2);
-				} else if(!kmerFoundAtThisPosition && thisPositionInList) {
+				}
+				else if(!kmerFoundAtThisPosition && thisPositionInList) {
 					printf("kmer %zu has count %u\n", kmerIndex, searchData->count);
 					printf("position list: ");
 					for(size_t i = 0; i < searchData->count; i++) {

@@ -84,7 +84,8 @@ void generateRandomIndex(struct AwFmIndex **index, uint8_t **sequence, size_t se
 	if(sequence == NULL) {
 		printf("critical failure: could not allocate sequence in unit test.");
 		exit(-1);
-	} else if(suffixArray == NULL) {
+	}
+	else if(suffixArray == NULL) {
 		printf("critical failure: could not allocate suffix array in unit test.");
 		exit(-2);
 	}
@@ -162,8 +163,8 @@ void testRangeForCorrectness(const struct AwFmSearchRange *range, const uint8_t 
 				printf("%zu, ", suffixArray[i]);
 			}
 			printf("]\n");
-
-		} else if(!kmerFoundAtPosition && kmerExpectedAtPosition) {
+		}
+		else if(!kmerFoundAtPosition && kmerExpectedAtPosition) {
 			sprintf(buffer,
 					"kmer  \"%.*s\" returned range [%zu, %zu], which contains position %zu, but that position was not in range:",
 					kmerLength, kmer, range->startPtr, range->endPtr, position);

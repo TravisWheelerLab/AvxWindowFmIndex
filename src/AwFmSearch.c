@@ -11,7 +11,8 @@ struct AwFmSearchRange awFmCreateInitialQueryRange(
 	uint8_t finalLetterIndexInQuery;
 	if(index->config.alphabetType == AwFmAlphabetNucleotide) {
 		finalLetterIndexInQuery = awFmAsciiNucleotideToLetterIndex(query[queryLength - 1]);
-	} else {
+	}
+	else {
 		finalLetterIndexInQuery = awFmAsciiAminoAcidToLetterIndex(query[queryLength - 1]);
 	}
 
@@ -167,7 +168,8 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
 				backtracePosition = awFmNucleotideBacktraceBwtPosition(index, backtracePosition);
 				databaseSequenceOffset++;
 			}
-		} else {
+		}
+		else {
 			while(!awFmBwtPositionIsSampled(index, backtracePosition)) {
 				backtracePosition = awFmAminoBacktraceBwtPosition(index, backtracePosition);
 				databaseSequenceOffset++;
@@ -203,7 +205,8 @@ enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct A
 		size_t globalPosition, size_t *sequenceNumber, size_t *localSequencePosition) {
 	if(!index->fastaVector) {
 		return AwFmUnsupportedVersionError;
-	} else {
+	}
+	else {
 		if(globalPosition >= index->bwtLength) {
 			return AwFmIllegalPositionError;
 		}
@@ -216,7 +219,8 @@ enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct A
 				size_t sequenceStartPosition;
 				if(sequenceIndex == 0) {
 					sequenceStartPosition = 0;
-				} else {
+				}
+				else {
 					sequenceStartPosition = index->fastaVector->metadata.data[sequenceIndex - 1].sequenceEndPosition;
 				}
 				*sequenceNumber				 = sequenceIndex;
@@ -257,7 +261,8 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(
 	if(index->config.alphabetType == AwFmAlphabetNucleotide) {
 		bwtBlockWidth		= sizeof(struct AwFmNucleotideBlock);
 		kmerLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[kmerLetterPosition]);
-	} else {
+	}
+	else {
 		bwtBlockWidth		= sizeof(struct AwFmAminoBlock);
 		kmerLetterIndex = awFmAsciiAminoAcidToLetterIndex(kmer[kmerLetterPosition]);
 	}
@@ -273,7 +278,8 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(
 			kmerLetterIndex = awFmAsciiNucleotideToLetterIndex(kmer[kmerLetterPosition]);
 			awFmNucleotideIterativeStepBackwardSearch(index, &range, kmerLetterIndex);
 		}
-	} else {
+	}
+	else {
 		while(__builtin_expect(awFmSearchRangeIsValid(&range) && (kmerLetterPosition--), 1)) {
 			kmerLetterIndex = awFmAsciiAminoAcidToLetterIndex(kmer[kmerLetterPosition]);
 			awFmAminoIterativeStepBackwardSearch(index, &range, kmerLetterIndex);

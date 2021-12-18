@@ -70,7 +70,8 @@ int main(int argc, char **argv) {
 		// search for the kmers
 		if(useCountFunction) {
 			awFmParallelSearchCount(index, searchList, numThreadsInParallelQuery);
-		} else {
+		}
+		else {
 			awFmParallelSearchLocate(index, searchList, numThreadsInParallelQuery);
 		}
 		clock_t searchEndTime			= clock();
@@ -128,7 +129,8 @@ bool charIsAmbiguous(char c, enum AwFmAlphabetType alphabet) {
 				return false;
 			}
 		}
-	} else {
+	}
+	else {
 		for(uint8_t i = 0; i < 20; i++) {
 			if(tolower(c) == aminoLookup[i]) {
 				return false;
@@ -167,7 +169,8 @@ bool getStringFromSequenceFile(
 		if(charFromFile >= 'A' && charFromFile < 'z') {
 			if(charIsAmbiguous(charFromFile, alphabet)) {
 				return false;
-			} else {
+			}
+			else {
 				buffer[charactersGrabbed++] = charFromFile;
 			}
 		}

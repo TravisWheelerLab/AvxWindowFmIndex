@@ -318,14 +318,16 @@ void testAwFmIndexGivesCorrectHeaders(void) {
 			char *headerBufferPtrFromFastaVector;
 			if(sequenceIndex == 0) {
 				headerBufferPtrFromFastaVector = fastaVector->header.charData;
-			} else {
+			}
+			else {
 				size_t headerOffset						 = fastaVector->metadata.data[sequenceIndex - 1].headerEndPosition;
 				headerBufferPtrFromFastaVector = fastaVector->header.charData + headerOffset;
 			}
 			size_t headerLengthFromFastaVector;
 			if(sequenceIndex == 0) {
 				headerLengthFromFastaVector = fastaVector->metadata.data[0].headerEndPosition;
-			} else {
+			}
+			else {
 				size_t startPosition				= fastaVector->metadata.data[sequenceIndex - 1].headerEndPosition;
 				size_t endPosition					= fastaVector->metadata.data[sequenceIndex].headerEndPosition;
 				headerLengthFromFastaVector = endPosition - startPosition;
@@ -411,7 +413,8 @@ void compareIndicesForEqualityIgnoreVersion(const struct AwFmIndex *index1, cons
 					}
 				}
 			}
-		} else {
+		}
+		else {
 			bool blocksAreEqual = memcmp(&index1->bwtBlockList.asAmino[blockIndex], &index2->bwtBlockList.asAmino[blockIndex],
 																sizeof(struct AwFmAminoBlock)) == 0;
 			sprintf(buffer, "index 1 bwt block %zu did not compare equal to matching index 2 block.", blockIndex);

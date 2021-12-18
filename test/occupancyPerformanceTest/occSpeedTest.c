@@ -71,7 +71,8 @@ void performDbQueries(const struct AwFmIndex *restrict const index, uint64_t pos
 			ptrs[1] = ptrs[1] % positionsInDb;
 			awFmOccupancyDataPrefetch(index, ptrs[1]);
 		}
-	} else {
+	}
+	else {
 		for(uint32_t i = 0; i < numQueries; i++) {
 			uint8_t letter = rand() % 20;
 			ptrs[0]				 = awFmGetOccupancy(index, ptrs[0], letter) + index->rankPrefixSums[letter];

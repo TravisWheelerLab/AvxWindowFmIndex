@@ -108,7 +108,8 @@ void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
 			parallelSearchExtendKmersInBlock(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
 			parallelSearchTracebackPositionLists(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
 		}
-	} else {
+	}
+	else {
 		// exact duplicate of above code, without the omp pragma, so it doesn't kill performance with only 1 thread.
 		for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchListCount;
 				threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES) {
@@ -147,7 +148,8 @@ void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
 				searchList->kmerSearchData[i].count = awFmSearchRangeLength(&ranges[i - threadBlockStartIndex]);
 			}
 		}
-	} else {
+	}
+	else {
 		// exact duplicate of above code, without the omp pragma, so it doesn't kill performance with only 1 thread.
 		for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchListCount;
 				threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES) {
@@ -183,14 +185,16 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const 
 			// TODO: reimplement partial seeded search when it's implementable
 			if(kmerLength < index->config.kmerLengthInSeedTable) {
 				awFmNucleotideNonSeededSearch(index, kmerString, kmerLength, &ranges[rangesIndex]);
-			} else {
+			}
+			else {
 				ranges[rangesIndex] = awFmNucleotideKmerSeedRangeFromTable(index, kmerString, kmerLength);
 			}
-		} else {
+		}
+		else {
 			if(kmerLength < index->config.kmerLengthInSeedTable) {
 				awFmAminoNonSeededSearch(index, kmerString, kmerLength, &ranges[rangesIndex]);
-
-			} else {
+			}
+			else {
 				ranges[rangesIndex] = awFmAminoKmerSeedRangeFromTable(index, kmerString, kmerLength);
 			}
 		}
@@ -221,7 +225,8 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
 				if(index->config.alphabetType == AwFmAlphabetNucleotide) {
 					const uint8_t queryLetterIndex = awFmAsciiNucleotideToLetterIndex(kmerString[currentQueryLetterIndex]);
 					awFmNucleotideIterativeStepBackwardSearch(index, &ranges[rangesIndex], queryLetterIndex);
-				} else {
+				}
+				else {
 					const uint8_t queryLetterIndex = awFmAsciiAminoAcidToLetterIndex(kmerString[currentQueryLetterIndex]);
 					awFmAminoIterativeStepBackwardSearch(index, &ranges[rangesIndex], queryLetterIndex);
 				}
@@ -256,7 +261,8 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
 					backtrace.position = awFmNucleotideBacktraceBwtPosition(index, backtrace.position);
 					backtrace.offset++;
 				}
-			} else {
+			}
+			else {
 				while(!awFmBwtPositionIsSampled(index, backtrace.position)) {
 					backtrace.position = awFmAminoBacktraceBwtPosition(index, backtrace.position);
 					backtrace.offset++;
@@ -273,7 +279,8 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
 bool setPositionListCount(struct AwFmKmerSearchData *restrict const searchData, uint32_t newCount) {
 	if(__builtin_expect(searchData->capacity >= newCount, 1)) {
 		searchData->count = newCount;
-	} else {
+	}
+	else {
 		const size_t newCapacity			= newCount;
 		const size_t newLengthInBytes = newCapacity * sizeof(uint64_t);
 		void *tmpPtr									= realloc(searchData->positionList, newLengthInBytes);

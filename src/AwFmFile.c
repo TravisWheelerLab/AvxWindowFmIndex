@@ -315,7 +315,8 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 			fclose(fileHandle);
 			awFmDeallocIndex(indexData);
 			return AwFmAllocationFailure;
-		} else {
+		}
+		else {
 			elementsRead = fread(indexData->suffixArray.values, 1, compressedSuffixArrayByteLength, fileHandle);
 			if(elementsRead != compressedSuffixArrayByteLength) {
 				fclose(fileHandle);
@@ -408,8 +409,8 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
 		// null terminate the string
 		sequenceBuffer[sequenceSegmentLength] = 0;
 		return AwFmFileReadOkay;
-
-	} else {
+	}
+	else {
 
 		return AwFmUnsupportedVersionError;
 	}
@@ -467,7 +468,8 @@ size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index) {
 size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index) {
 	if(index->config.storeOriginalSequence) {
 		return awFmGetSequenceFileOffset(index) + ((index->bwtLength - 1) * sizeof(char));
-	} else {
+	}
+	else {
 		return awFmGetSequenceFileOffset(index);
 	}
 }

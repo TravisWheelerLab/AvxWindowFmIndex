@@ -74,7 +74,8 @@ void checkRangeForCorrectness(const struct AwFmSearchRange *restrict const range
 
 			sprintf(buffer, "range had position %zu for kmer %s, but that position holds kmer %s.\n", position, kmerBuffer,
 					sequenceBuffer);
-		} else {
+		}
+		else {
 			sprintf(buffer, "position %zu matches kmer %s, but was not represented in the range.\n", position, kmerBuffer);
 		}
 		testAssertString((kmerFoundAtPosition == positionFoundInRange), buffer);
@@ -160,7 +161,8 @@ void testAllKmerRanges(struct AwFmIndexConfiguration *config, uint64_t sequenceL
 		char *kmer2									 = "agaaa";
 		if(config->alphabetType == AwFmAlphabetNucleotide) {
 			awFmNucleotideNonSeededSearch(index, kmer2, 5, &range);
-		} else {
+		}
+		else {
 			awFmAminoNonSeededSearch(index, kmer2, 5, &range);
 		}
 		printf("range for agaaa: %zu, %zu\n", range.startPtr, range.endPtr);
@@ -193,7 +195,8 @@ void testAllKmerRanges(struct AwFmIndexConfiguration *config, uint64_t sequenceL
 				if(index->config.alphabetType == AwFmAlphabetNucleotide) {
 					kmer[letterInKmer] = nucleotideLookup[(kmerIndexCopy % 4)];
 					kmerIndexCopy /= 4;
-				} else {
+				}
+				else {
 					kmer[letterInKmer] = aminoLookup[(kmerIndexCopy % 20)];
 					kmerIndexCopy /= 20;
 				}

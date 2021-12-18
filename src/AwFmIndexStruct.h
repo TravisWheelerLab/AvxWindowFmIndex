@@ -1,12 +1,13 @@
 #ifndef AW_FM_INDEX_STRUCT_H
 #define AW_FM_INDEX_STRUCT_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
+
 #include "AwFmIndex.h"
 
-#define AW_FM_CURRENT_VERSION_NUMBER 8
+#define AW_FM_CURRENT_VERSION_NUMBER				8
 #define AW_FM_FEATURE_FLAG_BIT_FASTA_VECTOR 0
 
 /*
@@ -23,8 +24,7 @@
  *    Allocated AwFmIndex struct, or NULL on an allocation failure.
  *      If any dynamic allocation fails, all data used in the AwFmIndex will be deallocated, too.
  */
-struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexConfiguration *restrict const config,
-  const size_t bwtLength);
+struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexConfiguration *restrict const config, const size_t bwtLength);
 
 /*
  * Function:  awFmGetAlphabetCardinality
@@ -149,14 +149,14 @@ bool awFmReturnCodeSuccess(const enum AwFmReturnCode returnCode);
 
 
 /*
-* Function:  getBlockIndexFromGlobalPosition
-* --------------------
-*  Computes the block index, given the full BWT query position.
-*  Inputs:
-*    globalQueryPosition: Position in the BWT that the occurrence function is requesting
-*   Returns:
-*     Index of the block where the given query position resides.
-*/
+ * Function:  getBlockIndexFromGlobalPosition
+ * --------------------
+ *  Computes the block index, given the full BWT query position.
+ *  Inputs:
+ *    globalQueryPosition: Position in the BWT that the occurrence function is requesting
+ *   Returns:
+ *     Index of the block where the given query position resides.
+ */
 size_t awFmGetBlockIndexFromGlobalPosition(const size_t globalQueryPosition);
 
 
@@ -189,32 +189,32 @@ size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range)
 
 
 /*
-* Function:  awFmIndexIsVersionValid
-* --------------------
-* returns true if the given version number is one that is currently supported.
-*   The supported version numbers are enumerated at the top of this header (AwFmIndexStruct.h)
-*
-*  Inputs:
-*    versionNumber: version number from the AwFmIndex struct's config.
-*
-*  Returns:
-*    true if the versionNumber is one of the supported versions.
-*/
+ * Function:  awFmIndexIsVersionValid
+ * --------------------
+ * returns true if the given version number is one that is currently supported.
+ *   The supported version numbers are enumerated at the top of this header (AwFmIndexStruct.h)
+ *
+ *  Inputs:
+ *    versionNumber: version number from the AwFmIndex struct's config.
+ *
+ *  Returns:
+ *    true if the versionNumber is one of the supported versions.
+ */
 bool awFmIndexIsVersionValid(const uint16_t versionNumber);
 
 /*
-* Function:  awFmIndexContainsFastaVector
-* --------------------
-* returns true if indices of the given version number contain a FastaVector struct to catalog
-*   headers and the position of each sequence in the index. This function should be updated every
-*   time a new version is added.
-*
-*  Inputs:
-*    index: allocated and constructed index to check if it contains fastaVector information
-*
-*  Returns:
-*    True if the given version contains a FastaVector struct
-*/
-bool awFmIndexContainsFastaVector(const struct AwFmIndex * restrict const index);
+ * Function:  awFmIndexContainsFastaVector
+ * --------------------
+ * returns true if indices of the given version number contain a FastaVector struct to catalog
+ *   headers and the position of each sequence in the index. This function should be updated every
+ *   time a new version is added.
+ *
+ *  Inputs:
+ *    index: allocated and constructed index to check if it contains fastaVector information
+ *
+ *  Returns:
+ *    True if the given version contains a FastaVector struct
+ */
+bool awFmIndexContainsFastaVector(const struct AwFmIndex *restrict const index);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCT_H */

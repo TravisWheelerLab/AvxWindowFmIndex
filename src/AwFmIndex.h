@@ -1,127 +1,126 @@
 #ifndef AW_FM_INDEX_STRUCTS_H
 #define AW_FM_INDEX_STRUCTS_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "FastaVector.h"
 
 
 #ifndef AW_FM_NUM_CONCURRENT_QUERIES
-  #define AW_FM_NUM_CONCURRENT_QUERIES 8
+#define AW_FM_NUM_CONCURRENT_QUERIES 8
 #endif
 
-#define AW_FM_POSITIONS_PER_FM_BLOCK        256
-#define AW_FM_CACHE_LINE_SIZE_IN_BYTES      64
+#define AW_FM_POSITIONS_PER_FM_BLOCK				256
+#define AW_FM_CACHE_LINE_SIZE_IN_BYTES			64
 
 #define AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW 3
-#define AW_FM_NUCLEOTIDE_CARDINALITY        4
+#define AW_FM_NUCLEOTIDE_CARDINALITY				4
 
-#define AW_FM_AMINO_VECTORS_PER_WINDOW      5
-#define AW_FM_AMINO_CARDINALITY             20
-
-
-enum AwFmAlphabetType{
-  AwFmAlphabetAmino = 1, AwFmAlphabetNucleotide = 2};
-
-//NOTE: not currently used, but this enum is kept for future use.
-enum AwFmBwtType{
-  AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2};
+#define AW_FM_AMINO_VECTORS_PER_WINDOW			5
+#define AW_FM_AMINO_CARDINALITY							20
 
 
-//define the Simd vector type, which is determined by the architecture we're building for.
+enum AwFmAlphabetType { AwFmAlphabetAmino = 1, AwFmAlphabetNucleotide = 2 };
+
+// NOTE: not currently used, but this enum is kept for future use.
+enum AwFmBwtType { AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2 };
+
+
+// define the Simd vector type, which is determined by the architecture we're building for.
 #ifdef __aarch64__
-  #include <arm_neon.h>
+#include <arm_neon.h>
 
-  typedef struct AwFmSimdVec256{
-    uint8x16_t lowVec;
-    uint8x16_t highVec;
-  } AwFmSimdVec256;
+typedef struct AwFmSimdVec256 {
+	uint8x16_t lowVec;
+	uint8x16_t highVec;
+} AwFmSimdVec256;
 
 #else
-  #include <immintrin.h>
+#include <immintrin.h>
 
-  typedef __m256i AwFmSimdVec256;
+typedef __m256i AwFmSimdVec256;
 #endif
 
-//Types for the actual FM index structs
-struct AwFmAminoBlock{
-  AwFmSimdVec256   letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
-  uint64_t  baseOccurrences[AW_FM_AMINO_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding
+// Types for the actual FM index structs
+struct AwFmAminoBlock {
+	AwFmSimdVec256 letterBitVectors[AW_FM_AMINO_VECTORS_PER_WINDOW];
+	uint64_t baseOccurrences[AW_FM_AMINO_CARDINALITY + 4];	//+4 is for sentinel count and 32B padding
 };
 
-struct AwFmNucleotideBlock{
-  AwFmSimdVec256   letterBitVectors[AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW];
-  uint64_t  baseOccurrences[AW_FM_NUCLEOTIDE_CARDINALITY + 4]; //+4 is for sentinel count and 32B padding
+struct AwFmNucleotideBlock {
+	AwFmSimdVec256 letterBitVectors[AW_FM_NUCLEOTIDE_VECTORS_PER_WINDOW];
+	uint64_t baseOccurrences[AW_FM_NUCLEOTIDE_CARDINALITY + 4];	 //+4 is for sentinel count and 32B padding
 };
 
-union AwFmBwtBlockList{
-  struct AwFmNucleotideBlock  *asNucleotide;
-  struct AwFmAminoBlock       *asAmino;
+union AwFmBwtBlockList {
+	struct AwFmNucleotideBlock *asNucleotide;
+	struct AwFmAminoBlock *asAmino;
 };
 
 /*Struct for the configuration in the AwFmIndex struct.
-* This contains data that may be set by the user toconfigure the index.*/
-struct AwFmIndexConfiguration{
-  uint8_t               suffixArrayCompressionRatio;
-  uint8_t               kmerLengthInSeedTable;
-  enum AwFmAlphabetType alphabetType;
-  bool                  keepSuffixArrayInMemory;
-  bool                  storeOriginalSequence;
+ * This contains data that may be set by the user toconfigure the index.*/
+struct AwFmIndexConfiguration {
+	uint8_t suffixArrayCompressionRatio;
+	uint8_t kmerLengthInSeedTable;
+	enum AwFmAlphabetType alphabetType;
+	bool keepSuffixArrayInMemory;
+	bool storeOriginalSequence;
 };
 
-struct AwFmCompressedSuffixArray{
-  uint8_t   valueBitWidth;
-  uint8_t   *values;
-  uint64_t  compressedByteLength;
+struct AwFmCompressedSuffixArray {
+	uint8_t valueBitWidth;
+	uint8_t *values;
+	uint64_t compressedByteLength;
 };
 
-struct AwFmSearchRange{
-  uint64_t startPtr;
-  uint64_t endPtr;
+struct AwFmSearchRange {
+	uint64_t startPtr;
+	uint64_t endPtr;
 };
 
-  //feature flags, hardcode version
-struct AwFmIndex{
-          uint32_t                  versionNumber;
-          uint32_t                  featureFlags;   //for non user-customizable options.
-          uint64_t                  bwtLength;
-  union   AwFmBwtBlockList          bwtBlockList;
-          uint64_t                  *prefixSums;
-  struct  AwFmSearchRange           *kmerSeedTable;
-          FILE                      *fileHandle;
-  struct  AwFmIndexConfiguration    config;
-          int                       fileDescriptor;
-          size_t                    suffixArrayFileOffset;
-          size_t                    sequenceFileOffset;
-  //optional member data, dependant on the index version.
-  struct  FastaVector               *fastaVector; // ptr should be null if not in use.
-  struct  AwFmCompressedSuffixArray suffixArray;
-};
-
-
-struct AwFmKmerSearchData{
-  char                        *kmerString;
-  uint64_t                    kmerLength;
-  uint64_t                    *positionList;
-  uint32_t                    count;
-  uint32_t                    capacity;
-};
-
-struct AwFmKmerSearchList{
-  size_t                      capacity;
-  size_t                      count;
-  struct AwFmKmerSearchData   *kmerSearchData;
-};
-
-//for internal use during backtrace, you can likely ignore this
-struct AwFmBacktrace{
-  uint64_t position;
-  uint64_t offset;
+// feature flags, hardcode version
+struct AwFmIndex {
+	uint32_t versionNumber;
+	uint32_t featureFlags;	// for non user-customizable options.
+	uint64_t bwtLength;
+	union AwFmBwtBlockList bwtBlockList;
+	uint64_t *prefixSums;
+	struct AwFmSearchRange *kmerSeedTable;
+	FILE *fileHandle;
+	struct AwFmIndexConfiguration config;
+	int fileDescriptor;
+	size_t suffixArrayFileOffset;
+	size_t sequenceFileOffset;
+	// optional member data, dependant on the index version.
+	struct FastaVector *fastaVector;	// ptr should be null if not in use.
+	struct AwFmCompressedSuffixArray suffixArray;
 };
 
 
+struct AwFmKmerSearchData {
+	char *kmerString;
+	uint64_t kmerLength;
+	uint64_t *positionList;
+	uint32_t count;
+	uint32_t capacity;
+};
+
+struct AwFmKmerSearchList {
+	size_t capacity;
+	size_t count;
+	struct AwFmKmerSearchData *kmerSearchData;
+};
+
+// for internal use during backtrace, you can likely ignore this
+struct AwFmBacktrace {
+	uint64_t position;
+	uint64_t offset;
+};
+
+/* clang-format off */
 enum AwFmReturnCode{
   AwFmSuccess             = 1,    AwFmFileReadOkay                = 2,    AwFmFileWriteOkay         = 3,
   AwFmGeneralFailure      = -1,   AwFmUnsupportedVersionError     = -2,   AwFmAllocationFailure     = -3,
@@ -129,7 +128,7 @@ enum AwFmReturnCode{
   AwFmNoFileSrcGiven      = -7,   AwFmNoDatabaseSequenceGiven     = -8,   AwFmFileFormatError       = -9,
   AwFmFileOpenFail        = -10,  AwFmFileReadFail                = -11,  AwFmFileWriteFail         = -12,
   AwFmErrorDbSequenceNull = -13,  AwFmErrorSuffixArrayNull        = -14,  AwFmFileAlreadyExists     = -15};
-
+/* clang-format on */
 
 /*
  * Function:  awFmCreateIndex
@@ -156,8 +155,8 @@ enum AwFmReturnCode{
  *      AwFmFileWriteFail if a file write failed.
  */
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
-  struct AwFmIndexConfiguration *restrict const config, const uint8_t *restrict const sequence, const size_t sequenceLength,
-  const char *restrict const fileSrc, const bool allowFileOverwrite);
+		struct AwFmIndexConfiguration *restrict const config, const uint8_t *restrict const sequence,
+		const size_t sequenceLength, const char *restrict const fileSrc, const bool allowFileOverwrite);
 
 
 /*
@@ -187,8 +186,8 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
  *      AwFmFileWriteFail if a file write failed.
  */
 enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
-  struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc,
-  const char *restrict const indexFileSrc, const bool allowFileOverwrite);
+		struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc, const char *restrict const indexFileSrc,
+		const bool allowFileOverwrite);
 
 
 /*
@@ -226,7 +225,7 @@ void awFmDeallocIndex(struct AwFmIndex *index);
  *      AwFmFileWriteFail if a file write failed.
  */
 enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index, const uint8_t *restrict const sequence,
-  const uint64_t sequenceLength, const char *restrict const fileSrc, const bool allowOverwrite);
+		const uint64_t sequenceLength, const char *restrict const fileSrc, const bool allowOverwrite);
 
 
 /*
@@ -249,9 +248,8 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
  *        is not the correct format.
  *      AwFmAllocationFailure on failure to allocated the necessary memory for the index.
  */
-enum AwFmReturnCode awFmReadIndexFromFile(struct AwFmIndex *restrict *restrict index,
-  const char *fileSrc, const bool keepSuffixArrayInMemory);
-
+enum AwFmReturnCode awFmReadIndexFromFile(
+		struct AwFmIndex *restrict *restrict index, const char *fileSrc, const bool keepSuffixArrayInMemory);
 
 
 /*
@@ -320,7 +318,7 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
  *                    will likely vary from system to system. Suggested default value is 4
  */
 void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
-  struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
+		struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
 
 
 /*
@@ -351,7 +349,7 @@ void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
  *                    will likely vary from system to system. Suggested default value is 4
  */
 void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
-  struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
+		struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
 
 
 /*
@@ -376,8 +374,7 @@ void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
  *    AwFmIllegalPositionError if the start position is not less than the end position
  */
 enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
-  const size_t sequenceStartPosition, const size_t sequenceSegmentLength,
-  char *const sequenceBuffer);
+		const size_t sequenceStartPosition, const size_t sequenceSegmentLength, char *const sequenceBuffer);
 
 
 /*
@@ -399,8 +396,8 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
  *    queryLength: length of the query argument. This value is used to find the last character
  *    in the input query.
  */
-struct AwFmSearchRange awFmCreateInitialQueryRange(const struct AwFmIndex *restrict const index,
-  const char *restrict const query, const uint8_t queryLength);
+struct AwFmSearchRange awFmCreateInitialQueryRange(
+		const struct AwFmIndex *restrict const index, const char *restrict const query, const uint8_t queryLength);
 
 
 /*
@@ -416,8 +413,8 @@ struct AwFmSearchRange awFmCreateInitialQueryRange(const struct AwFmIndex *restr
  *      this acts as an out-parameter, and will update to the newly extended range once finished.
  *    letter: letter of the prefix or suffix character.
  */
-void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
-  struct AwFmSearchRange *restrict const range, const uint8_t letter);
+void awFmNucleotideIterativeStepBackwardSearch(
+		const struct AwFmIndex *restrict const index, struct AwFmSearchRange *restrict const range, const uint8_t letter);
 
 
 /*
@@ -433,8 +430,8 @@ void awFmNucleotideIterativeStepBackwardSearch(const struct AwFmIndex *restrict 
  *      this acts as an out-parameter, and will update to the newly extended range once finished.
  *    letter: letter of the prefix or suffix character.
  */
-void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const index,
-  struct AwFmSearchRange *restrict const range, const uint8_t letter);
+void awFmAminoIterativeStepBackwardSearch(
+		const struct AwFmIndex *restrict const index, struct AwFmSearchRange *restrict const range, const uint8_t letter);
 
 
 /*
@@ -473,55 +470,55 @@ void awFmAminoIterativeStepBackwardSearch(const struct AwFmIndex *restrict const
  *      AwFmIllegalPositionError on a suffix array position being out of bounds of
  *        the file's compressed suffix array.
  */
- uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
-   const struct AwFmSearchRange *restrict const searchRange, enum AwFmReturnCode *restrict fileAccessResult);
+uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
+		const struct AwFmSearchRange *restrict const searchRange, enum AwFmReturnCode *restrict fileAccessResult);
 
 
 /*
-* Function:  awFmGetLocalSequencePositionFromIndexPosition
-* --------------------
-*  For indices that are built from a fasta file (indices that use an internal FastaVector struct),
-*   this function takes the global position into the full indexed sequence collection, and returns
-*   the index of the individual sequence that the global position lands in and the local position
-*   in that sequence that corresponds to the global position.
-*
-*  Inputs:
-*     index:                  Pointer to the valid AwFmIndex struct.
-*     globalPosition:         Position into the sequence collection, as is stored in the suffix array.
-*     sequenceNumber:         Out-argument that returns the index of the sequence the global position falls into,
-*       or 0 on error.
-*     localSequencePosition:  Out-argument that returns the local position in the relevant sequence,
-*       or 0 on error.
-*
-*  Returns:
-*    AwFmReturnCode detailing the result of the read attempt. Possible return values:
-*      AwFmFileReadOkay on success,
-*      AwFmIllegalPositionError if the globalPosition is greater than the length of the index.
-*      AwFmUnsupportedVersionError if the version of the AwFmIndex does not support FastaVector.
-*/
+ * Function:  awFmGetLocalSequencePositionFromIndexPosition
+ * --------------------
+ *  For indices that are built from a fasta file (indices that use an internal FastaVector struct),
+ *   this function takes the global position into the full indexed sequence collection, and returns
+ *   the index of the individual sequence that the global position lands in and the local position
+ *   in that sequence that corresponds to the global position.
+ *
+ *  Inputs:
+ *     index:                  Pointer to the valid AwFmIndex struct.
+ *     globalPosition:         Position into the sequence collection, as is stored in the suffix array.
+ *     sequenceNumber:         Out-argument that returns the index of the sequence the global position falls into,
+ *       or 0 on error.
+ *     localSequencePosition:  Out-argument that returns the local position in the relevant sequence,
+ *       or 0 on error.
+ *
+ *  Returns:
+ *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
+ *      AwFmFileReadOkay on success,
+ *      AwFmIllegalPositionError if the globalPosition is greater than the length of the index.
+ *      AwFmUnsupportedVersionError if the version of the AwFmIndex does not support FastaVector.
+ */
 enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct AwFmIndex *restrict const index,
-  size_t globalPosition, size_t *sequenceNumber, size_t *localSequencePosition);
+		size_t globalPosition, size_t *sequenceNumber, size_t *localSequencePosition);
 
 
 /*
-* Function:  awFmGetHeaderStringFromSequenceNumber
-* --------------------
-*  For indices that are built from a fasta file (indices that use an internal FastaVector struct),
-*   this function returns a pointer to the header and the length of said for for the
-*   given sequenceNumber as out-arguments.
-*
-*  Inputs:
-*     index:            Pointer to the valid AwFmIndex struct.
-*     sequenceNumber:   Index of the sequence whose corresponding header the function will return.
-*     headerBuffer:     Upon success, this function returns the pointer to the (non null-terminated) header in this out-argument.
-*     headerLength:     Upon success, this fucntion reuturns the length of the header in this out-argument.
-*
-*  Returns:
-*    AwFmReturnCode detailing the result of the read attempt. Possible return values:
-*      AwFmFileReadOkay on success,
-*      AwFmUnsupportedVersionError if the version of the AwFmIndex does not support FastaVector.
-*/
-enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(const struct AwFmIndex *restrict const index,
-  size_t sequenceNumber, char **headerBuffer, size_t *headerLength);
+ * Function:  awFmGetHeaderStringFromSequenceNumber
+ * --------------------
+ *  For indices that are built from a fasta file (indices that use an internal FastaVector struct),
+ *   this function returns a pointer to the header and the length of said for for the
+ *   given sequenceNumber as out-arguments.
+ *
+ *  Inputs:
+ *     index:            Pointer to the valid AwFmIndex struct.
+ *     sequenceNumber:   Index of the sequence whose corresponding header the function will return.
+ *     headerBuffer:     Upon success, this function returns the pointer to the (non null-terminated) header in this
+ * out-argument. headerLength:     Upon success, this fucntion reuturns the length of the header in this out-argument.
+ *
+ *  Returns:
+ *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
+ *      AwFmFileReadOkay on success,
+ *      AwFmUnsupportedVersionError if the version of the AwFmIndex does not support FastaVector.
+ */
+enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(
+		const struct AwFmIndex *restrict const index, size_t sequenceNumber, char **headerBuffer, size_t *headerLength);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

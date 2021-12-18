@@ -2,6 +2,7 @@
 #define AWFM_SIMD_CONFIG_H
 
 #include <stdint.h>
+
 #include "AwFmIndex.h"
 
 
@@ -91,6 +92,6 @@ uint32_t AwFmMaskedVectorPopcount(const AwFmSimdVec256 vec, const uint8_t localQ
  *  Inputs:
  *    memAddr: address of memory to prefetch.
  */
-void AwFmSimdPrefetch(const void *memAddr);
+void AwFmSimdPrefetch(const void* memAddr);
 
 #endif

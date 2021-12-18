@@ -1,8 +1,9 @@
 #ifndef AW_FM_LETTER_H
 #define AW_FM_LETTER_H
 
-#include "AwFmIndexStruct.h"
 #include <stdint.h>
+
+#include "AwFmIndexStruct.h"
 
 
 /*
@@ -56,15 +57,15 @@ uint8_t awFmNucleotideLetterIndexToCompressedVector(const uint8_t asciiLetter);
 
 
 /*
-* Function:  awFmNucleotideCompressedVectorToLetterIndex
-* --------------------
-* Transforms a compressed vector representation of a nucleotide letter into its letter index.
-*  Inputs:
-*    compressedVectorLetter: format that the letter is stored in the AVX vectors.
-*
-*  Returns:
-*    Letter index of the nucleotide.
-*/
+ * Function:  awFmNucleotideCompressedVectorToLetterIndex
+ * --------------------
+ * Transforms a compressed vector representation of a nucleotide letter into its letter index.
+ *  Inputs:
+ *    compressedVectorLetter: format that the letter is stored in the AVX vectors.
+ *
+ *  Returns:
+ *    Letter index of the nucleotide.
+ */
 uint8_t awFmNucleotideCompressedVectorToLetterIndex(const uint8_t compressedVectorLetter);
 
 /*
@@ -116,15 +117,15 @@ uint8_t awFmAminoAcidLetterIndexToCompressedVector(const uint8_t letterIndex);
 
 
 /*
-* Function:  awFmAminoAcidCompressedVectorToLetterIndex
-* --------------------
-* Transforms a compressed vector representation of an amino acid letter into its letter index.
-*  Inputs:
-*    compressedVectorLetter: format that the letter is stored in the AVX vectors.
-*
-*  Returns:
-*    Index of the amino acid between 0 and 19, or 20  as the sentinel.
-*/
+ * Function:  awFmAminoAcidCompressedVectorToLetterIndex
+ * --------------------
+ * Transforms a compressed vector representation of an amino acid letter into its letter index.
+ *  Inputs:
+ *    compressedVectorLetter: format that the letter is stored in the AVX vectors.
+ *
+ *  Returns:
+ *    Index of the amino acid between 0 and 19, or 20  as the sentinel.
+ */
 uint8_t awFmAminoAcidCompressedVectorToLetterIndex(const uint8_t compressedVectorLetter);
 
 #endif /* end of include guard: AW_FM_LETTER_H */

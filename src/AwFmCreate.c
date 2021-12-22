@@ -236,7 +236,7 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 
 	// create the file
 	returnCode =
-			awFmWriteIndexToFile(indexData, (uint8_t *)fullSequencePtr, fullSequenceLength, fastaSrc, allowFileOverwrite);
+			awFmWriteIndexToFile(indexData, (uint8_t *)fullSequencePtr, fullSequenceLength, indexFileSrc, allowFileOverwrite);
 
 
 	if(!config->keepSuffixArrayInMemory) {

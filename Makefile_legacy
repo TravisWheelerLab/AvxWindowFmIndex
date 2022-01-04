@@ -74,9 +74,9 @@ FASTA_VECTOR_INSTALL_METADATA_HEADER_FILE	=	$(AWFMINDEX_INSTALL_INCLUDE_DIR)/$(F
 ARCH = $(shell uname -m)
 CC 			?= gcc
 ifeq ($(ARCH),x86_64)
-CFLAGS 	= -std=gnu11 -fpic -O3 -mtune=native -march=native -Wall -Wextra -fopenmp -mavx2
+CFLAGS 	= -std=gnu11 -fpic -O0 -g -mtune=native -fsanitize=address -march=native -Wall -Wextra -fopenmp -mavx2
 else
-CFLAGS 	= -std=gnu11 -fpic -O3 -mtune=native -march=native -Wall -Wextra -fopenmp
+CFLAGS 	= -std=gnu11 -fpic -O0 -g -fsanitize=address -mtune=native -march=native -Wall -Wextra -fopenmp
 endif
 
 
@@ -90,6 +90,8 @@ OBJECT_FILES 	:= $(patsubst $(AWFMINDEX_SRC_DIR)/%, $(AWFMINDEX_BUILD_DIR)/%, $(
 .PHONY: all
 all: $(LIBDIVSUFSORT_BUILD_STATIC_LIBRARY_FILE) $(FASTA_VECTOR_BUILD_STATIC_LIBRARY_FILE) $(AWFMINDEX_BUILD_LIBRARY_DIR) $(OBJECT_FILES) $(AWFMINDEX_BUILD_HEADER_FILE)
 	$(CC) -fpic -fopenmp -o $(AWFMINDEX_BUILD_SHARED_LIB_FILE) $(OBJECT_FILES) $(LDFLAGS)
+
+
 
 .PHONY: install
 install:

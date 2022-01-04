@@ -511,7 +511,8 @@ enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct A
  *     index:            Pointer to the valid AwFmIndex struct.
  *     sequenceNumber:   Index of the sequence whose corresponding header the function will return.
  *     headerBuffer:     Upon success, this function returns the pointer to the (non null-terminated) header in this
- * out-argument. headerLength:     Upon success, this fucntion reuturns the length of the header in this out-argument.
+ * 			out-argument.
+ *		headerLength:     Upon success, this fucntion reuturns the length of the header in this out-argument.
  *
  *  Returns:
  *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
@@ -520,5 +521,23 @@ enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct A
  */
 enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(
 		const struct AwFmIndex *restrict const index, size_t sequenceNumber, char **headerBuffer, size_t *headerLength);
+
+
+/*
+ * Function:  displayDiagnosticInfoForIndex
+ * --------------------
+ *  Displays diagnostic information for an AwFmIndex. This can print either simple
+ *		info about the index, more detailed info, or the result of searching for a given query.
+ *
+ *  Inputs:
+ *    indexFileSrc:	file src of the index to load
+ *    displayGeneral:   If true, displays the simplest info about the index, including the config.
+ *    dispalyDetailed:  If true, displays more detailed info, including the beginning of the SA and kmer seed table.
+ *		saInMemory:				determines whether to keep the suffix array in memory, or leave on disk.
+ *		queryString: 			String to query, and report results. Leave as NULL to skip this diagnostic tool.
+ *
+ */
+ void displayDiagnosticInfoForIndex(char *indexFileSrc, bool displayGeneral,
+  bool dispalyDetailed, bool saInMemory, char *queryString);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

@@ -128,6 +128,9 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 		struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc, const char *restrict const indexFileSrc,
 		const bool allowFileOverwrite) {
+			#ifdef _DEBUG
+				printf("\x1b[36mDEBUG: awFmCreateIndexFromFasta\x1b[0m\n");
+			#endif
 
 	// first, do a sanity check on inputs
 	if(config == NULL) {
@@ -148,14 +151,24 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 	if(fastaVector == NULL) {
 		return AwFmAllocationFailure;
 	}
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: fastaVector Allocated\x1b[0m\n");
+	#endif
 	enum FastaVectorReturnCode fastaVectorReturnCode = fastaVectorInit(fastaVector);
 	if(fastaVectorReturnCode == FASTA_VECTOR_ALLOCATION_FAIL) {
 		return AwFmAllocationFailure;
 	}
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: fastaVector Init\x1b[0m\n");
+	#endif
 	fastaVectorReturnCode = fastaVectorReadFasta(fastaSrc, fastaVector);
 	if(fastaVectorReturnCode == FASTA_VECTOR_FILE_OPEN_FAIL) {
 		return AwFmFileOpenFail;
 	}
+
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: fasta finished reading\x1b[0m\n");
+	#endif
 	else if(fastaVectorReturnCode == FASTA_VECTOR_ALLOCATION_FAIL) {
 		return AwFmAllocationFailure;
 	}
@@ -170,11 +183,19 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 		return AwFmAllocationFailure;
 	}
 
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: sequence copied\x1b[0m"\n);
+	#endif
+
 	// sanitize the sequence, turning ambiguity characters into the singular ambiguity character
 	// character (x for nucleotide, z for amino)
 	// giving the sequencePtr as the in and out arrays makes this an in-place algorithm
 	fullSequenceSanitize((uint8_t *)fullSequencePtr, sanitizedSequenceCopy, fullSequenceLength, config->alphabetType);
 
+
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: sequence sanitized\x1b[0m\n");
+	#endif
 	// FastaVector will always have one extra storage at the end of the string, so this shouldn't ever
 	// cause a buffer overflow
 	sanitizedSequenceCopy[suffixArrayLength - 1] = '$';
@@ -185,12 +206,20 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 		return AwFmAllocationFailure;
 	}
 
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: index allocated\x1b[0m\n");
+	#endif
+
 	indexData->versionNumber = AW_FM_CURRENT_VERSION_NUMBER;
 
 	indexData->featureFlags = 0 | (1 << AW_FM_FEATURE_FLAG_BIT_FASTA_VECTOR);
 	indexData->fastaVector	= fastaVector;
 	memcpy(&indexData->config, config, sizeof(struct AwFmIndexConfiguration));
 
+
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: config allocated\x1b[0m\n");
+	#endif
 	// init the in memory suffix array to NULL, to be safe. this will get overwritten on success,
 	// if the metadata demands in memory SA. If not, this will be left NULL.
 	indexData->suffixArray.values = NULL;
@@ -206,6 +235,10 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 		return AwFmAllocationFailure;
 	}
 
+
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: SA allocated\x1b[0m\n");
+	#endif
 	// create the suffix array, storing it starting in the second element of the suffix array we allocated.
 	// this doesn't clobber the sentinel we added earlier, and makes for easier bwt creation.
 	int64_t divSufSortReturnCode = divsufsort64(sanitizedSequenceCopy, (int64_t *)(suffixArray), suffixArrayLength);
@@ -216,13 +249,35 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 		return AwFmSuffixArrayCreationFailure;
 	}
 
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: SA generated, printing first 10 values:\x1b[0m\n");
+		for(size_t i = 0; i < 10; i++){
+			printf("\x1b[32mSA index %zu: %zu\x1b[0m\n", i, suffixArray[i]);
+		}
+	#endif
+
 	// set the bwt and prefix sums
 	setBwtAndPrefixSums(indexData, indexData->bwtLength, sanitizedSequenceCopy, suffixArray);
-
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: BWT and prefix sums set, printing prefix sums:\x1b[0m\n");
+		for(size_t i = 0; i < 6; i++){
+			printf("\x1b[32mchars less than symbol %zu index: %zu\x1b[0m\n", i, indexData->prefixSums[i]);
+		}
+	#endif
 	// after generating the bwt, the sequence copy is no longer needed.
 	free(sanitizedSequenceCopy);
+	#ifdef _DEBUG
+		printf("\x1b[36mfreed sequence copy\x1b[0m\n");
+	#endif
 
 	populateKmerSeedTable(indexData);
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: kmer table populated, first 10 values:\x1b[0m\n");
+		for(size_t i = 0; i < 10; i++){
+			printf("\x1b[32mkmer @ index %zu: [%zu, %zu]\x1b[0m\n", i,
+				indexData->kmerSeedTable[i].startPtr, indexData->kmerSeedTable[i].endPtr);
+		}
+	#endif
 	// initialize the compressed suffix array
 	enum AwFmReturnCode returnCode = awFmInitCompressedSuffixArray(
 			suffixArray, suffixArrayLength, &indexData->suffixArray, config->suffixArrayCompressionRatio);
@@ -230,25 +285,45 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 		return returnCode;
 	}
 
+	#ifdef _DEBUG
+		printf("\x1b[36mDEBUG: compressed SA generated, first 10 values:\x1b[0m\n");
+		for(size_t i = 0; i < 10; i++){
+			printf("\x1b[32m compressed SA index %i: %zu\x1b[0m\n", i, awFmGetValueFromCompressedSuffixArray(indexData->suffixArray, i));
+		}
+	#endif
+
 	indexData->suffixArrayFileOffset = awFmGetSuffixArrayFileOffset(indexData);
 	indexData->sequenceFileOffset		 = awFmGetSequenceFileOffset(indexData);
 	// file descriptor will be set in awFmWriteIndexToFile
+
+		#ifdef _DEBUG
+			printf("\x1b[36mfile offsets generated\x1b[0m\n");
+		#endif
 
 	// create the file
 	returnCode =
 			awFmWriteIndexToFile(indexData, (uint8_t *)fullSequencePtr, fullSequenceLength, fastaSrc, allowFileOverwrite);
 
-
+			#ifdef _DEBUG
+				printf("\x1b[36mindex written to file\x1b[0m\n");
+			#endif
 	if(!config->keepSuffixArrayInMemory) {
 		// if it's kept in memory, the suffixArray array is now used in the compressedSuffixArray.
 		// so, don't free() it now, but it'll need to be free()d at dealloc time.
 		free(suffixArray);
 		indexData->suffixArray.values = NULL;
+		#ifdef _DEBUG
+			printf("\x1b[36msuffix array freed (not supposed to be kept in memory at the moment)\x1b[0m\n");
+		#endif
 	}
+
 
 	// set the index as an out argument.
 	*index = indexData;
 
+	#ifdef _DEBUG
+		printf("\x1b[36mgeneration from fasta finished, returning\x1b[0m\n");
+	#endif
 	return returnCode;
 }
 

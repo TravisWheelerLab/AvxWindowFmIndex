@@ -443,7 +443,7 @@ enum AwFmReturnCode awFmGetSuffixArrayValueFromFile(
 	memcpy(valueOut, valueBuffer, 8);
 	*valueOut >>= offset.bitOffset;
 	*valueOut |= ((uint64_t)valueBuffer[8]) << (64 - offset.bitOffset);
-	size_t bitmask = (1 << index->suffixArray.valueBitWidth) - 1;
+	size_t bitmask = ( ((size_t)1) << index->suffixArray.valueBitWidth) - 1;
 	*valueOut &= bitmask;
 	return AwFmSuccess;
 }

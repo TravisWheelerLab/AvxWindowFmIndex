@@ -328,10 +328,11 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 	if(indexContainsFastaVector) {
 		fseek(fileHandle, awFmGetFastaVectorFileOffset(indexData), SEEK_SET);
 		// allocate and init the fastaVector struct
-		struct FastaVector *fastaVector = malloc(sizeof(fastaVector));
+		struct FastaVector *fastaVector = malloc(sizeof(struct FastaVector));
 		if(!fastaVector) {
 			fclose(fileHandle);
 			awFmDeallocIndex(indexData);
+			return AwFmAllocationFailure;
 		}
 		enum FastaVectorReturnCode fastaVectorReturnCode = fastaVectorInit(fastaVector);
 		if(fastaVectorReturnCode == FASTA_VECTOR_ALLOCATION_FAIL) {
@@ -444,7 +445,7 @@ enum AwFmReturnCode awFmGetSuffixArrayValueFromFile(
 	memcpy(valueOut, valueBuffer, 8);
 	*valueOut >>= offset.bitOffset;
 	*valueOut |= ((uint64_t)valueBuffer[8]) << (64 - offset.bitOffset);
-	size_t bitmask = (1 << index->suffixArray.valueBitWidth) - 1;
+	size_t bitmask = (((size_t)1) << index->suffixArray.valueBitWidth) - 1;
 	*valueOut &= bitmask;
 	return AwFmSuccess;
 }

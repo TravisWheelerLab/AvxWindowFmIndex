@@ -47,7 +47,8 @@ uint8_t awFmNucleotideCompressedVectorToLetterIndex(const uint8_t compressedVect
 uint8_t awFmAsciiAminoAcidToLetterIndex(const uint8_t asciiLetter) {
 	if(__builtin_expect(asciiLetter == '$', 0)) {
 		return 21;
-	} else {
+	}
+	else {
 		static const uint8_t letterEncodings[32] = {20, 0, 20, 1, 2, 3, 4, 5, 6, 7, 20, 8, 9, 10, 11, 20, 12, 13, 14, 15,
 				16, 20, 17, 18, 20, 19, 20, 20, 20, 20, 20, 20};
 		// find the index and mod (to prevent array out of bounds for weird ascii inputs)
@@ -63,7 +64,8 @@ uint8_t awFmAsciiAminoLetterSanitize(const uint8_t asciiLetter) {
 
 	if(__builtin_expect(letterIsAmbiguityChar, 0)) {
 		return 'z';
-	} else {
+	}
+	else {
 		return asciiLetter;
 	}
 }

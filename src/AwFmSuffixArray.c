@@ -137,7 +137,8 @@ enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *res
 		}
 
 		return AwFmSuccess;
-	} else {
+	}
+	else {
 		for(size_t i = 0; i < positionArrayLength; i++) {
 			size_t indexInSuffixArray = positionArray[i] / index->config.suffixArrayCompressionRatio;
 			enum AwFmReturnCode rc		= awFmGetSuffixArrayValueFromFile(index, indexInSuffixArray, &positionArray[i]);
@@ -160,8 +161,8 @@ enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(
 		size_t saValue				 = awFmGetValueFromCompressedSuffixArray(&index->suffixArray, suffixArrayPosition);
 		backtracePtr->position = (saValue + backtracePtr->offset) % index->bwtLength;
 		return AwFmSuccess;
-
-	} else {
+	}
+	else {
 		uint64_t suffixArrayPosition = backtracePtr->position / index->config.suffixArrayCompressionRatio;
 		size_t saValue;
 		enum AwFmReturnCode rc = awFmGetSuffixArrayValueFromFile(index, suffixArrayPosition, &saValue);

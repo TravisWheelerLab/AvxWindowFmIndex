@@ -92,7 +92,8 @@ static inline struct AwFmSearchRange awFmNucleotidePartialKmerSeedRangeFromTable
 	if(__builtin_expect((kmer[kmerLength - 1] | 0x20) == 't', 0)) {
 		// lookup kmer from scratch
 		awFmNucleotideNonSeededSearch(index, kmer, kmerLength, &range);
-	} else {
+	}
+	else {
 
 		const uint64_t endSequenceKmerTableIndex = 0;	 // index->endSequenceKmerTableIndex;
 		const uint8_t kmerLengthInSeedTable			 = index->config.kmerLengthInSeedTable;
@@ -141,7 +142,8 @@ inline struct AwFmSearchRange awFmAminoPartialKmerSeedRangeFromTable(
 	if(__builtin_expect((kmer[kmerLength - 1] | 0x20) == 'y', 0)) {
 		// lookup kmer from scratch
 		awFmAminoNonSeededSearch(index, kmer, kmerLength, &range);
-	} else {
+	}
+	else {
 
 		const uint64_t endSequenceKmerTableIndex = 0;	 // index->endSequenceKmerTableIndex;
 		const uint8_t kmerLengthInSeedTable			 = index->config.kmerLengthInSeedTable;

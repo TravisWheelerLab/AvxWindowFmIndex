@@ -327,10 +327,11 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 	if(indexContainsFastaVector) {
 		fseek(fileHandle, awFmGetFastaVectorFileOffset(indexData), SEEK_SET);
 		// allocate and init the fastaVector struct
-		struct FastaVector *fastaVector = malloc(sizeof(fastaVector));
+		struct FastaVector *fastaVector = malloc(sizeof(struct FastaVector));
 		if(!fastaVector) {
 			fclose(fileHandle);
 			awFmDeallocIndex(indexData);
+			return AwFmAllocationFailure;
 		}
 		enum FastaVectorReturnCode fastaVectorReturnCode = fastaVectorInit(fastaVector);
 		if(fastaVectorReturnCode == FASTA_VECTOR_ALLOCATION_FAIL) {

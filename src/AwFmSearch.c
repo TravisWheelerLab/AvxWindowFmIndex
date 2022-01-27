@@ -40,7 +40,7 @@ void awFmNucleotideIterativeStepBackwardSearch(
 	AwFmSimdVec256 occurrenceVector =
 			awFmMakeNucleotideOccurrenceVector(&(index->bwtBlockList.asNucleotide[blockIndex]), letter);
 
-	uint_fast8_t vectorPopcount = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
+	uint_fast16_t vectorPopcount = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
 	newStartPointer += vectorPopcount + baseOccurrence;
 
 	range->startPtr = newStartPointer;
@@ -90,8 +90,8 @@ void awFmAminoIterativeStepBackwardSearch(
 	uint64_t baseOccurrence		 = index->bwtBlockList.asAmino[blockIndex].baseOccurrences[letter];
 	AwFmSimdVec256 occurrenceVector =
 			awFmMakeAminoAcidOccurrenceVector(&(index->bwtBlockList.asAmino[blockIndex]), letter);
-	uint_fast8_t vectorPopcount = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
-	uint64_t newStartPointer		= letterPrefixSum + vectorPopcount + baseOccurrence;
+	uint16_t vectorPopcount	 = AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
+	uint64_t newStartPointer = letterPrefixSum + vectorPopcount + baseOccurrence;
 
 	// prefetch the next start ptr
 	uint64_t newStartBlock = (newStartPointer - 1) / AW_FM_POSITIONS_PER_FM_BLOCK;
@@ -315,7 +315,7 @@ inline size_t awFmNucleotideBacktraceBwtPosition(
 	const AwFmSimdVec256 occurrenceVector = awFmMakeNucleotideOccurrenceVector(blockPtr, letterIndex);
 
 
-	uint8_t vectorPopcount				= AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
+	uint16_t vectorPopcount				= AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
 	uint64_t backtraceBwtPosition = prefixSums[letterIndex] + baseOccurrence + vectorPopcount - 1;
 
 	return backtraceBwtPosition;
@@ -338,7 +338,7 @@ inline size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict con
 	AwFmSimdVec256 occurrenceVector = awFmMakeAminoAcidOccurrenceVector(blockPtr, letterIndex);
 	const uint64_t baseOccurrence		= blockPtr->baseOccurrences[letterIndex];
 
-	const uint_fast8_t vectorPopcount		= AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
+	const uint16_t vectorPopcount				= AwFmMaskedVectorPopcount(occurrenceVector, localQueryPosition);
 	const uint64_t backtraceBwtPosition = prefixSums[letterIndex] + baseOccurrence + vectorPopcount - 1;
 
 	return backtraceBwtPosition;

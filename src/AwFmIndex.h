@@ -372,6 +372,7 @@ void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
  *    AwFmFileReadOkay on success.
  *    AwFmFileReadFail if the file could not be read sucessfully.
  *    AwFmIllegalPositionError if the start position is not less than the end position
+ *		AwFmUnsupportedVersionError if the index was configured to not store the original sequence.
  */
 enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
 		const size_t sequenceStartPosition, const size_t sequenceSegmentLength, char *const sequenceBuffer);

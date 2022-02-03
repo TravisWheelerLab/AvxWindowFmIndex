@@ -7,8 +7,8 @@ general text. Despite then name, AvxWindowFmIndex supports SIMD operation on
 both x86_64 architectures via AVX2, and ARM_64 architectures via Arm Neon.
 
 Please report any issues or bugs to the "Issues" tab on the project's github
-(https://github.com/TravisWheelerLab/AvxWindowFmIndex), and view our pre-print
-article here (https://www.biorxiv.org/content/10.1101/2021.01.12.426474v2).
+(https://github.com/TravisWheelerLab/AvxWindowFmIndex), and view our published
+article here (https://doi.org/10.1186/s13015-021-00204-6).
 
 ## Prerequisites
 
@@ -17,23 +17,24 @@ The following is required to build and use this software
 * GCC C compiler
 * Make
 * CMake
+* Optionally, Make for the legacy build system
 
-Note that Mac users will need to install GCC through Homebrew or some other
-means as the built-in Clang compiler, which is aliased as `gcc`, does not
+
+Note that MacOS users will need to install GCC through Homebrew or some other
+means, because the built-in Clang compiler, which is aliased as `gcc`, does not
 support OpenMP.
 
 ```
 brew install gcc
 ```
 
-If you're building on a Mac with an Apple Silicon CPU, be sure that you install
-a compatible version of GCC.
 
-After cloning the repo, clone initialize and clone submodules. This will happen
+After cloning the repo, you should initialize and update the submodules. This will happen
 automatically if you use the legacy build system, but there is no harm in doing
-it manually.
+it manually for either the CMake or legacy Make builds.
 
 ```
+git clone https://github.com/TravisWheelerLab/AvxWindowFmIndex.git
 git submodule init
 git submodule update
 ```
@@ -41,8 +42,6 @@ git submodule update
 Now the project is ready to build.
 
 ## CMake Build
-### WARNING
-Building with Cmake is currently unsupported on MacOS, and will result in errors. Instead, please use the legacy makefile system on MacOS.
 
 The default way to build AwFmIndex is to use CMake. The usual CMake incantations
 will work. This will result in both shared and static libraries written to the
@@ -53,16 +52,16 @@ cmake .
 make
 ```
 
-To point the build at a specific version of GCC, which is necessary on a Mac,
-use the following:
+To install on MacOS, you will need to specify the install location of your
+GCC compiler. An Example is given below:
 
 ```
 cmake -DCMAKE_C_COMPILER=/path/to/gcc .
 make
 ```
 
-The library (both shared and static) can be installed to the default prefix as
-well. If you'd like to change the prefix, pass
+The library (both shared and static) is installed to the default install path.
+If you'd like to change the installation location, change the PREFIX as follows:
 `-DCMAKE_INSTALL_PREFIX=/prefix/path` to the `cmake` commands above.
 
 ```
@@ -71,7 +70,7 @@ make install
 
 ## Makefile Build (Legacy)
 
-There is also a custom Makefile included. It exists to support use-cases where
+There is also a custom Makefile included, included to support use-cases where
 CMake is disallowed.
 
 ### Shared Library

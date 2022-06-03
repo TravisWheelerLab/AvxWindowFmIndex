@@ -15,9 +15,8 @@ article here (https://doi.org/10.1186/s13015-021-00204-6).
 The following is required to build and use this software
 
 * GCC C compiler
-* Make
-* CMake
-* Optionally, Make for the legacy build system
+* CMake, or optionally,
+* Make for the legacy build system
 
 
 Note that MacOS users will need to install GCC through Homebrew or some other

@@ -242,7 +242,7 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 	if(!config->keepSuffixArrayInMemory) {
 		// if it's kept in memory, the suffixArray array is now used in the compressedSuffixArray.
 		// so, don't free() it now, but it'll need to be free()d at dealloc time.
-		free(suffixArray);
+		free(indexData->suffixArray.values);
 		indexData->suffixArray.values = NULL;
 	}
 

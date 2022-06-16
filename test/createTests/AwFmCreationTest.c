@@ -7,7 +7,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../libdivsufsort/build/include/divsufsort64.h"
+#include "../../lib/libdivsufsort/build/include/divsufsort64.h"
 #include "../../src/AwFmCreate.h"
 #include "../../src/AwFmIndex.h"
 #include "../../src/AwFmIndexStruct.h"
@@ -109,7 +109,7 @@ struct AwFmIndex *testCreateNucleotideIndex(const uint8_t *sequence, const size_
 
 	const uint32_t expectedVersionNumber = AW_FM_CURRENT_VERSION_NUMBER;
 	struct AwFmIndex *restrict index;
-	enum AwFmReturnCode returnCode = awFmCreateIndex(&index, &config, sequence, sequenceLength, fileSrc, true);
+	enum AwFmReturnCode returnCode = awFmCreateIndex(&index, &config, sequence, sequenceLength, fileSrc);
 	sprintf(buffer, "return code was not successful, returned %d", returnCode);
 	testAssertString(returnCode >= 0, buffer);
 
@@ -234,7 +234,7 @@ void testCreateAminoIndex(void) {
 			.keepSuffixArrayInMemory																				 = false,
 			.storeOriginalSequence																					 = false};
 	struct AwFmIndex *index;
-	awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+	awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 	size_t numSentinelsEncountered = 0;
 	for(size_t i = 0; i < sequenceLength + 1; i++) {

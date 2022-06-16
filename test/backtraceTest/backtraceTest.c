@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#include "../../libdivsufsort/build/include/divsufsort64.h"
+#include "../../lib/FastaVector/src/FastaVector.h"
+#include "../../lib/libdivsufsort/build/include/divsufsort64.h"
 #include "../../src/AwFmCreate.h"
 #include "../../src/AwFmIndex.h"
 #include "../../src/AwFmIndexStruct.h"
@@ -72,7 +72,7 @@ void testNucleotideBacktrace() {
 				.alphabetType																										 = AwFmAlphabetNucleotide,
 				.keepSuffixArrayInMemory																				 = false,
 				.storeOriginalSequence																					 = false};
-		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 		if(index == NULL) {
 			free(sequence);
@@ -145,7 +145,7 @@ void testAminoBacktrace(void) {
 				.keepSuffixArrayInMemory																				 = true,
 				.storeOriginalSequence																					 = true,
 				.storeOriginalSequence																					 = false};
-		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 		if(index == NULL) {
 			free(sequence);

@@ -104,7 +104,7 @@ void generateRandomIndex(struct AwFmIndex **index, uint8_t **sequence, size_t se
 		exit(-3);
 	}
 	enum AwFmReturnCode awFmReturnCode =
-			awFmCreateIndex(index, &config, *sequence, sequenceLength, "testIndex.awfmi", true);
+			awFmCreateIndex(index, &config, *sequence, sequenceLength, "testIndex.awfmi");
 	if(awFmReturnCode < 0) {
 		printf("critical failure: create index returned error code %i\n", awFmReturnCode);
 		exit(-4);

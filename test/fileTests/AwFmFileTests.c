@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../libdivsufsort/build/include/divsufsort64.h"
+#include "../../lib/libdivsufsort/build/include/divsufsort64.h"
 #include "../../src/AwFmCreate.h"
 #include "../../src/AwFmIndex.h"
 #include "../../src/AwFmIndexStruct.h"
@@ -53,7 +53,7 @@ void sequenceRecallTest(void) {
 				.alphabetType																										 = AwFmAlphabetNucleotide,
 				.keepSuffixArrayInMemory																				 = false,
 				.storeOriginalSequence																					 = true};
-		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 		char sequenceBuffer[2048];
 		for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++) {
@@ -88,7 +88,7 @@ void sequenceRecallTest(void) {
 		for(size_t i = 0; i < sequenceLength; i++) {
 			sequence[i] = aminoLookup[rand() % 20];
 		}
-		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 		for(size_t sequencePosition = 0; sequencePosition < sequenceLength; sequencePosition++) {
 			size_t sequenceSegmentLength = rand() % 10 + 1;
 			if(sequencePosition + sequenceSegmentLength >= index->bwtLength) {
@@ -142,7 +142,7 @@ void suffixArrayTest(void) {
 		referenceSuffixArray[0] = sequenceLength;
 
 
-		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 		size_t numElementsInSuffixArray = sequenceLength / compressionRatio;
 
 		for(size_t i = 0; i < numElementsInSuffixArray; i++) {
@@ -174,7 +174,7 @@ void suffixArrayTest(void) {
 
 		config.alphabetType = AwFmAlphabetAmino;
 
-		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 		numElementsInSuffixArray = sequenceLength / compressionRatio;
 
@@ -229,7 +229,7 @@ void indexReadTest(void) {
 				.storeOriginalSequence																					 = false};
 
 		enum AwFmReturnCode returnCode =
-				awFmCreateIndex(&index, &config, sequence, sequenceLength, "testindex.awfmi", true);
+				awFmCreateIndex(&index, &config, sequence, sequenceLength, "testindex.awfmi");
 		if(returnCode < 0) {
 			printf("ERROR: creating initial index returned error code %i\n", returnCode);
 		}

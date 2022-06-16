@@ -75,7 +75,7 @@ void testParallelSearchAmino(void) {
 	}
 
 
-	awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+	awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 	printf("index generated\n");
 
 
@@ -216,7 +216,7 @@ void testParallelSearchNucleotide() {
 	// null terminate the sequence for easy printing
 	sequence[sequenceLength] = 0;
 
-	awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+	awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 
 	const size_t kmerSearchListCapacity = 100 + (rand() % 10000);
@@ -351,7 +351,7 @@ void testParallelCount(void) {
 	// null terminate the sequence for easy printing
 	sequence[sequenceLength] = 0;
 
-	awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+	awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 	printf("index generated\n");
 
 	const size_t kmerSearchListCapacity = 1000 + (rand() % 6000);

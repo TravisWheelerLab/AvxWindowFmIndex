@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../libdivsufsort/build/include/divsufsort64.h"
+#include "../../lib/libdivsufsort/build/include/divsufsort64.h"
 #include "../../src/AwFmCreate.h"
 #include "../../src/AwFmIndex.h"
 #include "../../src/AwFmIndexStruct.h"
@@ -54,7 +54,7 @@ void inMemorySaUncompressedTest(void) {
 
 
 		enum AwFmReturnCode returnCode =
-				awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+				awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 		if(returnCode < 0) {
 			printf("error: create returned code %i!!!\n", returnCode);
@@ -123,7 +123,7 @@ void inMemorySaCompressedTest(void) {
 				.storeOriginalSequence																					 = true};
 
 
-		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 		size_t numKmers												= 100;
 		uint8_t kmerLength										= 8;
 		struct AwFmKmerSearchList *searchList = awFmCreateKmerSearchList(numKmers);
@@ -190,7 +190,7 @@ void inMemoryFromFileTest(void) {
 				.storeOriginalSequence																					 = true};
 
 
-		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 		awFmDeallocIndex(index);
 
 		awFmReadIndexFromFile(&index, "testIndex.awfmi", true);

@@ -7,7 +7,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../libdivsufsort/build/include/divsufsort64.h"
+#include "../../lib/libdivsufsort/build/include/divsufsort64.h"
 #include "../../src/AwFmCreate.h"
 #include "../../src/AwFmIndex.h"
 #include "../../src/AwFmIndexStruct.h"
@@ -155,7 +155,7 @@ void testAllKmerRanges(struct AwFmIndexConfiguration *config, uint64_t sequenceL
 		// }
 		// printf("\n");
 
-		awFmCreateIndex(&index, config, sequence, sequenceLength, "testIndex.awfmi", true);
+		awFmCreateIndex(&index, config, sequence, sequenceLength, "testIndex.awfmi");
 
 		struct AwFmSearchRange range = {0, 0};
 		char *kmer2									 = "agaaa";

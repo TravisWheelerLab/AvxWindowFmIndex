@@ -7,7 +7,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../libdivsufsort/build/include/divsufsort64.h"
+#include "../../lib/libdivsufsort/build/include/divsufsort64.h"
 #include "../../src/AwFmCreate.h"
 #include "../../src/AwFmIndex.h"
 #include "../../src/AwFmIndexStruct.h"
@@ -93,7 +93,7 @@ void testNucletotideBwtGeneration(void) {
 				.alphabetType																										 = AwFmAlphabetNucleotide,
 				.keepSuffixArrayInMemory																				 = false,
 				.storeOriginalSequence																					 = true};
-		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 		for(size_t i = 0; i <= sequenceLength; i++) {
 			uint64_t suffixArrayValue = suffixArray[i];
@@ -183,7 +183,7 @@ void testAminoBwtGeneration(void) {
 				.alphabetType																										 = AwFmAlphabetAmino,
 				.keepSuffixArrayInMemory																				 = false,
 				.storeOriginalSequence																					 = false};
-		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi", true);
+		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 
 		for(size_t i = 0; i <= sequenceLength; i++) {

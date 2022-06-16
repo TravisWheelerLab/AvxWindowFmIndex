@@ -138,9 +138,9 @@ void testAwFmIndexIdenticalForFastaVector() {
 		struct AwFmIndex *fastaVectorIndex = NULL;
 
 		enum AwFmReturnCode awFmRc = awFmCreateIndex(
-				&defaultIndex, &config, (uint8_t *)sequenceCollectionPtr, sequenceCollectionLength, defaultIndexFileSrc, true);
+				&defaultIndex, &config, (uint8_t *)sequenceCollectionPtr, sequenceCollectionLength, defaultIndexFileSrc);
 		testAssertString(awFmRc == AwFmFileWriteOkay, "creating default index did not return AwFmSuccess.");
-		awFmRc = awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc, true);
+		awFmRc = awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc);
 		testAssertString(awFmRc == AwFmFileWriteOkay, "creating fastaVector index did not return AwFmSuccess");
 
 		compareIndicesForEqualityIgnoreVersion(defaultIndex, fastaVectorIndex);
@@ -177,7 +177,7 @@ void testAwFmIndexFastaVectorDataMatchesExpected(void) {
 		struct AwFmIndex *fastaVectorIndex = NULL;
 
 		enum AwFmReturnCode awFmRc =
-				awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc, true);
+				awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc);
 		testAssertString(awFmRc == AwFmFileWriteOkay, "creating fastaVector index did not return AwFmSuccess.");
 
 		// compare the fasta sequence
@@ -275,7 +275,7 @@ void testAwFmIndexGivesCorrectLocalPositions(void) {
 		struct AwFmIndex *fastaVectorIndex = NULL;
 
 		enum AwFmReturnCode awFmRc =
-				awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc, true);
+				awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc);
 		testAssertString(awFmRc == AwFmFileWriteOkay, "creating fastaVector index did not return AwFmSuccess.");
 
 		checkAllGlobalPositionsForCorrectLocalPositions(fastaVector, fastaVectorIndex);
@@ -311,7 +311,7 @@ void testAwFmIndexGivesCorrectHeaders(void) {
 		struct AwFmIndex *fastaVectorIndex = malloc(sizeof(struct AwFmIndex));
 
 		enum AwFmReturnCode awFmRc =
-				awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc, true);
+				awFmCreateIndexFromFasta(&fastaVectorIndex, &config, fastaFileSrc, fastaVectorIndexFileSrc);
 		testAssertString(awFmRc == AwFmSuccess, "creating fastaVector index did not return AwFmSuccess.");
 
 		for(size_t sequenceIndex = 0; sequenceIndex < fastaVector->metadata.count; sequenceIndex++) {

@@ -26,7 +26,7 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
 		struct AwFmKmerSearchList *restrict const searchList, struct AwFmSearchRange *restrict const ranges,
 		const size_t threadBlockStartIndex, const size_t threadBlockEndIndex);
 
-void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const index,
 		struct AwFmKmerSearchList *restrict const searchList, struct AwFmSearchRange *restrict const ranges,
 		const size_t threadBlockStartIndex, const size_t threadBlockEndIndex);
 
@@ -89,11 +89,11 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
 }
 
 
-void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
 		struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads) {
 
 	const uint32_t searchListCount = searchList->count;
-
+	enum AwFmReturnCode atomicReturnCode = AwFmSuccess;
 	if(numThreads > 1) {
 #pragma omp parallel for num_threads(numThreads)
 		for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchListCount;
@@ -106,11 +106,16 @@ void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
 
 			parallelSearchFindKmerSeedsForBlock(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
 			parallelSearchExtendKmersInBlock(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
-			parallelSearchTracebackPositionLists(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
+			enum AwFmReturnCode rc = parallelSearchTracebackPositionLists(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
+			if(__builtin_expect(awFmReturnCodeIsFailure(rc), 0)){
+				#pragma omp atomic update
+				atomicReturnCode = AwFmFileReadFail;
+				break;
+			}
 		}
+		return atomicReturnCode;
 	}
 	else {
-		// exact duplicate of above code, without the omp pragma, so it doesn't kill performance with only 1 thread.
 		for(size_t threadBlockStartIndex = 0; threadBlockStartIndex < searchListCount;
 				threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES) {
 			const size_t threadBlockEndIndex = threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES > searchList->count ?
@@ -120,8 +125,12 @@ void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
 
 			parallelSearchFindKmerSeedsForBlock(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
 			parallelSearchExtendKmersInBlock(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
-			parallelSearchTracebackPositionLists(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
+			enum AwFmReturnCode rc =  parallelSearchTracebackPositionLists(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
+			if(__builtin_expect(awFmReturnCodeIsFailure(rc),0)){
+				return rc;
+			}
 		}
+		return AwFmSuccess;
 	}
 }
 
@@ -236,7 +245,7 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
 }
 
 
-void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const index,
 		struct AwFmKmerSearchList *restrict const searchList, struct AwFmSearchRange *restrict const ranges,
 		const size_t threadBlockStartIndex, const size_t threadBlockEndIndex) {
 
@@ -269,10 +278,13 @@ void parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const
 				}
 			}
 
-			awFmSuffixArrayReadPositionParallel(index, &backtrace);
+			if(__builtin_expect(awFmSuffixArrayReadPositionParallel(index, &backtrace), 0) != AwFmSuccess){
+				return AwFmFileReadFail;
+			}
 			searchData->positionList[indexOfPositionToBacktrace] = backtrace.position;
 		}
 	}
+	return AwFmSuccess;
 }
 
 

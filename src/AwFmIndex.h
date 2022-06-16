@@ -316,8 +316,13 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
  *    searchList:   pointer to the searchList struct loaded with kmers to search for.
  *    numThreads:   How many threads to direct OpenMP to use. The best value for this argument
  *                    will likely vary from system to system. Suggested default value is 4
+ *  Returns:
+ *    AwFmReturnCode represnting the result of the read. Possible returns are:
+ *      AwFmFileReadOkay on success.
+ *      AwFmFileReadFail if the file could not be read sucessfully (If suffix array
+*					is stored on file, not in memory)
  */
-void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
 		struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
 
 

@@ -138,3 +138,13 @@ bool awFmIndexIsVersionValid(const uint16_t versionNumber) {
 bool awFmIndexContainsFastaVector(const struct AwFmIndex *restrict const index) {
 	return index->featureFlags & (1 << AW_FM_FEATURE_FLAG_BIT_FASTA_VECTOR);
 }
+
+
+inline bool awFmReturnCodeIsFailure(const enum AwFmReturnCode rc){
+	return rc < 0;
+}
+
+
+inline bool awFmReturnCodeIsSuccess(const enum AwFmReturnCode rc){
+	return !awFmReturnCodeIsFailure(rc);
+}

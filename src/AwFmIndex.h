@@ -522,4 +522,29 @@ enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct A
 enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(
 		const struct AwFmIndex *restrict const index, size_t sequenceNumber, char **headerBuffer, size_t *headerLength);
 
+
+/*
+ * Function:  awFmReturnCodeIsFailure
+ * --------------------
+ *  For a given return code, returns true if the code describes an error condition, or true on a successful condititon.
+ *
+ *  Inputs:
+ *     rc:            AwFmReturnCode returned by an AwFm function.
+ *  Returns:
+ *    True if return code describes an error of some kind.
+ */
+inline bool awFmReturnCodeIsFailure(const enum AwFmReturnCode rc);
+
+/*
+ * Function:  awFmReturnCodeIsFailure
+ * --------------------
+ *  returns the negation of awFmReturnCodeIsFailure().
+ *
+ *  Inputs:
+ *     rc:            AwFmReturnCode returned by an AwFm function.
+ *  Returns:
+ *    True if return code describes a successful operation.
+ */
+inline bool awFmReturnCodeIsSuccess(const enum AwFmReturnCode rc);
+
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

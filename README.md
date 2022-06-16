@@ -140,7 +140,7 @@ can be found in the tuning/build and tuning/search directories.
 
 To create an .awfmi index, use the awFmCreateIndex() or awFmCreateIndexFromFasta()
 functions. These functions will take a given sequence (or fasta containing one or more sequences),
-and create an index file that conforms to the given configuration. These functions \
+and create an index file that conforms to the given configuration. These functions 
 will overwrite the given fileSrc.
 
 ``` c
@@ -156,6 +156,11 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
   struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc,
   const char *restrict const indexFileSrc);
 ```
+
+Like all functions that return an 'enum AwFmReturnCode', make sure to check the
+return code to determine if the result was successful or not. The function prototypes
+in the header files contain robust documentation about functions, and their possible
+return codes.
 
 The configuration struct is as follows, the fields are described below:
 
@@ -256,7 +261,7 @@ To locate all instances of the kmers against an AwFmIndex, use the
 `awFmParallelSearchLocate` function.
 
 ``` c
-void awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
  struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
 ```
 
@@ -265,6 +270,8 @@ list of locations can be found in the corresponding entry in
 `searchList->kmerSearchData[x].positionBacktraceList.position`. The `numThreads`
 argument tells the algorithm how many threads to use. The optimal setting will
 vary from system to system, but 4 or 8 seem to be good choices on many systems.
+In the unlikely event of a failure to read from disk, this function will return AwFmFileReadFail.
+Otherwise, it will return AwFmSuccess.
 
 To print the positions in the database sequence where a kmer at a given index
 was found:
@@ -390,3 +397,70 @@ of the header.
 
 This function also returns `AwFmUnsupportedVersionError` if the index was not
 built from a fasta file.
+
+
+
+
+### Usage Example
+
+Here is an example of creating an AwFmIndex and using it to perform a search on queries given
+via the argument list parameter.
+If you already have an index you'd like to use instead of generating a new one, use awFmReadIndexFromFile().
+``` c
+int main(int argc, char **argv){
+
+  char *indexFileSrc = "indexFiles/index.awfmi";
+  char *fastaInputFileSrc = "fastas/dnaSequence.fasta"
+	struct AwFmIndex *index;
+	struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 8,
+			.kmerLengthInSeedTable																					 = 12,
+			.alphabetType																										 = AwFmAlphabetNucleotide,
+			.keepSuffixArrayInMemory																				 = false,
+			.storeOriginalSequence																					 = true};
+	struct AwFmReturnCode returnCode = awFmCreateIndexFromFasta(&index, &config, sequence, sequenceLength, indexFileSrc, true);
+  if(awFmReturnCodeIsFailure(returnCode)){
+    printf("create index failed with return code %u\n", returnCode);
+    exit(1);
+  }
+
+  uint64_t numQueries = argc-1; //first argument is the name of the executable, so skip it.
+	struct AwFmKmerSearchList *searchList = awFmCreateKmerSearchList(numQueries);
+  if(searchList == NULL){
+    printf("could not allocate memory for search list\n");
+    exit(2);
+  }
+
+  searchList->count = numQueries;
+  //initialize the queries in the search list
+  for(size_t i = 0; i < numQueries; i++){
+    searchList->kmerSearchData[i].kmerLength = strlen(argv[i+1]);
+    searchList->kmerSearchData[i].kmerString = &argv[i+1];
+  }
+
+  //search for the queries
+
+  returnCode awFmParallelSearchLocate(index, searchList, numThreads);
+  if(awFmReturnCodeIsFailure(returnCode)){
+    printf("parallel search failed with return code %u\n", returnCode);
+    exit(3);
+  }
+
+  //print all the hits.
+  for(size_t kmerIndex = 0; kmerIndex < searchList->count; kmerIndex++){
+    const uint32_t numHitPositions = searchList->kmerSearchData[kmerIndex].count;
+    uint64_t *positionList =  
+      searchList->kmerSearchData[kmerIndex].positionList;
+
+    for(size_t i = 0; i < numHitPositions; i++){
+      printf("kmer at index %zu found at database position %zu."\n,
+      kmerIndex, positionList[i]);
+    }
+  }
+
+  //code cleanup
+  awFmDeallocKmerSearchList(searchList);
+  awFmDeallocIndex(index);
+
+  exit(0);
+}
+```

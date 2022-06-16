@@ -31,7 +31,7 @@ void fullSequenceSanitize(const uint8_t *const sequence, uint8_t *const sanitize
 /*function implementations*/
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 		struct AwFmIndexConfiguration *restrict const config, const uint8_t *restrict const sequence,
-		const size_t sequenceLength, const char *restrict const fileSrc, const bool allowFileOverwrite) {
+		const size_t sequenceLength, const char *restrict const fileSrc) {
 
 	// first, do a sanity check on inputs
 	if(config == NULL) {
@@ -111,7 +111,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 	// file descriptor will be set in awFmWriteIndexToFile
 
 	// create the file
-	returnCode = awFmWriteIndexToFile(indexData, sequence, sequenceLength, fileSrc, allowFileOverwrite);
+	returnCode = awFmWriteIndexToFile(indexData, sequence, sequenceLength, fileSrc);
 
 	if(!config->keepSuffixArrayInMemory) {
 		free(indexData->suffixArray.values);
@@ -126,8 +126,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 
 /*function implementations*/
 enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
-		struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc, const char *restrict const indexFileSrc,
-		const bool allowFileOverwrite) {
+		struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc, const char *restrict const indexFileSrc) {
 
 	// first, do a sanity check on inputs
 	if(config == NULL) {
@@ -236,7 +235,7 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 
 	// create the file
 	returnCode =
-			awFmWriteIndexToFile(indexData, (uint8_t *)fullSequencePtr, fullSequenceLength, indexFileSrc, allowFileOverwrite);
+			awFmWriteIndexToFile(indexData, (uint8_t *)fullSequencePtr, fullSequenceLength, indexFileSrc);
 
 
 	if(!config->keepSuffixArrayInMemory) {

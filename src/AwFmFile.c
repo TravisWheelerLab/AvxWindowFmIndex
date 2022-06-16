@@ -18,7 +18,7 @@ static const uint8_t IndexFileFormatIdHeaderLength = 10;
 static const char IndexFileFormatIdHeader[11]			 = "AwFmIndex\n\0";
 
 enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index, const uint8_t *restrict const sequence,
-		const uint64_t sequenceLength, const char *restrict const fileSrc, const bool allowOverwrite) {
+		const uint64_t sequenceLength, const char *restrict const fileSrc) {
 	if(__builtin_expect(fileSrc == NULL, 0)) {
 		return AwFmNoFileSrcGiven;
 	}
@@ -35,7 +35,7 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
 	const bool storeOriginalSequence		= index->config.storeOriginalSequence;
 
 	// open the file
-	char fileOpenMode[5] = {'w', '+', 'b', (allowOverwrite ? 0 : 'x'), 0};
+	char fileOpenMode[4] = "w+b";
 	index->fileHandle		 = fopen(fileSrc, fileOpenMode);
 
 	if(index->fileHandle == NULL) {

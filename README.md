@@ -138,14 +138,15 @@ can be found in the tuning/build and tuning/search directories.
 
 ### Making an .awfmi index file
 
-To create an .awfmi index, use the awFmCreateIndex() function. This function
-will take a given sequence, and create an index file that conforms to the given
-configuration.
+To create an .awfmi index, use the awFmCreateIndex() or awFmCreateIndexFromFasta()
+functions. These functions will take a given sequence (or fasta containing one or more sequences),
+and create an index file that conforms to the given configuration. These functions \
+will overwrite the given fileSrc.
 
 ``` c
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
   struct AwFmIndexConfiguration *restrict const config, const uint8_t *restrict const sequence,
-  const size_t sequenceLength, const char *restrict const fileSrc, const bool allowFileOverwrite);
+  const size_t sequenceLength, const char *restrict const fileSrc);
 ```
 
 or, to generate an index from all sequences in a well-formed fasta file,
@@ -153,7 +154,7 @@ or, to generate an index from all sequences in a well-formed fasta file,
 ``` c
 enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
   struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc,
-  const char *restrict const indexFileSrc, const bool allowFileOverwrite);
+  const char *restrict const indexFileSrc);
 ```
 
 The configuration struct is as follows, the fields are described below:

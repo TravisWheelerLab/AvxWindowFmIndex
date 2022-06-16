@@ -142,8 +142,6 @@ enum AwFmReturnCode{
  *    sequence:       Database sequence that the AwFmIndex is built from.
  *    sequenceLength: Length of the sequence.
  *    fileSrc:        File path to write the Index file to.
- *    allowOverwrite: If set, will allow overwriting the file at the given fileSrc.
- *      If allowOverwite is false, will return error code AwFmFileAlreadyExists.
  *
  *  Returns:
  *    AwFmReturnCode represnting the result of the write. Possible returns are:
@@ -156,7 +154,7 @@ enum AwFmReturnCode{
  */
 enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 		struct AwFmIndexConfiguration *restrict const config, const uint8_t *restrict const sequence,
-		const size_t sequenceLength, const char *restrict const fileSrc, const bool allowFileOverwrite);
+		const size_t sequenceLength, const char *restrict const fileSrc);
 
 
 /*
@@ -172,8 +170,6 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
  *    fastaSrc:       File source of the fasta to use to generate the index.
  *      Every sequence in the fasta file will be included in the index.
  *    indexFileSrc:        File path to write the Index file to.
- *    allowOverwrite: If set, will allow overwriting the file at the given fileSrc.
- *      If allowOverwite is false, will return error code AwFmFileAlreadyExists.
  *
  *  Returns:
  *    AwFmReturnCode represnting the result of the write. Possible returns are:
@@ -186,8 +182,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
  *      AwFmFileWriteFail if a file write failed.
  */
 enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
-		struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc, const char *restrict const indexFileSrc,
-		const bool allowFileOverwrite);
+		struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc, const char *restrict const indexFileSrc);
 
 
 /*
@@ -215,8 +210,6 @@ void awFmDeallocIndex(struct AwFmIndex *index);
  *    sequence:       Database sequence that the AwFmIndex is built from.
  *    sequenceLength: Length of the sequence.
  *    fileSrc:        File path to write the Index file to.
- *    allowOverwrite: If set, will allow overwriting the file at the given fileSrc.
- *      If allowOverwite is false, will return error code AwFmFileAlreadyExists.
  *
  *  Returns:
  *    AwFmReturnCode represnting the result of the write. Possible returns are:
@@ -225,7 +218,7 @@ void awFmDeallocIndex(struct AwFmIndex *index);
  *      AwFmFileWriteFail if a file write failed.
  */
 enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index, const uint8_t *restrict const sequence,
-		const uint64_t sequenceLength, const char *restrict const fileSrc, const bool allowOverwrite);
+		const uint64_t sequenceLength, const char *restrict const fileSrc);
 
 
 /*

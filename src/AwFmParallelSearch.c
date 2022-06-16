@@ -108,9 +108,8 @@ enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *restrict co
 			parallelSearchExtendKmersInBlock(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
 			enum AwFmReturnCode rc = parallelSearchTracebackPositionLists(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
 			if(__builtin_expect(awFmReturnCodeIsFailure(rc), 0)){
-				#pragma omp atomic update
+				#pragma omp atomic write
 				atomicReturnCode = AwFmFileReadFail;
-				break;
 			}
 		}
 		return atomicReturnCode;

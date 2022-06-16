@@ -531,7 +531,7 @@ enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(
  *  Returns:
  *    True if return code describes an error of some kind.
  */
-inline bool awFmReturnCodeIsFailure(const enum AwFmReturnCode rc);
+bool awFmReturnCodeIsFailure(const enum AwFmReturnCode rc);
 
 /*
  * Function:  awFmReturnCodeIsFailure
@@ -543,6 +543,6 @@ inline bool awFmReturnCodeIsFailure(const enum AwFmReturnCode rc);
  *  Returns:
  *    True if return code describes a successful operation.
  */
-inline bool awFmReturnCodeIsSuccess(const enum AwFmReturnCode rc);
+bool awFmReturnCodeIsSuccess(const enum AwFmReturnCode rc);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

@@ -186,6 +186,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
 
 	// make sure that reading from the suffix array actually succeeded
 	if(*fileAccessResult == AwFmFileReadFail) {
+		free(offsetArray);
 		return positionArray;
 	}
 

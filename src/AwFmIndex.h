@@ -441,33 +441,26 @@ void awFmAminoIterativeStepBackwardSearch(
  *    determine the corresponding database sequence position for each BWT position
  *    between the searchRange's pointers (inclusive startPtr, exclusive endPtr).
  *
- *  Note: When using a bi-directional FM-index, the range given should correspond the the
- *    traditional backward BWT, not the forward BWT.
  *
  *  It is the caller's responsibility to free() the returned sequence position array and offset array.
  *
- *  This function will overwrite the data in the positionArray, returning the
- *    database sequence positions in the corresponding elements of the positionArray.
  *
- *  Note: positionArray and offsetArray should be of equal length. Having either shorter
- *    than positionArrayLength will result in undefined behavior.
  *
  *  Inputs:
  *    index:              Pointer to the valid AwFmIndex struct.
- *    positionArray:          Array of positions in the implied full suffix array to load.
- *      This function will convert these positions to indices in the compressed suffix array,
- *      as long as the positions are multiples of the suffix array compression ratio.
- *    offsetArray:  array of offsets to be added to the database sequence positions.
- *      This is needed because we can only query the suffix array on positions that are sampled.
- *    positionArrayLength:    Length of the positionArray and offsetArray.
+ *    searchRange:        Range in the index. These BWT positions will be converted 
+ * 		to real global sequence positions
+ *    fileAssessResult:		Returns the result of this action as an out-variable.
+ * 		possible return values are:
+ * 			AwFmFileReadOkay on success
+ * 			AwFmGeneralFailure if the search range did not represent any values (aka SP > EP)
+ * 			AwFmFileReadFail on failure to read from the position array (if left 
+ * 				on file and not in memory)
+ * 			AwFmAllocationFailure if the function could not allocate memory for the return array.
  *
  *  Returns:
- *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
- *      AwFmFileReadOkay on success,
- *      AwFmFileOpenFail on failure to open the AwFm Index file
- *      AwFmFileReadFail on failure to read as many characters as was expected by the sequence.
- *      AwFmIllegalPositionError on a suffix array position being out of bounds of
- *        the file's compressed suffix array.
+ * 		Dynamically allocated array of hit positions. the length of the array will be the same length as the search range.
+ * 			This length can be easily determined with the awFmSearchRangeLength() function
  */
 uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
 		const struct AwFmSearchRange *restrict const searchRange, enum AwFmReturnCode *restrict fileAccessResult);

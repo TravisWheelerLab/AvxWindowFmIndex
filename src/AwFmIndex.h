@@ -513,6 +513,21 @@ enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct A
 enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(
 		const struct AwFmIndex *restrict const index, size_t sequenceNumber, char **headerBuffer, size_t *headerLength);
 
+/*
+ * Function:  awFmSearchRangeLength
+ * --------------------
+ * Gets the number of positions included in the given AwFmSearchRange
+ *
+ *  Inputs:
+ *    range: Range of positions in the BWT that corresponds to some number of
+ *      instances of a given kmer.
+ *
+ *  Returns:
+ *    Number of positions in the given range if the range is valid (startPtr < endPtr),
+ *      or 0 otherwise, as that would imply that no instances of that kmer were found.
+ */
+size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range);
+
 
 /*
  * Function:  awFmReturnCodeIsFailure

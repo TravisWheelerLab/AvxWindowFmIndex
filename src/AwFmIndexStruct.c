@@ -8,7 +8,7 @@
 
 #define AW_FM_BWT_BYTE_ALIGNMENT 32
 
-struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexConfiguration *restrict const config, const size_t bwtLength) {
+struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexConfiguration *_RESTRICT_ const config, const size_t bwtLength) {
 
 	// allocate the index
 	struct AwFmIndex *index = malloc(sizeof(struct AwFmIndex));
@@ -73,7 +73,7 @@ uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet) {
 }
 
 
-size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict index) {
+size_t awFmGetKmerTableLength(const struct AwFmIndex *_RESTRICT_ index) {
 	const size_t multiplier = awFmGetAlphabetCardinality(index->config.alphabetType);
 	size_t length						= 1;
 	for(size_t i = 0; i < index->config.kmerLengthInSeedTable; i++) {
@@ -84,17 +84,17 @@ size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict index) {
 }
 
 
-bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position) {
+bool awFmBwtPositionIsSampled(const struct AwFmIndex *_RESTRICT_ const index, const uint64_t position) {
 	return (position % index->config.suffixArrayCompressionRatio) == 0;
 }
 
 
-uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index) {
+uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *_RESTRICT_ const index) {
 	return 1 + ((index->bwtLength - 1) / index->config.suffixArrayCompressionRatio);
 }
 
 
-bool awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange) {
+bool awFmSearchRangeIsValid(const struct AwFmSearchRange *_RESTRICT_ const searchRange) {
 	return searchRange->startPtr <= searchRange->endPtr;
 }
 
@@ -124,7 +124,7 @@ uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQuer
 }
 
 
-size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range) {
+size_t awFmSearchRangeLength(const struct AwFmSearchRange *_RESTRICT_ const range) {
 	uint64_t length = range->endPtr - range->startPtr;
 	return (range->startPtr <= range->endPtr) ? length + 1 : 0;
 }
@@ -135,7 +135,7 @@ bool awFmIndexIsVersionValid(const uint16_t versionNumber) {
 }
 
 
-bool awFmIndexContainsFastaVector(const struct AwFmIndex *restrict const index) {
+bool awFmIndexContainsFastaVector(const struct AwFmIndex *_RESTRICT_ const index) {
 	return index->featureFlags & (1 << AW_FM_FEATURE_FLAG_BIT_FASTA_VECTOR);
 }
 

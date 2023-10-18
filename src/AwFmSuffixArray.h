@@ -128,7 +128,7 @@ size_t awFmGetSampledSuffixArrayLength(uint64_t bwtLength, uint64_t compressionR
  *      AwFmFileReadFail if the file could not be read sucessfully.
  */
 enum AwFmReturnCode awFmReadPositionsFromSuffixArray(
-		const struct AwFmIndex *const index, uint64_t *restrict const positionArray, const size_t positionArrayLength);
+		const struct AwFmIndex *const index, uint64_t *_RESTRICT_ const positionArray, const size_t positionArrayLength);
 
 
 struct AwFmSuffixArrayOffset awFmGetOffsetIntoSuffixArrayByteArray(
@@ -152,6 +152,6 @@ struct AwFmSuffixArrayOffset awFmGetOffsetIntoSuffixArrayByteArray(
  *      AwFmFileReadFail if the file could not be read sucessfully.
  */
 enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(
-		const struct AwFmIndex *restrict const index, struct AwFmBacktrace *restrict const backtracePtr);
+		const struct AwFmIndex *_RESTRICT_ const index, struct AwFmBacktrace *_RESTRICT_ const backtracePtr);
 
 #endif

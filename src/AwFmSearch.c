@@ -6,7 +6,7 @@
 
 
 struct AwFmSearchRange awFmCreateInitialQueryRange(
-		const struct AwFmIndex *restrict const index, const char *restrict const query, const uint8_t queryLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const query, const uint8_t queryLength) {
 
 	uint8_t finalLetterIndexInQuery;
 	if(index->config.alphabetType == AwFmAlphabetNucleotide) {
@@ -25,7 +25,7 @@ struct AwFmSearchRange awFmCreateInitialQueryRange(
 
 
 void awFmNucleotideIterativeStepBackwardSearch(
-		const struct AwFmIndex *restrict const index, struct AwFmSearchRange *restrict const range, const uint8_t letter) {
+		const struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange *_RESTRICT_ const range, const uint8_t letter) {
 
 	// query for the start pointer
 	uint64_t queryPosition				 = range->startPtr - 1;
@@ -79,7 +79,7 @@ void awFmNucleotideIterativeStepBackwardSearch(
 
 
 void awFmAminoIterativeStepBackwardSearch(
-		const struct AwFmIndex *restrict const index, struct AwFmSearchRange *restrict const range, const uint8_t letter) {
+		const struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange *_RESTRICT_ const range, const uint8_t letter) {
 
 	// query for the start pointer
 	uint64_t queryPosition				 = range->startPtr - 1;
@@ -125,8 +125,8 @@ void awFmAminoIterativeStepBackwardSearch(
 }
 
 
-uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
-		const struct AwFmSearchRange *restrict const searchRange, enum AwFmReturnCode *restrict fileAccessResult) {
+uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *_RESTRICT_ const index,
+		const struct AwFmSearchRange *_RESTRICT_ const searchRange, enum AwFmReturnCode *_RESTRICT_ fileAccessResult) {
 
 	const uint64_t numPositionsInRange = awFmSearchRangeLength(searchRange);
 
@@ -136,8 +136,8 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
 		return NULL;
 	}
 
-	uint64_t *const restrict positionArray = malloc(numPositionsInRange * sizeof(uint64_t));
-	uint64_t *const restrict offsetArray	 = malloc(numPositionsInRange * sizeof(uint64_t));
+	uint64_t *const _RESTRICT_ positionArray = malloc(numPositionsInRange * sizeof(uint64_t));
+	uint64_t *const _RESTRICT_ offsetArray	 = malloc(numPositionsInRange * sizeof(uint64_t));
 	// check for allocation failures
 	if(__builtin_expect(positionArray == NULL, 0)) {
 		*fileAccessResult = AwFmAllocationFailure;
@@ -201,7 +201,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
 }
 
 
-enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct AwFmIndex *_RESTRICT_ const index,
 		size_t globalPosition, size_t *sequenceNumber, size_t *localSequencePosition) {
 	if(!index->fastaVector) {
 		return AwFmUnsupportedVersionError;
@@ -235,7 +235,7 @@ enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct A
 
 
 enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(
-		const struct AwFmIndex *restrict const index, size_t sequenceNumber, char **headerBuffer, size_t *headerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, size_t sequenceNumber, char **headerBuffer, size_t *headerLength) {
 	if(sequenceNumber > index->fastaVector->metadata.count) {
 		return AwFmIllegalPositionError;
 	}
@@ -253,7 +253,7 @@ enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(
 
 
 struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(
-		const struct AwFmIndex *restrict const index, const char *restrict const kmer, const uint16_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength) {
 	int8_t kmerLetterPosition = kmerLength - 1;
 	uint16_t bwtBlockWidth;
 	uint8_t kmerLetterIndex;
@@ -290,7 +290,7 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(
 
 
 bool awFmSingleKmerExists(
-		const struct AwFmIndex *restrict const index, const char *restrict const kmer, const uint16_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength) {
 
 	struct AwFmSearchRange kmerRange = awFmDatabaseSingleKmerExactMatch(index, kmer, kmerLength);
 	return kmerRange.startPtr <= kmerRange.endPtr;
@@ -298,12 +298,12 @@ bool awFmSingleKmerExists(
 
 
 inline size_t awFmNucleotideBacktraceBwtPosition(
-		const struct AwFmIndex *restrict const index, const uint64_t bwtPosition) {
+		const struct AwFmIndex *_RESTRICT_ const index, const uint64_t bwtPosition) {
 	const uint64_t *prefixSums			 = index->prefixSums;
 	const uint64_t blockIndex				 = awFmGetBlockIndexFromGlobalPosition(bwtPosition);
 	const uint8_t localQueryPosition = awFmGetBlockQueryPositionFromGlobalPosition(bwtPosition);
 
-	const struct AwFmNucleotideBlock *restrict const blockPtr = &index->bwtBlockList.asNucleotide[blockIndex];
+	const struct AwFmNucleotideBlock *_RESTRICT_ const blockPtr = &index->bwtBlockList.asNucleotide[blockIndex];
 	const uint8_t letterIndex = awFmGetNucleotideLetterAtBwtPosition(blockPtr, localQueryPosition);
 
 	// if we encountered the sentinel, we know the position and can stop backtracing
@@ -322,12 +322,12 @@ inline size_t awFmNucleotideBacktraceBwtPosition(
 }
 
 
-inline size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition) {
+inline size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *_RESTRICT_ const index, const uint64_t bwtPosition) {
 	const uint64_t *prefixSums			 = index->prefixSums;
 	const uint64_t blockIndex				 = awFmGetBlockIndexFromGlobalPosition(bwtPosition);
 	const uint8_t localQueryPosition = awFmGetBlockQueryPositionFromGlobalPosition(bwtPosition);
 
-	const struct AwFmAminoBlock *restrict const blockPtr = &index->bwtBlockList.asAmino[blockIndex];
+	const struct AwFmAminoBlock *_RESTRICT_ const blockPtr = &index->bwtBlockList.asAmino[blockIndex];
 	uint8_t letterIndex																	 = awFmGetAminoLetterAtBwtPosition(blockPtr, localQueryPosition);
 
 	// if we encountered the sentinel, we know the position and can stop backtracing
@@ -345,7 +345,7 @@ inline size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict con
 }
 
 
-inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const index, const char *restrict const kmer,
+inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer,
 		const uint8_t kmerLength, struct AwFmSearchRange *range) {
 
 	uint8_t indexInKmerString = kmerLength - 1;
@@ -359,7 +359,7 @@ inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const
 }
 
 
-inline void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const index, const char *restrict const kmer,
+inline void awFmAminoNonSeededSearch(const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer,
 		const uint8_t kmerLength, struct AwFmSearchRange *range) {
 
 	uint8_t indexInKmerString = kmerLength - 1;

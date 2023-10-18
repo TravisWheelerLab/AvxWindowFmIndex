@@ -27,13 +27,13 @@ int main(int argc, char **argv) {
 }
 
 
-void setVectorBytes(uint8_t *restrict const vector, const uint8_t byteValue) {
+void setVectorBytes(uint8_t *_RESTRICT_ const vector, const uint8_t byteValue) {
 	for(uint8_t i = 0; i < 32; i++) {
 		vector[i] = byteValue;
 	}
 }
 
-uint16_t setVectorRandBits(uint8_t *restrict const vector) {
+uint16_t setVectorRandBits(uint8_t *_RESTRICT_ const vector) {
 	uint8_t bitsSet = 0;
 	for(uint8_t byteIndex = 0; byteIndex < 32; byteIndex++) {
 		vector[byteIndex] = 0;

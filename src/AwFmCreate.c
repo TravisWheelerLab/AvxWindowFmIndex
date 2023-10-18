@@ -15,13 +15,13 @@
 
 
 /*private function prototypes*/
-void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t sequenceLength,
-		const uint8_t *restrict const sequence, const uint64_t *restrict const unsampledSuffixArray);
+void setBwtAndPrefixSums(struct AwFmIndex *_RESTRICT_ const index, const size_t sequenceLength,
+		const uint8_t *_RESTRICT_ const sequence, const uint64_t *_RESTRICT_ const unsampledSuffixArray);
 
-void populateKmerSeedTable(struct AwFmIndex *restrict const index);
-
-void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, struct AwFmSearchRange range,
+void populateKmerSeedTableRecursive(struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange range,
 		uint8_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier);
+		
+void populateKmerSeedTable(struct AwFmIndex *_RESTRICT_ const index);
 
 
 void fullSequenceSanitize(const uint8_t *const sequence, uint8_t *const sanitizedSequenceCopy,
@@ -29,9 +29,9 @@ void fullSequenceSanitize(const uint8_t *const sequence, uint8_t *const sanitize
 
 
 /*function implementations*/
-enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
-		struct AwFmIndexConfiguration *restrict const config, const uint8_t *restrict const sequence,
-		const size_t sequenceLength, const char *restrict const fileSrc) {
+enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *_RESTRICT_ *index,
+		struct AwFmIndexConfiguration *_RESTRICT_ const config, const uint8_t *_RESTRICT_ const sequence,
+		const size_t sequenceLength, const char *_RESTRICT_ const fileSrc) {
 
 	// first, do a sanity check on inputs
 	if(config == NULL) {
@@ -62,7 +62,7 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 	sanitizedSequenceCopy[suffixArrayLength - 1] = '$';
 
 	// allocate the index and all internal arrays.
-	struct AwFmIndex *restrict indexData = awFmIndexAlloc(config, suffixArrayLength);
+	struct AwFmIndex *_RESTRICT_ indexData = awFmIndexAlloc(config, suffixArrayLength);
 	if(indexData == NULL) {
 		return AwFmAllocationFailure;
 	}
@@ -125,8 +125,8 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
 }
 
 /*function implementations*/
-enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
-		struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc, const char *restrict const indexFileSrc) {
+enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *_RESTRICT_ *index,
+		struct AwFmIndexConfiguration *_RESTRICT_ const config, const char *fastaSrc, const char *_RESTRICT_ const indexFileSrc) {
 
 	// first, do a sanity check on inputs
 	if(config == NULL) {
@@ -179,7 +179,7 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 	sanitizedSequenceCopy[suffixArrayLength - 1] = '$';
 
 	// allocate the index and all internal arrays.
-	struct AwFmIndex *restrict indexData = awFmIndexAlloc(config, suffixArrayLength);
+	struct AwFmIndex *_RESTRICT_ indexData = awFmIndexAlloc(config, suffixArrayLength);
 	if(indexData == NULL) {
 		return AwFmAllocationFailure;
 	}
@@ -251,8 +251,8 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
 	return returnCode;
 }
 
-void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bwtLength,
-		const uint8_t *restrict const sequence, const uint64_t *restrict const unsampledSuffixArray) {
+void setBwtAndPrefixSums(struct AwFmIndex *_RESTRICT_ const index, const size_t bwtLength,
+		const uint8_t *_RESTRICT_ const sequence, const uint64_t *_RESTRICT_ const unsampledSuffixArray) {
 	if(index->config.alphabetType == AwFmAlphabetNucleotide) {
 		uint64_t baseOccurrences[8] = {0};
 		// baseOccurrences is length 8 because that's how long the signpost baseOccurrences in
@@ -264,7 +264,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 			const uint8_t byteInVector										 = positionInBlock / 8;
 			const uint8_t bitInVectorByte									 = positionInBlock % 8;
 			struct AwFmNucleotideBlock *nucleotideBlockPtr = &index->bwtBlockList.asNucleotide[blockIndex];
-			uint8_t *restrict const letterBitVectorBytes	 = (uint8_t *)nucleotideBlockPtr->letterBitVectors;
+			uint8_t *_RESTRICT_ const letterBitVectorBytes	 = (uint8_t *)nucleotideBlockPtr->letterBitVectors;
 
 			if(__builtin_expect(positionInBlock == 0, 0)) {
 				// when we start a new block, copy over the base occurrences, and initialize the bit vectors
@@ -308,8 +308,8 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 			const uint8_t positionInBlock														= suffixArrayPosition % AW_FM_POSITIONS_PER_FM_BLOCK;
 			const uint8_t byteInVector															= positionInBlock / 8;
 			const uint8_t bitInVectorByte														= positionInBlock % 8;
-			struct AwFmAminoBlock *restrict const aminoBlockPointer = &index->bwtBlockList.asAmino[blockIndex];
-			uint8_t *restrict const letterBitVectorBytes						= (uint8_t *)aminoBlockPointer->letterBitVectors;
+			struct AwFmAminoBlock *_RESTRICT_ const aminoBlockPointer = &index->bwtBlockList.asAmino[blockIndex];
+			uint8_t *_RESTRICT_ const letterBitVectorBytes						= (uint8_t *)aminoBlockPointer->letterBitVectors;
 
 			if(__builtin_expect(positionInBlock == 0, 0)) {
 				// when we start a new block, copy over the base occurrences, and initialize the bit vectors
@@ -347,7 +347,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *restrict const index, const size_t bw
 	}
 }
 
-void populateKmerSeedTable(struct AwFmIndex *restrict const index) {
+void populateKmerSeedTable(struct AwFmIndex *_RESTRICT_ const index) {
 	const uint8_t alphabetCardinality = awFmGetAlphabetCardinality(index->config.alphabetType);
 	for(uint8_t i = 0; i < alphabetCardinality; i++) {
 		struct AwFmSearchRange range = {.startPtr = index->prefixSums[i], .endPtr = index->prefixSums[i + 1] - 1};
@@ -356,7 +356,7 @@ void populateKmerSeedTable(struct AwFmIndex *restrict const index) {
 }
 
 
-void populateKmerSeedTableRecursive(struct AwFmIndex *restrict const index, struct AwFmSearchRange range,
+void populateKmerSeedTableRecursive(struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange range,
 		uint8_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier) {
 	const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->config.alphabetType);
 

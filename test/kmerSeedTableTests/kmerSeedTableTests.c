@@ -21,9 +21,9 @@ uint8_t aminoLookup[21] = {
 		'a', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'y', 'z'};
 uint8_t nucleotideLookup[5] = {'a', 'g', 'c', 't', 'x'};
 
-void checkRangeForCorrectness(const struct AwFmSearchRange *restrict const range,
-		const uint64_t *restrict const suffixArray, const char *kmer, const uint8_t kmerLength,
-		const uint8_t *restrict const sequence, const uint64_t sequenceLength);
+void checkRangeForCorrectness(const struct AwFmSearchRange *_RESTRICT_ const range,
+		const uint64_t *_RESTRICT_ const suffixArray, const char *kmer, const uint8_t kmerLength,
+		const uint8_t *_RESTRICT_ const sequence, const uint64_t sequenceLength);
 bool rangeCompare(struct AwFmSearchRange range1, struct AwFmSearchRange range2);
 void testAllKmerRanges(struct AwFmIndexConfiguration *config, uint64_t sequenceLength);
 
@@ -46,9 +46,9 @@ int main(int argc, char **argv) {
 }
 
 
-void checkRangeForCorrectness(const struct AwFmSearchRange *restrict const range,
-		const uint64_t *restrict const suffixArray, const char *kmer, const uint8_t kmerLength,
-		const uint8_t *restrict const sequence, const uint64_t sequenceLength) {
+void checkRangeForCorrectness(const struct AwFmSearchRange *_RESTRICT_ const range,
+		const uint64_t *_RESTRICT_ const suffixArray, const char *kmer, const uint8_t kmerLength,
+		const uint8_t *_RESTRICT_ const sequence, const uint64_t sequenceLength) {
 
 	// make a null terminated copy of the kmer
 	char kmerBuffer[kmerLength + 1];

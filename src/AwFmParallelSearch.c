@@ -18,20 +18,20 @@
 #define DEFAULT_POSITION_LIST_CAPACITY 4
 
 
-void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const index,
-		struct AwFmKmerSearchList *restrict const searchList, struct AwFmSearchRange *restrict const ranges,
+void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *_RESTRICT_ const index,
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, struct AwFmSearchRange *_RESTRICT_ const ranges,
 		const size_t threadBlockStartIndex, const size_t threadBlockEndIndex);
 
-void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const index,
-		struct AwFmKmerSearchList *restrict const searchList, struct AwFmSearchRange *restrict const ranges,
+void parallelSearchExtendKmersInBlock(const struct AwFmIndex *_RESTRICT_ const index,
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, struct AwFmSearchRange *_RESTRICT_ const ranges,
 		const size_t threadBlockStartIndex, const size_t threadBlockEndIndex);
 
-enum AwFmReturnCode parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const index,
-		struct AwFmKmerSearchList *restrict const searchList, struct AwFmSearchRange *restrict const ranges,
+enum AwFmReturnCode parallelSearchTracebackPositionLists(const struct AwFmIndex *_RESTRICT_ const index,
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, struct AwFmSearchRange *_RESTRICT_ const ranges,
 		const size_t threadBlockStartIndex, const size_t threadBlockEndIndex);
 
 
-bool setPositionListCount(struct AwFmKmerSearchData *restrict const searchData, uint32_t count);
+bool setPositionListCount(struct AwFmKmerSearchData *_RESTRICT_ const searchData, uint32_t count);
 
 
 struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity) {
@@ -80,7 +80,7 @@ struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity) {
 }
 
 
-void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchList) {
+void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *_RESTRICT_ const searchList) {
 	for(size_t i = 0; i < searchList->capacity; i++) {
 		free(searchList->kmerSearchData[i].positionList);
 	}
@@ -89,8 +89,8 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
 }
 
 
-enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
-		struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads) {
+enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *_RESTRICT_ const index,
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint8_t numThreads) {
 
 	const uint32_t searchListCount = searchList->count;
 	enum AwFmReturnCode atomicReturnCode = AwFmSuccess;
@@ -133,8 +133,8 @@ enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *restrict co
 	}
 }
 
-void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
-		struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads) {
+void awFmParallelSearchCount(const struct AwFmIndex *_RESTRICT_ const index,
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint8_t numThreads) {
 
 	const uint32_t searchListCount = searchList->count;
 
@@ -179,8 +179,8 @@ void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
 }
 
 
-void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const index,
-		struct AwFmKmerSearchList *restrict const searchList, struct AwFmSearchRange *restrict const ranges,
+void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *_RESTRICT_ const index,
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, struct AwFmSearchRange *_RESTRICT_ const ranges,
 		const size_t threadBlockStartIndex, const size_t threadBlockEndIndex) {
 
 	for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++) {
@@ -210,8 +210,8 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *restrict const 
 }
 
 
-void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const index,
-		struct AwFmKmerSearchList *restrict const searchList, struct AwFmSearchRange *restrict const ranges,
+void parallelSearchExtendKmersInBlock(const struct AwFmIndex *_RESTRICT_ const index,
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, struct AwFmSearchRange *_RESTRICT_ const ranges,
 		const size_t threadBlockStartIndex, const size_t threadBlockEndIndex) {
 	bool hasActiveQueries					 = true;
 	uint8_t currentKmerLetterIndex = index->config.kmerLengthInSeedTable;
@@ -222,7 +222,7 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
 
 		for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++) {
 			const uint64_t rangesIndex																 = kmerIndex - threadBlockStartIndex;
-			const struct AwFmKmerSearchData *restrict const searchData = &searchList->kmerSearchData[kmerIndex];
+			const struct AwFmKmerSearchData *_RESTRICT_ const searchData = &searchList->kmerSearchData[kmerIndex];
 			const uint8_t kmerLength																	 = searchData->kmerLength;
 			const char *kmerString																		 = searchData->kmerString;
 
@@ -244,8 +244,8 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *restrict const ind
 }
 
 
-enum AwFmReturnCode parallelSearchTracebackPositionLists(const struct AwFmIndex *restrict const index,
-		struct AwFmKmerSearchList *restrict const searchList, struct AwFmSearchRange *restrict const ranges,
+enum AwFmReturnCode parallelSearchTracebackPositionLists(const struct AwFmIndex *_RESTRICT_ const index,
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, struct AwFmSearchRange *_RESTRICT_ const ranges,
 		const size_t threadBlockStartIndex, const size_t threadBlockEndIndex) {
 
 	for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++) {
@@ -254,7 +254,7 @@ enum AwFmReturnCode parallelSearchTracebackPositionLists(const struct AwFmIndex 
 		struct AwFmKmerSearchData *searchData = &searchList->kmerSearchData[kmerIndex];
 		const size_t rangeLength							= awFmSearchRangeLength(&ranges[rangesIndex]);
 		setPositionListCount(searchData, rangeLength);
-		// struct AwFmBacktrace *restrict const backtracePositionList = {
+		// struct AwFmBacktrace *_RESTRICT_ const backtracePositionList = {
 		//   .position = searchList->kmerSearchData[kmerIndex].positionList;
 		// };searchList->kmerSearchData[kmerIndex].positionBacktraceList;
 
@@ -287,7 +287,7 @@ enum AwFmReturnCode parallelSearchTracebackPositionLists(const struct AwFmIndex 
 }
 
 
-bool setPositionListCount(struct AwFmKmerSearchData *restrict const searchData, uint32_t newCount) {
+bool setPositionListCount(struct AwFmKmerSearchData *_RESTRICT_ const searchData, uint32_t newCount) {
 	if(__builtin_expect(searchData->capacity >= newCount, 1)) {
 		searchData->count = newCount;
 	}

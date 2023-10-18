@@ -53,12 +53,12 @@ void testDisallowOverwrite();
 void testMetadataCheck();
 
 void testKmerTableLengths(
-		const struct AwFmIndex *restrict const index, const uint8_t *sequence, const size_t sequenceLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const uint8_t *sequence, const size_t sequenceLength);
 
 struct AwFmIndex *testCreateNucleotideIndex(const uint8_t *sequence, const size_t sequenceLength);
 
 void testCreateAminoIndex();
-void testPrefixSums(const struct AwFmIndex *restrict const index, const uint8_t *sequence, const size_t sequenceLength);
+void testPrefixSums(const struct AwFmIndex *_RESTRICT_ const index, const uint8_t *sequence, const size_t sequenceLength);
 
 int main(int argc, char **argv) {
 	srand(time(NULL));
@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
 	// }
 	printf("\n");
 
-	struct AwFmIndex *restrict const index = testCreateNucleotideIndex(sequence, sequenceLength);
+	struct AwFmIndex *_RESTRICT_ const index = testCreateNucleotideIndex(sequence, sequenceLength);
 	testPrefixSums(index, sequence, sequenceLength);
 	testKmerTableLengths(index, sequence, sequenceLength);
 
@@ -108,7 +108,7 @@ struct AwFmIndex *testCreateNucleotideIndex(const uint8_t *sequence, const size_
 	config.storeOriginalSequence				 = false;
 
 	const uint32_t expectedVersionNumber = AW_FM_CURRENT_VERSION_NUMBER;
-	struct AwFmIndex *restrict index;
+	struct AwFmIndex *_RESTRICT_ index;
 	enum AwFmReturnCode returnCode = awFmCreateIndex(&index, &config, sequence, sequenceLength, fileSrc);
 	sprintf(buffer, "return code was not successful, returned %d", returnCode);
 	testAssertString(returnCode >= 0, buffer);
@@ -140,7 +140,7 @@ struct AwFmIndex *testCreateNucleotideIndex(const uint8_t *sequence, const size_
 
 
 void testPrefixSums(
-		const struct AwFmIndex *restrict const index, const uint8_t *sequence, const size_t sequenceLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const uint8_t *sequence, const size_t sequenceLength) {
 	const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->config.alphabetType);
 	size_t *letterCounts			 = malloc((alphabetSize + 2) * sizeof(size_t));
 	memset(letterCounts, 0, alphabetSize * sizeof(size_t));
@@ -173,7 +173,7 @@ void testPrefixSums(
 
 
 void testKmerTableLengths(
-		const struct AwFmIndex *restrict const index, const uint8_t *sequence, const size_t sequenceLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const uint8_t *sequence, const size_t sequenceLength) {
 	printf("beginning kmer table lengths test\n");
 	const uint8_t kmerLength = index->config.kmerLengthInSeedTable;
 	for(size_t sequencePosition = 0; sequencePosition <= sequenceLength - kmerLength; sequencePosition++) {

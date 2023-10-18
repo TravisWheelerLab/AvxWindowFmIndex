@@ -30,7 +30,7 @@
  *      AwFmFileReadFail if the file could not be read sucessfully.
  */
 enum AwFmReturnCode awFmGetSuffixArrayValueFromFile(
-		const struct AwFmIndex *restrict const index, const size_t positionInArray, size_t *valueOut);
+		const struct AwFmIndex *_RESTRICT_ const index, const size_t positionInArray, size_t *valueOut);
 
 
 /*
@@ -44,7 +44,7 @@ enum AwFmReturnCode awFmGetSuffixArrayValueFromFile(
  *  Returns:
  *    Offset into the file, in bytes, where the sequence starts.
  */
-size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index);
+size_t awFmGetSequenceFileOffset(const struct AwFmIndex *_RESTRICT_ const index);
 
 
 /*
@@ -58,7 +58,7 @@ size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index);
  *  Returns:
  *    Offset into the file, in bytes, where the compressed suffix array starts.
  */
-size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index);
+size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *_RESTRICT_ const index);
 
 
 /*
@@ -72,6 +72,6 @@ size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index
  *  Returns:
  *    Offset into the file, in bytes, where the FastaVector data starts, if it exists.
  */
-size_t awFmGetFastaVectorFileOffset(const struct AwFmIndex *restrict const index);
+size_t awFmGetFastaVectorFileOffset(const struct AwFmIndex *_RESTRICT_ const index);
 
 #endif /* end of include guard: AW_FM_INDEX_FILE_H */

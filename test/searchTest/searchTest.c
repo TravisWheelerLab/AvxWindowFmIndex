@@ -37,7 +37,7 @@ bool sequencePositionInRange(
 void testRangeForCorrectness(const struct AwFmSearchRange *range, const uint8_t *sequence, const size_t sequenceLength,
 		const uint64_t *suffixArray, const char *kmer, const uint8_t kmerLength);
 struct AwFmSearchRange findRangeForKmer(
-		const struct AwFmIndex *restrict const index, const char *kmer, const uint64_t kmerLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const char *kmer, const uint64_t kmerLength);
 
 
 #define GENERATE_INDEX_FROM_SCRATCH
@@ -180,6 +180,6 @@ void testRangeForCorrectness(const struct AwFmSearchRange *range, const uint8_t 
 
 
 struct AwFmSearchRange findRangeForKmer(
-		const struct AwFmIndex *restrict const index, const char *kmer, const uint64_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *kmer, const uint64_t kmerLength) {
 	return awFmDatabaseSingleKmerExactMatch(index, kmer, kmerLength);
 }

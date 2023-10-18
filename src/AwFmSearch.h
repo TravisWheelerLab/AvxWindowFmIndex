@@ -32,7 +32,7 @@
  *    the given kmer does not exist in the database sequence.
  */
 struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(
-		const struct AwFmIndex *restrict const index, const char *restrict const kmer, const uint16_t kmerLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength);
 
 
 /*
@@ -50,7 +50,7 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(
  *    Position in the suffix array of the character in the sequence immediately preceeding the one
  *      found at the given bwtPosition.
  */
-size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
+size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *_RESTRICT_ const index, const uint64_t bwtPosition);
 
 /*
  * Function:  awFmBacktraceBwtPosition
@@ -67,7 +67,7 @@ size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *restrict const
  *    Position in the suffix array of the character in the sequence immediately preceeding the one
  *      found at the given bwtPosition.
  */
-size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict const index, const uint64_t bwtPosition);
+size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *_RESTRICT_ const index, const uint64_t bwtPosition);
 
 /*
  * Function:  awFmSingleKmerExists
@@ -87,7 +87,7 @@ size_t awFmAminoBacktraceBwtPosition(const struct AwFmIndex *restrict const inde
  *      cannot be found in the database sequence.
  */
 bool awFmSingleKmerExists(
-		const struct AwFmIndex *restrict const index, const char *restrict const kmer, const uint16_t kmerLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength);
 
 /*
  * Function:  awFmNucleotideNonSeededSearch
@@ -110,7 +110,7 @@ bool awFmSingleKmerExists(
  *      Since gcc doesn't seem to perform NRVO correctly, this performs slightly better.
  *
  */
-void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const index, const char *restrict const kmer,
+void awFmNucleotideNonSeededSearch(const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer,
 		const uint8_t kmerLength, struct AwFmSearchRange *range);
 
 
@@ -135,7 +135,7 @@ void awFmNucleotideNonSeededSearch(const struct AwFmIndex *restrict const index,
  *      Since gcc doesn't seem to perform NRVO correctly, this performs slightly better.
  *
  */
-void awFmAminoNonSeededSearch(const struct AwFmIndex *restrict const index, const char *restrict const kmer,
+void awFmAminoNonSeededSearch(const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer,
 		const uint8_t kmerLength, struct AwFmSearchRange *range);
 
 

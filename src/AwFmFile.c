@@ -17,8 +17,8 @@
 static const uint8_t IndexFileFormatIdHeaderLength = 10;
 static const char IndexFileFormatIdHeader[11]			 = "AwFmIndex\n\0";
 
-enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index, const uint8_t *restrict const sequence,
-		const uint64_t sequenceLength, const char *restrict const fileSrc) {
+enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *_RESTRICT_ const index, const uint8_t *_RESTRICT_ const sequence,
+		const uint64_t sequenceLength, const char *_RESTRICT_ const fileSrc) {
 	if(__builtin_expect(fileSrc == NULL, 0)) {
 		return AwFmNoFileSrcGiven;
 	}
@@ -172,7 +172,7 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
 
 
 enum AwFmReturnCode awFmReadIndexFromFile(
-		struct AwFmIndex *restrict *restrict index, const char *fileSrc, const bool keepSuffixArrayInMemory) {
+		struct AwFmIndex *_RESTRICT_ *_RESTRICT_ index, const char *fileSrc, const bool keepSuffixArrayInMemory) {
 
 	if(__builtin_expect(fileSrc == NULL, 0)) {
 		return AwFmNoFileSrcGiven;
@@ -184,7 +184,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 	}
 
 	// create a local-scope pointer for the index, when we're done we'll set the index out-arg to this pointer.
-	struct AwFmIndex *restrict indexData;
+	struct AwFmIndex *_RESTRICT_ indexData;
 
 	// read the header, and check to make sure it matches
 	char headerBuffer[IndexFileFormatIdHeaderLength + 1];
@@ -342,8 +342,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 		}
 
 		// free the sequence buffer in the fastaVector, since it won't be used here
-		free(fastaVector->sequence.charData);
-		fastaVector->sequence.charData = NULL;
+		fastaVectorStringDealloc(&fastaVector->sequence);
 
 		indexData->fastaVector = fastaVector;
 		size_t fastaVectorHeaderLength;
@@ -391,7 +390,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 }
 
 
-enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *_RESTRICT_ const index,
 		const size_t sequenceStartPosition, const size_t sequenceSegmentLength, char *const sequenceBuffer) {
 
 	if(index->config.storeOriginalSequence) {
@@ -419,7 +418,7 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
 
 
 enum AwFmReturnCode awFmGetSuffixArrayValueFromFile(
-		const struct AwFmIndex *restrict const index, const size_t positionInArray, size_t *valueOut) {
+		const struct AwFmIndex *_RESTRICT_ const index, const size_t positionInArray, size_t *valueOut) {
 
 	struct AwFmSuffixArrayOffset offset =
 			awFmGetOffsetIntoSuffixArrayByteArray(index->suffixArray.valueBitWidth, positionInArray);
@@ -451,7 +450,7 @@ enum AwFmReturnCode awFmGetSuffixArrayValueFromFile(
 }
 
 
-size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index) {
+size_t awFmGetSequenceFileOffset(const struct AwFmIndex *_RESTRICT_ const index) {
 	const size_t configLength						= 12 * sizeof(uint8_t);
 	const size_t bytesPerBwtBlock				= index->config.alphabetType == AwFmAlphabetNucleotide ?
 																						sizeof(struct AwFmNucleotideBlock) :
@@ -466,7 +465,7 @@ size_t awFmGetSequenceFileOffset(const struct AwFmIndex *restrict const index) {
 }
 
 
-size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index) {
+size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *_RESTRICT_ const index) {
 	if(index->config.storeOriginalSequence) {
 		return awFmGetSequenceFileOffset(index) + ((index->bwtLength - 1) * sizeof(char));
 	}
@@ -475,7 +474,7 @@ size_t awFmGetSuffixArrayFileOffset(const struct AwFmIndex *restrict const index
 	}
 }
 
-size_t awFmGetFastaVectorFileOffset(const struct AwFmIndex *restrict const index) {
+size_t awFmGetFastaVectorFileOffset(const struct AwFmIndex *_RESTRICT_ const index) {
 	size_t compressedSuffixArrayByteLength = index->suffixArray.compressedByteLength;
 	return awFmGetSuffixArrayFileOffset(index) + compressedSuffixArrayByteLength;
 }

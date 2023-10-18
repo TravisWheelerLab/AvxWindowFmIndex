@@ -9,6 +9,13 @@
 #include "FastaVector.h"
 
 
+
+#ifdef __cplusplus
+#define _RESTRICT_ __restrict_
+#else
+#define _RESTRICT_ restrict
+#endif
+
 #ifndef AW_FM_NUM_CONCURRENT_QUERIES
 #define AW_FM_NUM_CONCURRENT_QUERIES 8
 #endif
@@ -152,9 +159,9 @@ enum AwFmReturnCode{
  *      AwFmSuffixArrayCreationFailure if an error was caused by divsufsort64 in suffix array creation.
  *      AwFmFileWriteFail if a file write failed.
  */
-enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
-		struct AwFmIndexConfiguration *restrict const config, const uint8_t *restrict const sequence,
-		const size_t sequenceLength, const char *restrict const fileSrc);
+enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *_RESTRICT_ *index,
+		struct AwFmIndexConfiguration *_RESTRICT_ const config, const uint8_t *_RESTRICT_ const sequence,
+		const size_t sequenceLength, const char *_RESTRICT_ const fileSrc);
 
 
 /*
@@ -181,8 +188,8 @@ enum AwFmReturnCode awFmCreateIndex(struct AwFmIndex *restrict *index,
  *      AwFmSuffixArrayCreationFailure if an error was caused by divsufsort64 in suffix array creation.
  *      AwFmFileWriteFail if a file write failed.
  */
-enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *restrict *index,
-		struct AwFmIndexConfiguration *restrict const config, const char *fastaSrc, const char *restrict const indexFileSrc);
+enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *_RESTRICT_ *index,
+		struct AwFmIndexConfiguration *_RESTRICT_ const config, const char *fastaSrc, const char *_RESTRICT_ const indexFileSrc);
 
 
 /*
@@ -217,8 +224,8 @@ void awFmDeallocIndex(struct AwFmIndex *index);
  *      AwFmFileAlreadyExists if a file exists at the given fileSrc, but allowOverwite was false.
  *      AwFmFileWriteFail if a file write failed.
  */
-enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index, const uint8_t *restrict const sequence,
-		const uint64_t sequenceLength, const char *restrict const fileSrc);
+enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *_RESTRICT_ const index, const uint8_t *_RESTRICT_ const sequence,
+		const uint64_t sequenceLength, const char *_RESTRICT_ const fileSrc);
 
 
 /*
@@ -242,7 +249,7 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *restrict const index,
  *      AwFmAllocationFailure on failure to allocated the necessary memory for the index.
  */
 enum AwFmReturnCode awFmReadIndexFromFile(
-		struct AwFmIndex *restrict *restrict index, const char *fileSrc, const bool keepSuffixArrayInMemory);
+		struct AwFmIndex *_RESTRICT_ *_RESTRICT_ index, const char *fileSrc, const bool keepSuffixArrayInMemory);
 
 
 /*
@@ -280,7 +287,7 @@ struct AwFmKmerSearchList *awFmCreateKmerSearchList(const size_t capacity);
  *  Inputs:
  *    searchData:   pointer to the searchData struct to deallocate
  */
-void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchList);
+void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *_RESTRICT_ const searchList);
 
 
 /*
@@ -315,8 +322,8 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *restrict const searchL
  *      AwFmFileReadFail if the file could not be read sucessfully (If suffix array
 *					is stored on file, not in memory)
  */
-enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *restrict const index,
-		struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
+enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *_RESTRICT_ const index,
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint8_t numThreads);
 
 
 /*
@@ -346,8 +353,8 @@ enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *restrict co
  *    numThreads:   How many threads to direct OpenMP to use. The best value for this argument
  *                    will likely vary from system to system. Suggested default value is 4
  */
-void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
-		struct AwFmKmerSearchList *restrict const searchList, uint8_t numThreads);
+void awFmParallelSearchCount(const struct AwFmIndex *_RESTRICT_ const index,
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint8_t numThreads);
 
 
 /*
@@ -372,7 +379,7 @@ void awFmParallelSearchCount(const struct AwFmIndex *restrict const index,
  *    AwFmIllegalPositionError if the start position is not less than the end position
  *		AwFmUnsupportedVersionError if the index was configured to not store the original sequence.
  */
-enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *_RESTRICT_ const index,
 		const size_t sequenceStartPosition, const size_t sequenceSegmentLength, char *const sequenceBuffer);
 
 
@@ -396,7 +403,7 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *restrict co
  *    in the input query.
  */
 struct AwFmSearchRange awFmCreateInitialQueryRange(
-		const struct AwFmIndex *restrict const index, const char *restrict const query, const uint8_t queryLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const query, const uint8_t queryLength);
 
 
 /*
@@ -413,7 +420,7 @@ struct AwFmSearchRange awFmCreateInitialQueryRange(
  *    letter: letter of the prefix or suffix character.
  */
 void awFmNucleotideIterativeStepBackwardSearch(
-		const struct AwFmIndex *restrict const index, struct AwFmSearchRange *restrict const range, const uint8_t letter);
+		const struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange *_RESTRICT_ const range, const uint8_t letter);
 
 
 /*
@@ -430,7 +437,7 @@ void awFmNucleotideIterativeStepBackwardSearch(
  *    letter: letter of the prefix or suffix character.
  */
 void awFmAminoIterativeStepBackwardSearch(
-		const struct AwFmIndex *restrict const index, struct AwFmSearchRange *restrict const range, const uint8_t letter);
+		const struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange *_RESTRICT_ const range, const uint8_t letter);
 
 
 /*
@@ -462,8 +469,8 @@ void awFmAminoIterativeStepBackwardSearch(
  * 		Dynamically allocated array of hit positions. the length of the array will be the same length as the search range.
  * 			This length can be easily determined with the awFmSearchRangeLength() function
  */
-uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const index,
-		const struct AwFmSearchRange *restrict const searchRange, enum AwFmReturnCode *restrict fileAccessResult);
+uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *_RESTRICT_ const index,
+		const struct AwFmSearchRange *_RESTRICT_ const searchRange, enum AwFmReturnCode *_RESTRICT_ fileAccessResult);
 
 
 /*
@@ -488,7 +495,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *restrict const in
  *      AwFmIllegalPositionError if the globalPosition is greater than the length of the index.
  *      AwFmUnsupportedVersionError if the version of the AwFmIndex does not support FastaVector.
  */
-enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct AwFmIndex *restrict const index,
+enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct AwFmIndex *_RESTRICT_ const index,
 		size_t globalPosition, size_t *sequenceNumber, size_t *localSequencePosition);
 
 
@@ -511,7 +518,7 @@ enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct A
  *      AwFmUnsupportedVersionError if the version of the AwFmIndex does not support FastaVector.
  */
 enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(
-		const struct AwFmIndex *restrict const index, size_t sequenceNumber, char **headerBuffer, size_t *headerLength);
+		const struct AwFmIndex *_RESTRICT_ const index, size_t sequenceNumber, char **headerBuffer, size_t *headerLength);
 
 /*
  * Function:  awFmSearchRangeLength

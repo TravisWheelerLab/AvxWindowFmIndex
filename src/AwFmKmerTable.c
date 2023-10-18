@@ -5,7 +5,7 @@
 
 
 struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(
-		const struct AwFmIndex *restrict const index, const char *restrict const kmer, const uint8_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint8_t kmerLength) {
 
 	const uint8_t kmerSeedStartPosition = kmerLength - index->config.kmerLengthInSeedTable;
 	uint64_t kmerTableIndex							= 0;
@@ -19,7 +19,7 @@ struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(
 
 
 struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(
-		const struct AwFmIndex *restrict const index, const char *restrict const kmer, const uint8_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint8_t kmerLength) {
 
 	const uint8_t kmerSeedStartPosition = kmerLength - index->config.kmerLengthInSeedTable;
 	uint64_t kmerTableIndex							= 0;
@@ -82,7 +82,7 @@ that point, searching for the smaller kmers becomes much easier.
 
 */
 static inline struct AwFmSearchRange awFmNucleotidePartialKmerSeedRangeFromTable(
-		const struct AwFmIndex *restrict const index, const char *restrict const kmer, const uint8_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint8_t kmerLength) {
 
 	assert(false, "this function is unfinished, untested, and left only to be finished for future releases");
 	struct AwFmSearchRange range = {0, 0};
@@ -136,7 +136,7 @@ static inline struct AwFmSearchRange awFmNucleotidePartialKmerSeedRangeFromTable
 
 
 inline struct AwFmSearchRange awFmAminoPartialKmerSeedRangeFromTable(
-		const struct AwFmIndex *restrict const index, const char *restrict const kmer, const uint8_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint8_t kmerLength) {
 	struct AwFmSearchRange range = {0, 0};
 
 	if(__builtin_expect((kmer[kmerLength - 1] | 0x20) == 'y', 0)) {

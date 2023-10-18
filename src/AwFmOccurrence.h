@@ -22,7 +22,7 @@
  *   Vector with bits set at every position the given letter was found.
  */
 AwFmSimdVec256 awFmMakeNucleotideOccurrenceVector(
-		const struct AwFmNucleotideBlock *restrict const blockPtr, const uint8_t letter);
+		const struct AwFmNucleotideBlock *_RESTRICT_ const blockPtr, const uint8_t letter);
 
 
 /*
@@ -39,7 +39,7 @@ AwFmSimdVec256 awFmMakeNucleotideOccurrenceVector(
  *   Vector with bits set at every position the given letter was found.
  */
 AwFmSimdVec256 awFmMakeAminoAcidOccurrenceVector(
-		const struct AwFmAminoBlock *restrict const blockPtr, const uint8_t letter);
+		const struct AwFmAminoBlock *_RESTRICT_ const blockPtr, const uint8_t letter);
 
 
 /*
@@ -83,7 +83,7 @@ uint16_t awFmVectorPopcountBuiltin(const AwFmSimdVec256 occurrenceVector, const 
  * blockList that contains the block that should be prefetched.
  */
 void awFmBlockPrefetch(
-		const void *restrict const baseBlockListPtr, const uint64_t blockByteWidth, const uint64_t nextQueryPosition);
+		const void *_RESTRICT_ const baseBlockListPtr, const uint64_t blockByteWidth, const uint64_t nextQueryPosition);
 
 
 /*

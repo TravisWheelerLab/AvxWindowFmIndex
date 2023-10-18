@@ -126,8 +126,8 @@ inline size_t awFmGetSampledSuffixArrayLength(uint64_t bwtLength, uint64_t compr
 }
 
 
-enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *restrict const index,
-		uint64_t *restrict const positionArray, const size_t positionArrayLength) {
+enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *_RESTRICT_ const index,
+		uint64_t *_RESTRICT_ const positionArray, const size_t positionArrayLength) {
 
 	if(index->config.keepSuffixArrayInMemory) {
 		for(size_t i = 0; i < positionArrayLength; i++) {
@@ -153,7 +153,7 @@ enum AwFmReturnCode awFmReadPositionsFromSuffixArray(const struct AwFmIndex *res
 
 
 enum AwFmReturnCode awFmSuffixArrayReadPositionParallel(
-		const struct AwFmIndex *restrict const index, struct AwFmBacktrace *restrict const backtracePtr) {
+		const struct AwFmIndex *_RESTRICT_ const index, struct AwFmBacktrace *_RESTRICT_ const backtracePtr) {
 
 	if(__builtin_expect(index->config.keepSuffixArrayInMemory, 1)) {
 		uint64_t suffixArrayPosition = backtracePtr->position / index->config.suffixArrayCompressionRatio;

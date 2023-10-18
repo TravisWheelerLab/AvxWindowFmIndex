@@ -10,9 +10,9 @@
 
 
 AwFmSimdVec256 awFmMakeNucleotideOccurrenceVector(
-		const struct AwFmNucleotideBlock *restrict const blockPtr, const uint8_t letter) {
+		const struct AwFmNucleotideBlock *_RESTRICT_ const blockPtr, const uint8_t letter) {
 	// load the letter bit vectors
-	const AwFmSimdVec256 *restrict const blockVectorPtr = blockPtr->letterBitVectors;
+	const AwFmSimdVec256 *_RESTRICT_ const blockVectorPtr = blockPtr->letterBitVectors;
 	const AwFmSimdVec256 bit0Vector											= AwFmSimdVecLoad(blockVectorPtr);
 	const AwFmSimdVec256 bit1Vector											= AwFmSimdVecLoad(blockVectorPtr + 1);
 	const AwFmSimdVec256 bit2Vector											= AwFmSimdVecLoad(blockVectorPtr + 2);
@@ -48,11 +48,11 @@ AwFmSimdVec256 awFmMakeNucleotideOccurrenceVector(
  *   Vector with bits set at every position the given letter was found.
  */
 AwFmSimdVec256 awFmMakeAminoAcidOccurrenceVector(
-		const struct AwFmAminoBlock *restrict const blockPtr, const uint8_t letter) {
+		const struct AwFmAminoBlock *_RESTRICT_ const blockPtr, const uint8_t letter) {
 
 
 	// load the letter bit vectors
-	const AwFmSimdVec256 *restrict const blockVectorPtr = blockPtr->letterBitVectors;
+	const AwFmSimdVec256 *_RESTRICT_ const blockVectorPtr = blockPtr->letterBitVectors;
 	const AwFmSimdVec256 bit0Vector											= AwFmSimdVecLoad(blockVectorPtr);
 	const AwFmSimdVec256 bit1Vector											= AwFmSimdVecLoad(blockVectorPtr + 1);
 	const AwFmSimdVec256 bit2Vector											= AwFmSimdVecLoad(blockVectorPtr + 2);
@@ -109,7 +109,7 @@ AwFmSimdVec256 awFmMakeAminoAcidOccurrenceVector(
 
 
 inline void awFmBlockPrefetch(
-		const void *restrict const baseBlockListPtr, const uint64_t blockByteWidth, const uint64_t nextQueryPosition) {
+		const void *_RESTRICT_ const baseBlockListPtr, const uint64_t blockByteWidth, const uint64_t nextQueryPosition) {
 
 	const uint64_t blockIndex = awFmGetBlockIndexFromGlobalPosition(nextQueryPosition);
 	// make the blockAddress pointer as a uint8_t* to make clean and easy pointer arithmetic when defining cache line
@@ -140,7 +140,7 @@ uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *b
 	const uint8_t byteInBlock		 = localPosition / 8;
 	const uint8_t bitInBlockByte = localPosition % 8;
 
-	const uint8_t *restrict const letterBytePointer = &((uint8_t *)&blockPtr->letterBitVectors)[byteInBlock];
+	const uint8_t *_RESTRICT_ const letterBytePointer = &((uint8_t *)&blockPtr->letterBitVectors)[byteInBlock];
 	const uint8_t letterAsCompressedVector					= ((letterBytePointer[0] >> bitInBlockByte) & 1) |
 																					 ((letterBytePointer[32] >> bitInBlockByte) & 1) << 1 |
 																					 ((letterBytePointer[64] >> bitInBlockByte) & 1) << 2;
@@ -166,7 +166,7 @@ uint8_t awFmGetAminoLetterAtBwtPosition(const struct AwFmAminoBlock *blockPtr, c
 	const uint8_t byteInBlock		 = localPosition / 8;
 	const uint8_t bitInBlockByte = localPosition % 8;
 
-	const uint8_t *restrict const letterBytePointer = &((uint8_t *)&blockPtr->letterBitVectors)[byteInBlock];
+	const uint8_t *_RESTRICT_ const letterBytePointer = &((uint8_t *)&blockPtr->letterBitVectors)[byteInBlock];
 	const uint8_t letterAsCompressedVector =
 			((letterBytePointer[0] >> bitInBlockByte) & 1) | ((letterBytePointer[32] >> bitInBlockByte) & 1) << 1 |
 			((letterBytePointer[64] >> bitInBlockByte) & 1) << 2 | ((letterBytePointer[96] >> bitInBlockByte) & 1) << 3 |

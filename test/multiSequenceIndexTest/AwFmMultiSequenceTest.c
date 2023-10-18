@@ -40,7 +40,7 @@ void testAwFmIndexGivesCorrectLocalPositions(void);
 void testAwFmIndexGivesCorrectHeaders(void);
 void compareIndicesForEqualityIgnoreVersion(const struct AwFmIndex *index1, const struct AwFmIndex *index2);
 void checkAllGlobalPositionsForCorrectLocalPositions(
-		const struct FastaVector *restrict const fastaVector, const struct AwFmIndex *restrict const fastaVectorIndex);
+		const struct FastaVector *_RESTRICT_ const fastaVector, const struct AwFmIndex *_RESTRICT_ const fastaVectorIndex);
 
 
 int main(int argc, char **argv) {
@@ -456,7 +456,7 @@ void compareIndicesForEqualityIgnoreVersion(const struct AwFmIndex *index1, cons
 }
 
 void checkAllGlobalPositionsForCorrectLocalPositions(
-		const struct FastaVector *restrict const fastaVector, const struct AwFmIndex *restrict const fastaVectorIndex) {
+		const struct FastaVector *_RESTRICT_ const fastaVector, const struct AwFmIndex *_RESTRICT_ const fastaVectorIndex) {
 
 	for(size_t sequenceIndex = 0; sequenceIndex < fastaVector->metadata.count; sequenceIndex++) {
 		size_t sequenceBeginPosition =

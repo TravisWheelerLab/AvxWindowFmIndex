@@ -54,7 +54,7 @@ void checkArgs() {
 	}
 }
 
-void performDbQueries(const struct AwFmIndex *restrict const index, uint64_t positionsInDb) {
+void performDbQueries(const struct AwFmIndex *_RESTRICT_ const index, uint64_t positionsInDb) {
 	size_t ptrs[2];
 	ptrs[0] = rand() % positionsInDb;
 	ptrs[1] = rand() % positionsInDb;

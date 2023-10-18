@@ -24,7 +24,7 @@
  *    Allocated AwFmIndex struct, or NULL on an allocation failure.
  *      If any dynamic allocation fails, all data used in the AwFmIndex will be deallocated, too.
  */
-struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexConfiguration *restrict const config, const size_t bwtLength);
+struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexConfiguration *_RESTRICT_ const config, const size_t bwtLength);
 
 /*
  * Function:  awFmGetAlphabetCardinality
@@ -54,7 +54,7 @@ uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet);
  *  Returns:
  *    Number of AwFmSearchRange structs in the table.
  */
-size_t awFmGetKmerTableLength(const struct AwFmIndex *restrict index);
+size_t awFmGetKmerTableLength(const struct AwFmIndex *_RESTRICT_ index);
 
 
 /*
@@ -100,7 +100,7 @@ uint8_t awFmGetPrefixSumsLength(const enum AwFmAlphabetType alphabet);
  *  Returns:
  *    True if the given position is sampled in the suffix array, false otherwise.
  */
-bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, const uint64_t position);
+bool awFmBwtPositionIsSampled(const struct AwFmIndex *_RESTRICT_ const index, const uint64_t position);
 
 
 /*
@@ -114,7 +114,7 @@ bool awFmBwtPositionIsSampled(const struct AwFmIndex *restrict const index, cons
  *  Returns:
  *    Number of positions in the compressed suffix array.
  */
-uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict const index);
+uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *_RESTRICT_ const index);
 
 
 /*
@@ -130,7 +130,7 @@ uint64_t awFmGetCompressedSuffixArrayLength(const struct AwFmIndex *restrict con
  *  Returns:
  *    True if the search range represents a valid range of positions, or false if it represents no elements.
  */
-bool awFmSearchRangeIsValid(const struct AwFmSearchRange *restrict const searchRange);
+bool awFmSearchRangeIsValid(const struct AwFmSearchRange *_RESTRICT_ const searchRange);
 
 
 /*
@@ -173,6 +173,22 @@ uint_fast8_t awFmGetBlockQueryPositionFromGlobalPosition(const size_t globalQuer
 
 
 /*
+ * Function:  awFmSearchRangeLength
+ * --------------------
+ * Gets the number of positions included in the given AwFmSearchRange
+ *
+ *  Inputs:
+ *    range: Range of positions in the BWT that corresponds to some number of
+ *      instances of a given kmer.
+ *
+ *  Returns:
+ *    Number of positions in the given range if the range is valid (startPtr < endPtr),
+ *      or 0 otherwise, as that would imply that no instances of that kmer were found.
+ */
+size_t awFmSearchRangeLength(const struct AwFmSearchRange *_RESTRICT_ const range);
+
+
+/*
  * Function:  awFmIndexIsVersionValid
  * --------------------
  * returns true if the given version number is one that is currently supported.
@@ -199,6 +215,6 @@ bool awFmIndexIsVersionValid(const uint16_t versionNumber);
  *  Returns:
  *    True if the given version contains a FastaVector struct
  */
-bool awFmIndexContainsFastaVector(const struct AwFmIndex *restrict const index);
+bool awFmIndexContainsFastaVector(const struct AwFmIndex *_RESTRICT_ const index);
 
 #endif /* end of include guard: AW_FM_INDEX_STRUCT_H */

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 project(
         AWFMIndex
         HOMEPAGE_URL https://github.com/TravisWheelerLab/AvxWindowFmIndex
+        LANGUAGES C  # Specify C language explicitly
 )
 
 set(CMAKE_C_STANDARD 17)
@@ -66,22 +67,24 @@ set_target_properties(
 
 target_compile_options(
         awfmindex_static
-
         PRIVATE
         -mtune=native
         -march=native
+        -mavx2
         -Wall
         -Wextra
+        ${OpenMP_C_FLAGS}
 )
 
 target_compile_options(
         awfmindex
-
         PRIVATE
         -mtune=native
         -march=native
+        -mavx2 
         -Wall
         -Wextra
+        ${OpenMP_C_FLAGS}
 )
 
 install(

@@ -245,6 +245,10 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *_RESTRICT_ *index
 		indexData->suffixArray.values = NULL;
 	}
 
+	if(!config->storeOriginalSequence){
+		fastaVectorStringDealloc(&indexData->fastaVector->sequence); 
+	}
+
 	// set the index as an out argument.
 	*index = indexData;
 

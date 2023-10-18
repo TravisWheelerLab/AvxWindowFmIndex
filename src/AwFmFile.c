@@ -342,8 +342,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 		}
 
 		// free the sequence buffer in the fastaVector, since it won't be used here
-		free(fastaVector->sequence.charData);
-		fastaVector->sequence.charData = NULL;
+		fastaVectorStringDealloc(&fastaVector->sequence);
 
 		indexData->fastaVector = fastaVector;
 		size_t fastaVectorHeaderLength;

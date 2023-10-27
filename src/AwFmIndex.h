@@ -11,7 +11,7 @@
 
 
 #ifdef __cplusplus
-#define _RESTRICT_ __restrict_
+#define _RESTRICT_ __restrict__
 #else
 #define _RESTRICT_ restrict
 #endif

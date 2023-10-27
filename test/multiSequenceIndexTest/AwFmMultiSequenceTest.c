@@ -101,6 +101,7 @@ struct AwFmIndexConfiguration generateReasonableRandomMetadata() {
 	config.alphabetType								 = (rand() % 2) == 0 ? AwFmAlphabetAmino : AwFmAlphabetNucleotide;
 	config.kmerLengthInSeedTable	 = config.alphabetType == AwFmAlphabetNucleotide ? (rand() % 10) + 2 : (rand() % 4) + 1;
 	config.keepSuffixArrayInMemory = true;
+	config.storeOriginalSequence = true;
 
 	return config;
 }

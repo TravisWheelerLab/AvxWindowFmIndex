@@ -100,12 +100,12 @@ struct AwFmIndex *testCreateNucleotideIndex(const uint8_t *sequence, const size_
 
 	const bool keepSuffixArrayInMemory = false;
 	// not using initilize because valgrind complains about the padding bytes when I do it.
-	struct AwFmIndexConfiguration config = {0};
-	config.suffixArrayCompressionRatio	 = 1;
-	config.kmerLengthInSeedTable				 = 4;
-	config.alphabetType									 = AwFmAlphabetNucleotide;
-	config.keepSuffixArrayInMemory			 = false;
-	config.storeOriginalSequence				 = false;
+	struct AwFmIndexConfiguration config 	= {0};
+	config.suffixArrayCompressionRatio	 	= 1;
+	config.kmerLengthInSeedTable			= 4;
+	config.alphabetType						= AwFmAlphabetDna;
+	config.keepSuffixArrayInMemory			= false;
+	config.storeOriginalSequence			= false;
 
 	const uint32_t expectedVersionNumber = AW_FM_CURRENT_VERSION_NUMBER;
 	struct AwFmIndex *_RESTRICT_ index;
@@ -152,9 +152,9 @@ void testPrefixSums(
 	printf("\n");
 
 	for(size_t seqPos = 0; seqPos < sequenceLength; seqPos++) {
-		uint8_t letterAsIndex = index->config.alphabetType == AwFmAlphabetNucleotide ?
-																awFmAsciiNucleotideToLetterIndex(sequence[seqPos]) :
-																awFmAsciiAminoAcidToLetterIndex(sequence[seqPos]);
+		uint8_t letterAsIndex = index->config.alphabetType == AwFmAlphabetAmino ?
+																awFmAsciiAminoAcidToLetterIndex(sequence[seqPos]):
+																awFmAsciiNucleotideToLetterIndex(sequence[seqPos]);
 		letterCounts[letterAsIndex]++;
 	}
 
@@ -198,9 +198,9 @@ void testKmerTableLengths(
 
 		// printf("for kmer %.*s, found %zu.\n", kmerLength, kmerPtr1, kmerCount);
 		const struct AwFmSearchRange rangeInTable =
-				index->config.alphabetType == AwFmAlphabetNucleotide ?
-						awFmNucleotideKmerSeedRangeFromTable(index, (char *)kmerPtr1, kmerLength) :
-						awFmAminoKmerSeedRangeFromTable(index, (char *)kmerPtr1, kmerLength);
+				index->config.alphabetType == AwFmAlphabetAmino ?
+						awFmAminoKmerSeedRangeFromTable(index, (char *)kmerPtr1, kmerLength):
+						awFmNucleotideKmerSeedRangeFromTable(index, (char *)kmerPtr1, kmerLength);
 
 		const size_t numInRange = rangeInTable.endPtr - rangeInTable.startPtr + 1;
 

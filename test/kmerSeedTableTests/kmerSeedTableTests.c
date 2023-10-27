@@ -32,9 +32,9 @@ int main(int argc, char **argv) {
 	printf("main\n");
 
 	struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 240,
-			.kmerLengthInSeedTable																					 = 5,
-			.alphabetType																										 = AwFmAlphabetNucleotide,
-			.keepSuffixArrayInMemory																				 = false};
+			.kmerLengthInSeedTable		= 5,
+			.alphabetType				= AwFmAlphabetDna,
+			.keepSuffixArrayInMemory	= false};
 	testAllKmerRanges(&config, 2000);
 
 	printf("testing amino ranges\n");
@@ -117,8 +117,8 @@ void testAllKmerRanges(struct AwFmIndexConfiguration *config, uint64_t sequenceL
 			exit(-1);
 		}
 		for(uint64_t i = 0; i < sequenceLength; i++) {
-			sequence[i] =
-					(config->alphabetType == AwFmAlphabetNucleotide ? nucleotideLookup[rand() % 5] : aminoLookup[rand() % 21]);
+			sequence[i] = (config->alphabetType == AwFmAlphabetAmino) ? 
+				aminoLookup[rand() % 21]:	nucleotideLookup[rand() % 5]; 
 		}
 		// null terminate the sequence
 		sequence[sequenceLength] = 0;
@@ -159,7 +159,7 @@ void testAllKmerRanges(struct AwFmIndexConfiguration *config, uint64_t sequenceL
 
 		struct AwFmSearchRange range = {0, 0};
 		char *kmer2									 = "agaaa";
-		if(config->alphabetType == AwFmAlphabetNucleotide) {
+		if(config->alphabetType != AwFmAlphabetAmino) {
 			awFmNucleotideNonSeededSearch(index, kmer2, 5, &range);
 		}
 		else {
@@ -192,7 +192,7 @@ void testAllKmerRanges(struct AwFmIndexConfiguration *config, uint64_t sequenceL
 			}
 			size_t kmerIndexCopy = kmerIndex;
 			for(uint8_t letterInKmer = 0; letterInKmer < kmerLength; letterInKmer++) {
-				if(index->config.alphabetType == AwFmAlphabetNucleotide) {
+				if(index->config.alphabetType != AwFmAlphabetAmino) {
 					kmer[letterInKmer] = nucleotideLookup[(kmerIndexCopy % 4)];
 					kmerIndexCopy /= 4;
 				}
@@ -201,9 +201,9 @@ void testAllKmerRanges(struct AwFmIndexConfiguration *config, uint64_t sequenceL
 					kmerIndexCopy /= 20;
 				}
 			}
-			struct AwFmSearchRange kmerRange = config->alphabetType == AwFmAlphabetNucleotide ?
-																						 awFmNucleotideKmerSeedRangeFromTable(index, kmer, kmerLength) :
-																						 awFmAminoKmerSeedRangeFromTable(index, kmer, kmerLength);
+			struct AwFmSearchRange kmerRange = config->alphabetType == AwFmAlphabetAmino ?
+				awFmAminoKmerSeedRangeFromTable(index, kmer, kmerLength):
+				awFmNucleotideKmerSeedRangeFromTable(index, kmer, kmerLength);
 
 			checkRangeForCorrectness(&kmerRange, suffixArray, kmer, kmerLength, sequence, sequenceLength);
 		}

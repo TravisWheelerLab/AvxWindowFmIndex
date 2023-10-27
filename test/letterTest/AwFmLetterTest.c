@@ -30,7 +30,7 @@ void testNucleotideAscii() {
 				testAssert(awFmAsciiNucleotideToLetterIndex(awFmAsciiNucleotideLetterSanitize(c)) == 2);
 				testAssert(awFmAsciiNucleotideToLetterIndex(awFmAsciiNucleotideLetterSanitize(toupper(c))) == 2);
 				break;
-			case 't':
+			case 't': case 'u':
 				testAssert(awFmAsciiNucleotideToLetterIndex(awFmAsciiNucleotideLetterSanitize(c)) == 3);
 				testAssert(awFmAsciiNucleotideToLetterIndex(awFmAsciiNucleotideLetterSanitize(toupper(c))) == 3);
 				break;

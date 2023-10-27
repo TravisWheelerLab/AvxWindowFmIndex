@@ -24,7 +24,7 @@ AwFmSimdVec256 awFmMakeNucleotideOccurrenceVector(
 			return AwFmSimdVecAnd(bit2Vector, bit0Vector);
 		case 2:	 // Nucleotide G 0b011
 			return AwFmSimdVecAnd(bit1Vector, bit0Vector);
-		case 3:	 // Nucletoide T 0b001
+		case 3:	 // Nucletoide T (or U) 0b001
 			return AwFmSimdVecAndNot(bit2Vector, AwFmSimdVecAndNot(bit1Vector, bit0Vector));
 		case 4:	 // ambiguity character 'X' 0b010
 			return AwFmSimdVecAndNot(bit2Vector, AwFmSimdVecAndNot(bit0Vector, bit1Vector));

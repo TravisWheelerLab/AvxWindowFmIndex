@@ -43,7 +43,7 @@ struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(
  *
  *  Inputs:
  *    index: Index to backstep
- *    alphabet: alphabet of the index, either Nucleotide or Amino
+ *    alphabet: alphabet of the index, either Dna, Rna, or Amino
  *    bwtPosition: Position of the character to be returned.
  *
  *  Returns:
@@ -60,7 +60,7 @@ size_t awFmNucleotideBacktraceBwtPosition(const struct AwFmIndex *_RESTRICT_ con
  *
  *  Inputs:
  *    index: Index to backstep
- *    alphabet: alphabet of the index, either Nucleotide or Amino
+ *    alphabet: alphabet of the index, either Dna, Rna, or Amino
  *    bwtPosition: Position of the character to be returned.
  *
  *  Returns:

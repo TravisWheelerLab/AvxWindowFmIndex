@@ -68,10 +68,10 @@ void testNucleotideBacktrace() {
 
 
 		struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 1,
-				.kmerLengthInSeedTable																					 = 8,
-				.alphabetType																										 = AwFmAlphabetNucleotide,
-				.keepSuffixArrayInMemory																				 = false,
-				.storeOriginalSequence																					 = false};
+				.kmerLengthInSeedTable		= 8,
+				.alphabetType 				= AwFmAlphabetDna,
+				.keepSuffixArrayInMemory	= false,
+				.storeOriginalSequence		= false};
 		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 		if(index == NULL) {
@@ -140,11 +140,10 @@ void testAminoBacktrace(void) {
 		suffixArray[0] = sequenceLength;
 
 		struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 1,
-				.kmerLengthInSeedTable																					 = 4,
-				.alphabetType																										 = AwFmAlphabetAmino,
-				.keepSuffixArrayInMemory																				 = true,
-				.storeOriginalSequence																					 = true,
-				.storeOriginalSequence																					 = false};
+				.kmerLengthInSeedTable		= 4,
+				.alphabetType				= AwFmAlphabetAmino,
+				.keepSuffixArrayInMemory	= true,
+				.storeOriginalSequence		= false};
 		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 		if(index == NULL) {

@@ -197,10 +197,10 @@ void testParallelSearchAmino(void) {
 void testParallelSearchNucleotide() {
 	struct AwFmIndex *index;
 	struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = saCompressionRatio,
-			.kmerLengthInSeedTable																					 = 9,
-			.alphabetType																										 = AwFmAlphabetNucleotide,
-			.keepSuffixArrayInMemory																				 = true,
-			.storeOriginalSequence																					 = false};
+			.kmerLengthInSeedTable		= 9,
+			.alphabetType				= AwFmAlphabetDna,
+			.keepSuffixArrayInMemory	= true,
+			.storeOriginalSequence		= false};
 
 	const uint64_t sequenceLength = 5000 + rand() % 5000;
 	printf("creating nucleotide sequence of length %zu.\n", sequenceLength);

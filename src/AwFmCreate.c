@@ -257,7 +257,7 @@ enum AwFmReturnCode awFmCreateIndexFromFasta(struct AwFmIndex *_RESTRICT_ *index
 
 void setBwtAndPrefixSums(struct AwFmIndex *_RESTRICT_ const index, const size_t bwtLength,
 		const uint8_t *_RESTRICT_ const sequence, const uint64_t *_RESTRICT_ const unsampledSuffixArray) {
-	if(index->config.alphabetType == AwFmAlphabetNucleotide) {
+	if(index->config.alphabetType != AwFmAlphabetAmino) {
 		uint64_t baseOccurrences[8] = {0};
 		// baseOccurrences is length 8 because that's how long the signpost baseOccurrences in
 		// each window need to be to keep alignment to 32B AVX2 boundries.
@@ -375,7 +375,7 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *_RESTRICT_ const index, st
 	// recursive case
 	for(uint8_t extendedLetter = 0; extendedLetter < alphabetSize; extendedLetter++) {
 		struct AwFmSearchRange newRange = range;
-		if(index->config.alphabetType == AwFmAlphabetNucleotide) {
+		if(index->config.alphabetType != AwFmAlphabetAmino) {
 			awFmNucleotideIterativeStepBackwardSearch(index, &newRange, extendedLetter);
 		}
 		else {
@@ -392,7 +392,7 @@ void populateKmerSeedTableRecursive(struct AwFmIndex *_RESTRICT_ const index, st
 inline void fullSequenceSanitize(const uint8_t *const sequence, uint8_t *const sanitizedSequenceCopy,
 		const size_t sequenceLength, const enum AwFmAlphabetType alphabetType) {
 
-	if(alphabetType == AwFmAlphabetNucleotide) {
+	if(alphabetType != AwFmAlphabetAmino) {
 		for(size_t i = 0; i < sequenceLength; i++) {
 			sanitizedSequenceCopy[i] = awFmAsciiNucleotideLetterSanitize(sequence[i]);
 		}

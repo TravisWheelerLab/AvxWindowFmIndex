@@ -10,7 +10,7 @@
  * Function:  awFmAsciiNucleotideToLetterIndex
  * --------------------
  * Transforms an ascii nucleotide character into a bit-compressed index representation.
- * Any non-nucleotide (a,c,g,t,A,C,G, or T) character will be converted to index 4,
+ * Any non-nucleotide (a,c,g,t,u, A,C,G,T, or U) character will be converted to index 4,
  *  signifying a sentinel character.
  *
  *  This function should only be given nucleotides or sentinel '$' characters. Passing ambiguity codes

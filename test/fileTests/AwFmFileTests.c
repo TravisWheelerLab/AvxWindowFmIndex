@@ -49,10 +49,10 @@ void sequenceRecallTest(void) {
 
 		struct AwFmIndex *index;
 		struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 240,
-				.kmerLengthInSeedTable																					 = 2,
-				.alphabetType																										 = AwFmAlphabetNucleotide,
-				.keepSuffixArrayInMemory																				 = false,
-				.storeOriginalSequence																					 = true};
+				.kmerLengthInSeedTable		= 2,
+				.alphabetType			 	= AwFmAlphabetDna,
+				.keepSuffixArrayInMemory	= false,
+				.storeOriginalSequence		= true};
 		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 		char sequenceBuffer[2048];
@@ -125,10 +125,10 @@ void suffixArrayTest(void) {
 		printf("    compression ratio %zu, nucleotide\n", compressionRatio);
 		struct AwFmIndex *index;
 		struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = compressionRatio,
-				.kmerLengthInSeedTable																					 = 2,
-				.alphabetType																										 = AwFmAlphabetNucleotide,
-				.keepSuffixArrayInMemory																				 = false,
-				.storeOriginalSequence																					 = true};
+				.kmerLengthInSeedTable		= 2,
+				.alphabetType				= AwFmAlphabetDna,
+				.keepSuffixArrayInMemory	= false,
+				.storeOriginalSequence		= true};
 
 		const size_t sequenceLength = 4000 + rand() % 2000;
 		uint8_t *sequence						= malloc((sequenceLength + 1) * sizeof(uint8_t));
@@ -207,7 +207,7 @@ void indexReadTest(void) {
 	for(size_t testNum = 0; testNum < 100; testNum++) {
 		printf("test %zu\n", testNum);
 		const uint8_t kmerLengthInSeedTable			 = rand() % 3 + 2;
-		const enum AwFmAlphabetType alphabetType = rand() & 1 ? AwFmAlphabetNucleotide : AwFmAlphabetAmino;
+		const enum AwFmAlphabetType alphabetType = rand() & 1 ? AwFmAlphabetDna : AwFmAlphabetAmino;
 
 		const uint64_t sequenceLength = 10000 + (rand() % 1000);
 		uint8_t *sequence							= malloc(sequenceLength * sizeof(uint8_t));
@@ -218,7 +218,7 @@ void indexReadTest(void) {
 
 		// randomize the sequence
 		for(size_t i = 0; i < sequenceLength; i++) {
-			sequence[i] = alphabetType == AwFmAlphabetNucleotide ? nucleotideLookup[rand() % 5] : aminoLookup[rand() % 21];
+			sequence[i] = alphabetType == AwFmAlphabetDna ? nucleotideLookup[rand() % 5] : aminoLookup[rand() % 21];
 		}
 
 		struct AwFmIndex *index;
@@ -283,9 +283,9 @@ void indexReadTest(void) {
 
 		// bwtBlockList
 		size_t blockListLengthInBytes =
-				alphabetType == AwFmAlphabetNucleotide ?
-						awFmNumBlocksFromBwtLength(index->bwtLength) * sizeof(struct AwFmNucleotideBlock) :
-						awFmNumBlocksFromBwtLength(index->bwtLength) * sizeof(struct AwFmAminoBlock);
+				alphabetType == AwFmAlphabetAmino ?
+						awFmNumBlocksFromBwtLength(index->bwtLength) * sizeof(struct AwFmAminoBlock):
+						awFmNumBlocksFromBwtLength(index->bwtLength) * sizeof(struct AwFmNucleotideBlock);
 
 		sprintf(buffer, "the bwt block lists of the original and the one from file did not match.");
 		testAssertString(

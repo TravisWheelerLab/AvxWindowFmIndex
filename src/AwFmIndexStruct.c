@@ -30,8 +30,8 @@ struct AwFmIndex *awFmIndexAlloc(const struct AwFmIndexConfiguration *_RESTRICT_
 
 	// allocate the blockLists
 	size_t numBlocksInBwt = awFmNumBlocksFromBwtLength(bwtLength);
-	size_t sizeOfBwtBlock = config->alphabetType == AwFmAlphabetNucleotide ? sizeof(struct AwFmNucleotideBlock) :
-																																					 sizeof(struct AwFmAminoBlock);
+	size_t sizeOfBwtBlock = config->alphabetType == AwFmAlphabetAmino? 
+		sizeof(struct AwFmAminoBlock): sizeof(struct AwFmNucleotideBlock);
 
 	// alloc the backward bwt
 	index->bwtBlockList.asNucleotide = aligned_alloc(AW_FM_BWT_BYTE_ALIGNMENT, numBlocksInBwt * sizeOfBwtBlock);
@@ -69,7 +69,7 @@ void awFmDeallocIndex(struct AwFmIndex *index) {
 
 
 uint_fast8_t awFmGetAlphabetCardinality(const enum AwFmAlphabetType alphabet) {
-	return (alphabet == AwFmAlphabetNucleotide) ? AW_FM_NUCLEOTIDE_CARDINALITY : AW_FM_AMINO_CARDINALITY;
+	return (alphabet == AwFmAlphabetAmino) ? AW_FM_AMINO_CARDINALITY: AW_FM_NUCLEOTIDE_CARDINALITY;
 }
 
 

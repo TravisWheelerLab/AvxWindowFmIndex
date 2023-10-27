@@ -11,7 +11,7 @@
 
 
 #ifdef __cplusplus
-#define _RESTRICT_ __restrict_
+#define _RESTRICT_ __restrict__
 #else
 #define _RESTRICT_ restrict
 #endif
@@ -30,7 +30,7 @@
 #define AW_FM_AMINO_CARDINALITY							20
 
 
-enum AwFmAlphabetType { AwFmAlphabetAmino = 1, AwFmAlphabetNucleotide = 2 };
+enum AwFmAlphabetType { AwFmAlphabetAmino = 1, AwFmAlphabetDna = 2, AwFmAlphabetRna = 3};
 
 // NOTE: not currently used, but this enum is kept for future use.
 enum AwFmBwtType { AwFmBwtTypeBackwardOnly = 1, AwFmBwtTypeBiDirectional = 2 };

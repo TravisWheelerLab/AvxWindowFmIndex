@@ -98,9 +98,10 @@ void getRawSequenceFromFastaVector(
 struct AwFmIndexConfiguration generateReasonableRandomMetadata() {
 	struct AwFmIndexConfiguration config;
 	config.suffixArrayCompressionRatio = (rand() % 20) + 1;
-	config.alphabetType								 = (rand() % 2) == 0 ? AwFmAlphabetAmino : AwFmAlphabetNucleotide;
-	config.kmerLengthInSeedTable	 = config.alphabetType == AwFmAlphabetNucleotide ? (rand() % 10) + 2 : (rand() % 4) + 1;
+	config.alphabetType								 = (rand() % 2) == 0 ? AwFmAlphabetAmino : AwFmAlphabetDna;
+	config.kmerLengthInSeedTable	 = config.alphabetType == AwFmAlphabetDna ? (rand() % 10) + 2 : (rand() % 4) + 1;
 	config.keepSuffixArrayInMemory = true;
+	config.storeOriginalSequence = true;
 
 	return config;
 }
@@ -391,7 +392,7 @@ void compareIndicesForEqualityIgnoreVersion(const struct AwFmIndex *index1, cons
 	// compare bwts
 	const size_t numBwtBlocks = index1->bwtLength / 256;
 	for(size_t blockIndex = 0; blockIndex < numBwtBlocks; blockIndex++) {
-		if(index1->config.alphabetType == AwFmAlphabetNucleotide) {
+		if(index1->config.alphabetType == AwFmAlphabetDna) {
 			bool blocksAreEqual =
 					memcmp(&index1->bwtBlockList.asNucleotide[blockIndex], &index2->bwtBlockList.asNucleotide[blockIndex],
 							sizeof(struct AwFmNucleotideBlock)) == 0;
@@ -423,7 +424,7 @@ void compareIndicesForEqualityIgnoreVersion(const struct AwFmIndex *index1, cons
 	}
 
 	// compare prefix sums
-	const size_t numPrefixSums = index1->config.alphabetType == AwFmAlphabetNucleotide ? 6 : 22;
+	const size_t numPrefixSums = index1->config.alphabetType == AwFmAlphabetDna ? 6 : 22;
 	for(size_t prefixSumIndex = 0; prefixSumIndex < numPrefixSums; prefixSumIndex++) {
 		sprintf(buffer, "index 1 prefix sum #%zu (%zu) did not compare equal to matching index 2 prefix sum (%zu).",
 				prefixSumIndex, index1->prefixSums[prefixSumIndex], index2->prefixSums[prefixSumIndex]);

@@ -89,10 +89,10 @@ void testNucletotideBwtGeneration(void) {
 
 		struct AwFmIndex *index;
 		struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 240,
-				.kmerLengthInSeedTable																					 = 2,
-				.alphabetType																										 = AwFmAlphabetNucleotide,
-				.keepSuffixArrayInMemory																				 = false,
-				.storeOriginalSequence																					 = true};
+				.kmerLengthInSeedTable		= 2,
+				.alphabetType				= AwFmAlphabetDna,
+				.keepSuffixArrayInMemory	= false,
+				.storeOriginalSequence		= true};
 		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
 
 		for(size_t i = 0; i <= sequenceLength; i++) {

@@ -189,7 +189,7 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *_RESTRICT_ cons
 		const char *kmerString											= searchData->kmerString;
 
 		const uint64_t rangesIndex = kmerIndex - threadBlockStartIndex;
-		if(index->config.alphabetType == AwFmAlphabetNucleotide) {
+		if(index->config.alphabetType != AwFmAlphabetAmino) {
 			// TODO: reimplement partial seeded search when it's implementable
 			if(kmerLength < index->config.kmerLengthInSeedTable) {
 				awFmNucleotideNonSeededSearch(index, kmerString, kmerLength, &ranges[rangesIndex]);
@@ -230,7 +230,7 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *_RESTRICT_ const i
 				hasActiveQueries											= true;
 				const uint8_t currentQueryLetterIndex = kmerLength - currentKmerLetterIndex;
 
-				if(index->config.alphabetType == AwFmAlphabetNucleotide) {
+				if(index->config.alphabetType != AwFmAlphabetAmino) {
 					const uint8_t queryLetterIndex = awFmAsciiNucleotideToLetterIndex(kmerString[currentQueryLetterIndex]);
 					awFmNucleotideIterativeStepBackwardSearch(index, &ranges[rangesIndex], queryLetterIndex);
 				}
@@ -264,7 +264,7 @@ enum AwFmReturnCode parallelSearchTracebackPositionLists(const struct AwFmIndex 
 			struct AwFmBacktrace backtrace = {
 					.position = ranges[rangesIndex].startPtr + indexOfPositionToBacktrace, .offset = 0};
 
-			if(index->config.alphabetType == AwFmAlphabetNucleotide) {
+			if(index->config.alphabetType != AwFmAlphabetAmino) {
 				while(!awFmBwtPositionIsSampled(index, backtrace.position)) {
 					backtrace.position = awFmNucleotideBacktraceBwtPosition(index, backtrace.position);
 					backtrace.offset++;

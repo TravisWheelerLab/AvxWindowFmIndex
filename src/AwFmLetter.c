@@ -12,7 +12,8 @@ uint8_t awFmAsciiNucleotideToLetterIndex(const uint8_t asciiLetter) {
 		case 'a': return 0;
 		case 'c': return 1;
 		case 'g': return 2;
-		case 't': return 3;
+		case 't': return 3;	//for DNA
+		case 'u': return 3;	//for RNA
 		case '$': return 5;
 		default: return 4;
 	}
@@ -25,7 +26,8 @@ uint8_t awFmAsciiNucleotideLetterSanitize(const uint8_t asciiLetter) {
 		case 'a': return 'a';
 		case 'c': return 'c';
 		case 'g': return 'g';
-		case 't': return 't';
+		case 't': return 't';	//for DNA
+		case 'u': return 'u';	//for RNA
 		case '$': return '$';	 // sentinel character
 		default: return 'x';	 // ambiguity character
 	}

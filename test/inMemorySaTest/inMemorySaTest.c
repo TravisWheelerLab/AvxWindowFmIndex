@@ -47,10 +47,10 @@ void inMemorySaUncompressedTest(void) {
 
 		struct AwFmIndex *index;
 		struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 1,
-				.kmerLengthInSeedTable																					 = 8,
-				.alphabetType																										 = AwFmAlphabetNucleotide,
-				.keepSuffixArrayInMemory																				 = true,
-				.storeOriginalSequence																					 = true};
+				.kmerLengthInSeedTable		= 8,
+				.alphabetType				= AwFmAlphabetDna,
+				.keepSuffixArrayInMemory	= true,
+				.storeOriginalSequence		= true};
 
 
 		enum AwFmReturnCode returnCode =
@@ -117,10 +117,10 @@ void inMemorySaCompressedTest(void) {
 		struct AwFmIndex *index;
 		// as an extreme edge case, compress the SA to only one value.
 		struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = sequenceLength - 1,
-				.kmerLengthInSeedTable																					 = 8,
-				.alphabetType																										 = AwFmAlphabetNucleotide,
-				.keepSuffixArrayInMemory																				 = true,
-				.storeOriginalSequence																					 = true};
+				.kmerLengthInSeedTable		= 8,
+				.alphabetType				= AwFmAlphabetDna,
+				.keepSuffixArrayInMemory	= true,
+				.storeOriginalSequence		= true};
 
 
 		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");
@@ -184,10 +184,10 @@ void inMemoryFromFileTest(void) {
 
 		struct AwFmIndex *index;
 		struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 16,
-				.kmerLengthInSeedTable																					 = 8,
-				.alphabetType																										 = AwFmAlphabetNucleotide,
-				.keepSuffixArrayInMemory																				 = true,
-				.storeOriginalSequence																					 = true};
+				.kmerLengthInSeedTable		= 8,
+				.alphabetType				= AwFmAlphabetDna,
+				.keepSuffixArrayInMemory	= true,
+				.storeOriginalSequence		= true};
 
 
 		awFmCreateIndex(&index, &config, sequence, sequenceLength, "testIndex.awfmi");

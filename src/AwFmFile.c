@@ -92,9 +92,9 @@ enum AwFmReturnCode awFmWriteIndexToFile(struct AwFmIndex *_RESTRICT_ const inde
 	}
 
 	const size_t numBlockInBwt		= awFmNumBlocksFromBwtLength(index->bwtLength);
-	const size_t bytesPerBwtBlock = index->config.alphabetType == AwFmAlphabetNucleotide ?
-																			sizeof(struct AwFmNucleotideBlock) :
-																			sizeof(struct AwFmAminoBlock);
+	const size_t bytesPerBwtBlock = index->config.alphabetType == AwFmAlphabetAmino ?
+																			sizeof(struct AwFmAminoBlock):
+																			sizeof(struct AwFmNucleotideBlock);
 
 	elementsWritten = fwrite(index->bwtBlockList.asNucleotide, bytesPerBwtBlock, numBlockInBwt, index->fileHandle);
 	if(elementsWritten != numBlockInBwt) {
@@ -270,9 +270,9 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 
 	// read the bwt block list
 	const size_t numBlockInBwt		= awFmNumBlocksFromBwtLength(indexData->bwtLength);
-	const size_t bytesPerBwtBlock = indexData->config.alphabetType == AwFmAlphabetNucleotide ?
-																			sizeof(struct AwFmNucleotideBlock) :
-																			sizeof(struct AwFmAminoBlock);
+	const size_t bytesPerBwtBlock = indexData->config.alphabetType == AwFmAlphabetAmino ?
+																			sizeof(struct AwFmAminoBlock):
+																			sizeof(struct AwFmNucleotideBlock);
 	elementsRead = fread(indexData->bwtBlockList.asNucleotide, bytesPerBwtBlock, numBlockInBwt, fileHandle);
 	if(elementsRead != numBlockInBwt) {
 		fclose(fileHandle);
@@ -452,9 +452,9 @@ enum AwFmReturnCode awFmGetSuffixArrayValueFromFile(
 
 size_t awFmGetSequenceFileOffset(const struct AwFmIndex *_RESTRICT_ const index) {
 	const size_t configLength						= 12 * sizeof(uint8_t);
-	const size_t bytesPerBwtBlock				= index->config.alphabetType == AwFmAlphabetNucleotide ?
-																						sizeof(struct AwFmNucleotideBlock) :
-																						sizeof(struct AwFmAminoBlock);
+	const size_t bytesPerBwtBlock				= index->config.alphabetType == AwFmAlphabetAmino ?
+																						sizeof(struct AwFmAminoBlock):
+																						sizeof(struct AwFmNucleotideBlock);
 	const size_t bwtLengthDataLength		= sizeof(uint64_t);
 	const size_t bwtLengthInBytes				= awFmNumBlocksFromBwtLength(index->bwtLength) * bytesPerBwtBlock;
 	const size_t prefixSumLengthInBytes = awFmGetPrefixSumsLength(index->config.alphabetType) * sizeof(uint64_t);

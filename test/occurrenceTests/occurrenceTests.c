@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../../libdivsufsort/build/include/divsufsort64.h"
+#include "../../lib/libdivsufsort/build/include/divsufsort64.h"
 #include "../../src/AwFmCreate.h"
 #include "../../src/AwFmIndex.h"
 #include "../../src/AwFmIndexStruct.h"

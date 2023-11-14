@@ -7,6 +7,15 @@ project(
 
 set(CMAKE_C_STANDARD 17)
 
+
+add_custom_target(
+    update_submodules
+    COMMAND ${CMAKE_COMMAND} -E echo "Updating submodules..."
+    COMMAND git submodule update --init --recursive
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
+
 #add support for OpenMP
 find_package(OpenMP REQUIRED)
 if(OpenMP_FOUND)

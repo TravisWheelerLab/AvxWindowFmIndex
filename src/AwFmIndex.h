@@ -533,7 +533,7 @@ enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(
  *    Number of positions in the given range if the range is valid (startPtr < endPtr),
  *      or 0 otherwise, as that would imply that no instances of that kmer were found.
  */
-size_t awFmSearchRangeLength(const struct AwFmSearchRange *restrict const range);
+size_t awFmSearchRangeLength(const struct AwFmSearchRange *_RESTRICT_ const range);
 
 
 /*

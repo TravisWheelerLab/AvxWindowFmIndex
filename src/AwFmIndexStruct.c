@@ -148,3 +148,13 @@ inline bool awFmReturnCodeIsFailure(const enum AwFmReturnCode rc){
 inline bool awFmReturnCodeIsSuccess(const enum AwFmReturnCode rc){
 	return !awFmReturnCodeIsFailure(rc);
 }
+
+
+uint32_t awFmGetNumSequences(const struct AwFmIndex *_RESTRICT_ const index){
+	if(index->fastaVector){
+		return index->fastaVector->metadata.count;
+	}
+	else{
+		return 1;
+	}
+}

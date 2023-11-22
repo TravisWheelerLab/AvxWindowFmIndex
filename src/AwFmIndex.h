@@ -560,4 +560,19 @@ bool awFmReturnCodeIsFailure(const enum AwFmReturnCode rc);
  */
 bool awFmReturnCodeIsSuccess(const enum AwFmReturnCode rc);
 
+
+/*
+ * Function:  awFmGetNumSequences
+ * --------------------
+ * Returns the number of sequences used to generate the awfmIndex. 
+ * When this index is built from a fasta, this will be equal to the number 
+ *  of sequences in that fasta. When built from a text string, this will be one.
+ *  Inputs:
+ *    index: AwFmIndex to query.
+ *
+ *  Returns:
+ *    Number of sequences contained inside the index.
+ */
+uint32_t awFmGetNumSequences(const struct AwFmIndex *_RESTRICT_ const index);
+
 #endif /* end of include guard: AW_FM_INDEX_STRUCTS_H */

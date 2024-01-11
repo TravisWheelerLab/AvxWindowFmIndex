@@ -367,6 +367,14 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 			awFmDeallocIndex(indexData);
 			return AwFmAllocationFailure;
 		}
+
+		elementsRead = fread(&fastaVector->header.charData, sizeof(char), fastaVectorHeaderLength, fileHandle);
+		if(elementsRead != fastaVectorHeaderLength) {
+			fclose(fileHandle);
+			awFmDeallocIndex(indexData);
+			return AwFmAllocationFailure;
+		}
+
 		fastaVector->metadata.data =
 				realloc(fastaVector->metadata.data, fastaVectorMetadataLength * sizeof(struct FastaVectorMetadata));
 		if(!fastaVector->metadata.data) {
@@ -374,6 +382,14 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 			awFmDeallocIndex(indexData);
 			return AwFmAllocationFailure;
 		}
+
+		elementsRead = fread(&fastaVector->metadata.data, sizeof(struct FastaVectorMetadata), fastaVectorMetadataLength, fileHandle);
+		if(elementsRead != fastaVectorMetadataLength) {
+			fclose(fileHandle);
+			awFmDeallocIndex(indexData);
+			return AwFmAllocationFailure;
+		}
+
 		fastaVector->header.count			 = fastaVectorHeaderLength;
 		fastaVector->header.capacity	 = fastaVectorHeaderLength;
 		fastaVector->metadata.count		 = fastaVectorMetadataLength;

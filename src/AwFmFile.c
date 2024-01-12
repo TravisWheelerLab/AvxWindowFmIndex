@@ -354,13 +354,13 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 		if(elementsRead != 1) {
 			fclose(fileHandle);
 			awFmDeallocIndex(indexData);
-			return AwFmAllocationFailure;
+			return AwFmFileReadFail;
 		}
 		elementsRead = fread(&fastaVectorMetadataLength, sizeof(size_t), 1, fileHandle);
 		if(elementsRead != 1) {
 			fclose(fileHandle);
 			awFmDeallocIndex(indexData);
-			return AwFmAllocationFailure;
+			return AwFmFileReadFail;
 		}
 
 		// now, to do some hacking to the FastaVector struct
@@ -371,11 +371,11 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 			return AwFmAllocationFailure;
 		}
 
-		elementsRead = fread(&fastaVector->header.charData, sizeof(char), fastaVectorHeaderLength, fileHandle);
+		elementsRead = fread(fastaVector->header.charData, sizeof(char), fastaVectorHeaderLength, fileHandle);
 		if(elementsRead != fastaVectorHeaderLength) {
 			fclose(fileHandle);
 			awFmDeallocIndex(indexData);
-			return AwFmAllocationFailure;
+			return AwFmFileReadFail;
 		}
 
 		fastaVector->metadata.data =
@@ -386,11 +386,11 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 			return AwFmAllocationFailure;
 		}
 
-		elementsRead = fread(&fastaVector->metadata.data, sizeof(struct FastaVectorMetadata), fastaVectorMetadataLength, fileHandle);
+		elementsRead = fread(fastaVector->metadata.data, sizeof(struct FastaVectorMetadata), fastaVectorMetadataLength, fileHandle);
 		if(elementsRead != fastaVectorMetadataLength) {
 			fclose(fileHandle);
 			awFmDeallocIndex(indexData);
-			return AwFmAllocationFailure;
+			return AwFmFileReadFail;
 		}
 
 		fastaVector->header.count			 = fastaVectorHeaderLength;

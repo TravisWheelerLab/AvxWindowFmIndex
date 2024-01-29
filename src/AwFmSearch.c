@@ -250,21 +250,18 @@ enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct A
 }
 
 
-enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(
-		const struct AwFmIndex *_RESTRICT_ const index, size_t sequenceNumber, char **headerBuffer, size_t *headerLength) {
-	if(sequenceNumber > index->fastaVector->metadata.count) {
+enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(const struct AwFmIndex *_RESTRICT_ const index, 
+	size_t sequenceNumber, char **headerBuffer, size_t *headerLength) {
+	if((index->featureFlags & (1 << AW_FM_FEATURE_FLAG_BIT_FASTA_VECTOR)) == 0){
+		return AwFmUnsupportedVersionError;
+	}
+	else if(sequenceNumber > index->fastaVector->metadata.count) {
 		return AwFmIllegalPositionError;
 	}
-
-	size_t headerStartOffset = 0;
-	if(sequenceNumber != 0) {
-		headerStartOffset = index->fastaVector->metadata.data[sequenceNumber - 1].headerEndPosition;
+	else{
+		fastaVectorFastaGetHeader(index->fastaVector,sequenceNumber, headerBuffer,headerLength);
+		return AwFmSuccess;
 	}
-	size_t headerEndPosition = index->fastaVector->metadata.data[sequenceNumber].headerEndPosition;
-
-	*headerBuffer = index->fastaVector->header.charData + headerStartOffset;
-	*headerLength = headerEndPosition - headerStartOffset;
-	return AwFmSuccess;
 }
 
 

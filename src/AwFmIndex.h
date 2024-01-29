@@ -407,6 +407,25 @@ struct AwFmSearchRange awFmCreateInitialQueryRange(
 
 
 /*
+ * Function:  awFmCreateInitialQueryRangeFromChar
+ * --------------------
+ * Creates the initial Start Pointer - End Pointer range for the given query.
+ *   This is a simpler version of the awFmCreateInitialQueryRange function for when
+ *   you just want to start the range based off a single character
+ *
+ *   NOTE: This function is likely only useful if you need to query on a letter-by-letter
+ *   basis, e.g., to implement inexact matching. If you just want to query for exact matches,
+ *   especially for many queries, use awFmParallelSearchLocate or awFmParallelSearchCount instead.
+ *
+ *  Inputs:
+ *    index: AwFmIndex struct to search
+ *    letter: letter to begin the search with. This will represent the final chacter in a searched kmer.
+ */
+struct AwFmSearchRange awFmCreateInitialQueryRangeFromChar(
+		const struct AwFmIndex *_RESTRICT_ const index, const char letter);
+
+
+/*
  * Function:  awFmIterativeStepBackwardSearch
  * --------------------
  * Performs a single backward search step on the given index.

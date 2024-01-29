@@ -24,6 +24,23 @@ struct AwFmSearchRange awFmCreateInitialQueryRange(
 }
 
 
+struct AwFmSearchRange awFmCreateInitialQueryRangeFromChar(
+	const struct AwFmIndex *_RESTRICT_ const index, const char letter){
+	uint8_t letterIndex;
+	if(index->config.alphabetType != AwFmAlphabetAmino) {
+		letterIndex = awFmAsciiNucleotideToLetterIndex(letter);
+	}
+	else {
+		letterIndex = awFmAsciiAminoAcidToLetterIndex(letter);
+	}
+	struct AwFmSearchRange searchRange;
+	searchRange.startPtr = index->prefixSums[letterIndex],
+	searchRange.endPtr	 = index->prefixSums[letterIndex + 1] - 1;
+
+	return searchRange;
+}
+
+
 void awFmNucleotideIterativeStepBackwardSearch(
 		const struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange *_RESTRICT_ const range, const uint8_t letter) {
 

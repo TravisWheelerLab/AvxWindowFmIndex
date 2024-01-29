@@ -175,8 +175,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *_RESTRICT_ const 
 			}
 		}
 
-		// position is divided by compression ratio to get the index in the suffix array
-		positionArray[i] = backtracePosition / index->config.suffixArrayCompressionRatio;
+		positionArray[i] = backtracePosition;
 		offsetArray[i]	 = databaseSequenceOffset;
 	}
 

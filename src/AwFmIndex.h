@@ -536,7 +536,7 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *_RESTRICT_ const 
  *
  *  Returns:
  *    AwFmReturnCode detailing the result of the read attempt. Possible return values:
- *      AwFmFileReadOkay on success,
+ *      AwFmSuccess on success,
  *      AwFmIllegalPositionError if the globalPosition is greater than the length of the index.
  *      AwFmUnsupportedVersionError if the version of the AwFmIndex does not support FastaVector.
  */

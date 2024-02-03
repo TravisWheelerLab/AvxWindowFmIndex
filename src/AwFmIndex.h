@@ -253,7 +253,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(
 
 
 /*
- * Function:  awFmDatabaseSingleKmerExactMatch
+ * Function:  awFmFindSearchRangeForString
  * --------------------
  *  Queries the FM-Index for the range of BWT positions that represent instances
  *    of the given Kmer found in the database.
@@ -274,7 +274,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(
  *    kmer may be found, as long as startPtr < endPtr. Otherwise (startPtr >= endPtr),
  *    the given kmer does not exist in the database sequence.
  */
-struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(
+struct AwFmSearchRange awFmFindSearchRangeForString(
 		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength);
 
 

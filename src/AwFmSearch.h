@@ -9,31 +9,6 @@
 #include "AwFmIndexStruct.h"
 
 
-/*
- * Function:  awFmDatabaseSingleKmerExactMatch
- * --------------------
- *  Queries the FM-Index for the range of BWT positions that represent instances
- *    of the given Kmer found in the database.
- *
- *  If the given kmer is not found, the AwFmSearch Range will result in a false value
- *   when given to the awFmSearchRangeIsValid function.
- *
- *  Inputs:
- *    index:        Pointer to the valid AwFmIndex struct.
- *    kmer:         Pointer to the kmer character string.
- *      kmer MUST point to valid data, otherwise, undefined behavior may occur, including
- *      creating potential segfauts.
- *    kmerLength:   Length of the kmer to be queried. Undefined behavior may occur if
- *      the function is given a kmerLength of 0.
- *
- *  Returns:
- *    AwFmSearchRange representing the range of BWT positions where the given
- *    kmer may be found, as long as startPtr < endPtr. Otherwise (startPtr >= endPtr),
- *    the given kmer does not exist in the database sequence.
- */
-struct AwFmSearchRange awFmDatabaseSingleKmerExactMatch(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength);
-
 
 /*
  * Function:  awFmBacktraceBwtPosition

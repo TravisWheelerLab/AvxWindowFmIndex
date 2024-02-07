@@ -22,6 +22,10 @@ set(
         PUBLIC_H_FILES
 
         src/AwFmIndex.h
+        lib/libdivsufsort/build/include/divsufsort64.h
+        lib/FastaVector/src/FastaVector.h
+        lib/FastaVector/src/FastaVectorMetadataVector.h
+        lib/FastaVector/src/FastaVectorString.h
 )
 
 set(
@@ -73,6 +77,38 @@ set_target_properties(
         PUBLIC_HEADER ${PUBLIC_H_FILES}
 )
 
+add_custom_target(
+    copy_headers
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/AWFMIndex
+)
+
+foreach(HEADER ${PUBLIC_H_FILES})
+    add_custom_command(
+        TARGET copy_headers
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_CURRENT_SOURCE_DIR}/${HEADER}
+                ${CMAKE_CURRENT_BINARY_DIR}/build
+    )
+endforeach()
+
+
+#copy the libdivsufsort and fastavector static libs to the build director
+add_custom_command(
+    TARGET awfmindex_static
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            $<TARGET_FILE:divsufsort64>
+            $<TARGET_FILE_DIR:awfmindex_static>
+)
+add_custom_command(
+    TARGET awfmindex_static
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            $<TARGET_FILE:divsufsort64>
+            $<TARGET_FILE:fastavector_static>
+            $<TARGET_FILE_DIR:awfmindex_static>
+)
+
 target_compile_options(
         awfmindex_static
         PRIVATE
@@ -104,6 +140,7 @@ install(
 # ------------
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/)
+add_dependencies(awfmindex_static copy_headers)
 
 # FastaVector
 

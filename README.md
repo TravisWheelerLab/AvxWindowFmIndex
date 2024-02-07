@@ -417,7 +417,7 @@ int main(int argc, char **argv){
 			.alphabetType																										 = AwFmAlphabetNucleotide,
 			.keepSuffixArrayInMemory																				 = false,
 			.storeOriginalSequence																					 = true};
-	struct AwFmReturnCode returnCode = awFmCreateIndexFromFasta(&index, &config, sequence, sequenceLength, indexFileSrc, true);
+	enum AwFmReturnCode returnCode = awFmCreateIndexFromFasta(&index, &config, sequence, sequenceLength, indexFileSrc, true);
   if(awFmReturnCodeIsFailure(returnCode)){
     printf("create index failed with return code %u\n", returnCode);
     exit(1);

@@ -18,11 +18,12 @@ endif()
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY build)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY build)
 
+
+#PUBLIC_H_FILES is missing divsufsort64.h, because it doesn't exist until after divsufsort is built
 set(
         PUBLIC_H_FILES
 
         src/AwFmIndex.h
-        lib/libdivsufsort/build/include/divsufsort64.h
         lib/FastaVector/src/FastaVector.h
         lib/FastaVector/src/FastaVectorMetadataVector.h
         lib/FastaVector/src/FastaVectorString.h
@@ -70,26 +71,24 @@ add_library(
         ${C_FILES}
 )
 
+# Set public headers for awfmindex_static
 set_target_properties(
-        awfmindex_static awfmindex
+    awfmindex_static
+    PROPERTIES
+    PUBLIC_HEADER "${PUBLIC_H_FILES}"
+)
 
-        PROPERTIES
-        PUBLIC_HEADER ${PUBLIC_H_FILES}
+# Set public headers for awfmindex
+set_target_properties(
+    awfmindex
+    PROPERTIES
+    PUBLIC_HEADER "${PUBLIC_H_FILES}"
 )
 
 add_custom_target(
     copy_headers
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/include/AWFMIndex
 )
-
-foreach(HEADER ${PUBLIC_H_FILES})
-    add_custom_command(
-        TARGET copy_headers
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${CMAKE_CURRENT_SOURCE_DIR}/${HEADER}
-                ${CMAKE_CURRENT_BINARY_DIR}/build
-    )
-endforeach()
 
 
 #copy the libdivsufsort and fastavector static libs to the build director
@@ -140,6 +139,24 @@ install(
 # ------------
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/)
+
+# Custom target for building submodules
+add_custom_target(build_submodule
+    COMMENT "Building submodules"
+)
+
+
+# Custom command to copy public headers after building submodules
+foreach(HEADER ${PUBLIC_H_FILES})
+    add_custom_command(
+        TARGET build_submodule  # Add dependency on build_submodule
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${CMAKE_CURRENT_SOURCE_DIR}/${HEADER}
+                ${CMAKE_CURRENT_BINARY_DIR}/build
+    )
+endforeach()
+
+add_dependencies(awfmindex_static build_submodule)
 add_dependencies(awfmindex_static copy_headers)
 
 # FastaVector
@@ -169,3 +186,22 @@ target_include_directories(
 
 target_link_libraries(awfmindex_static PRIVATE divsufsort64)
 target_link_libraries(awfmindex PRIVATE divsufsort64)
+
+
+
+# Custom target for building submodules
+add_custom_target(build_divsufsort
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/lib/
+    COMMENT "Building submodule"
+)
+
+# Custom command to move the divsufsort64.h file after the end of the build
+add_custom_command(
+        TARGET awfmindex_static POST_BUILD # Add dependency on build_submodule
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/libdivsufsort/include/divsufsort64.h
+        ${CMAKE_CURRENT_BINARY_DIR}/build/
+)
+
+# Add a dependency on build_submodule
+add_dependencies(awfmindex_static build_divsufsort)

@@ -462,10 +462,10 @@ struct AwFmSearchRange awFmCreateInitialQueryRangeFromChar(
  *    index: AwFmIndex struct to search
  *    range: range in the BWT that corresponds to the implicit kmer that is about to be extended.
  *      this acts as an out-parameter, and will update to the newly extended range once finished.
- *    letter: letter of the prefix or suffix character.
+ *    letterIndex: letter index of the prefix or suffix character, between 0 and 3.
  */
 void awFmNucleotideIterativeStepBackwardSearch(
-		const struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange *_RESTRICT_ const range, const uint8_t letter);
+		const struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange *_RESTRICT_ const range, const uint8_t letterIndex);
 
 
 /*
@@ -479,10 +479,10 @@ void awFmNucleotideIterativeStepBackwardSearch(
  *    index: AwFmIndex struct to search
  *    range: range in the BWT that corresponds to the implicit kmer that is about to be extended.
  *      this acts as an out-parameter, and will update to the newly extended range once finished.
- *    letter: letter of the prefix or suffix character.
+ *    letterIndex: letter index of the suffix character, between 0 and 19.
  */
 void awFmAminoIterativeStepBackwardSearch(
-		const struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange *_RESTRICT_ const range, const uint8_t letter);
+		const struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange *_RESTRICT_ const range, const uint8_t letterIndex);
 
 
 /*

@@ -181,5 +181,5 @@ void testRangeForCorrectness(const struct AwFmSearchRange *range, const uint8_t 
 
 struct AwFmSearchRange findRangeForKmer(
 		const struct AwFmIndex *_RESTRICT_ const index, const char *kmer, const uint64_t kmerLength) {
-	return awFmDatabaseSingleKmerExactMatch(index, kmer, kmerLength);
+	return awFmFindSearchRangeForString(index, kmer, kmerLength);
 }

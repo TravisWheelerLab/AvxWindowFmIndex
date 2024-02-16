@@ -28,10 +28,7 @@ brew install gcc
 ```
 
 
-After cloning the repo, you should initialize and update the submodules. This will happen
-automatically if you use the legacy build system, but there is no harm in doing
-it manually for either the CMake or legacy Make builds.
-
+After cloning the repo, you should initialize and update the submodules. 
 ```
 git clone https://github.com/TravisWheelerLab/AvxWindowFmIndex.git
 git submodule update --init --recursive --remote

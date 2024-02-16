@@ -34,8 +34,7 @@ it manually for either the CMake or legacy Make builds.
 
 ```
 git clone https://github.com/TravisWheelerLab/AvxWindowFmIndex.git
-git submodule init
-git submodule update
+git submodule update --init --recursive --remote
 ```
 
 Now the project is ready to build.
@@ -43,11 +42,26 @@ Now the project is ready to build.
 ## CMake Build
 
 The default way to build AwFmIndex is to use CMake. The usual CMake incantations
-will work. This will result in both shared and static libraries written to the
+will work. This will result in both shared libraries written to the
 `build/` directory.
 
 ```
 cmake .
+make
+```
+
+to instead make static libraries, set the BUILD_SHARED_LIBS variable as follows:
+```
+cmake -DBUILD_SHARED_LIBS=OFF .
+make
+```
+
+
+If you want both, it's eas easy as running both back-to-back
+```
+cmake -DBUILD_SHARED_LIBS=OFF .
+make
+cmake -DBUILD_SHARED_LIBS=ON .
 make
 ```
 

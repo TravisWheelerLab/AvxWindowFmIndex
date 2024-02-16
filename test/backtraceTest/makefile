@@ -1,13 +1,15 @@
 TEST_SRC = backtraceTest.c
 SRC = $(wildcard ../../src/*.c)
 
+
 CFLAGS = -std=c11 -fsanitize=address -Wall -mtune=native -fopenmp -mavx2 -O3
-LDLIBS = ../../lib/FastaVector/build/libfastavector_static.a ../../lib/libdivsufsort/build/lib/libdivsufsort64.a
+LDFLAGS = -L../../build
+LDLIBS = -lfastavector_static -ldivsufsort64
 
 EXE = backtraceTest.out
 
 backtraceTest: $(SRC)
-	gcc $(TEST_SRC) $(SRC) -o $(EXE) $(CFLAGS) $(LDLIBS)
+	gcc $(TEST_SRC) $(SRC) -o $(EXE) $(CFLAGS) $(LDFLAGS) $(LDLIBS)
 
 .PHONY: clean
 clean:

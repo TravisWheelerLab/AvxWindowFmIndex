@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "../../lib/FastaVector/src/FastaVector.h"
-#include "../../lib/libdivsufsort/build/include/divsufsort64.h"
+#include "../../build/FastaVector.h"
+#include "../../build/divsufsort64.h"
 #include "../../src/AwFmCreate.h"
 #include "../../src/AwFmIndex.h"
 #include "../../src/AwFmIndexStruct.h"

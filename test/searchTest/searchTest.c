@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../libdivsufsort/build/include/divsufsort64.h"
+#include "../../build/divsufsort64.h"
 #include "../../src/AwFmCreate.h"
 #include "../../src/AwFmIndex.h"
 #include "../../src/AwFmIndexStruct.h"
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
 void generateRandomIndex(struct AwFmIndex **index, uint8_t **sequence, size_t sequenceLength, uint64_t **suffixArray) {
 	printf("generating random index.\n");
 	// decide if we're building a nucleotide or amino index.
-	enum AwFmAlphabetType alphabetType	 = (rand() & 1) ? AwFmAlphabetNucleotide : AwFmAlphabetAmino;
+	enum AwFmAlphabetType alphabetType	 = (rand() & 1) ? AwFmAlphabetDna : AwFmAlphabetAmino;
 	struct AwFmIndexConfiguration config = {.suffixArrayCompressionRatio = 200,
 			.kmerLengthInSeedTable																					 = 4,
 			.alphabetType																										 = alphabetType,
@@ -90,7 +90,7 @@ void generateRandomIndex(struct AwFmIndex **index, uint8_t **sequence, size_t se
 		exit(-2);
 	}
 
-	uint8_t *characterLookupTable = alphabetType == AwFmAlphabetNucleotide ? nucleotideLookup : aminoLookup;
+	uint8_t *characterLookupTable = alphabetType == AwFmAlphabetDna ? nucleotideLookup : aminoLookup;
 	uint8_t alphabetCardinalty		= awFmGetAlphabetCardinality(alphabetType);
 	for(size_t i = 0; i < sequenceLength; i++) {
 		uint8_t characterIndex = rand() % (alphabetCardinalty + 1);	 //+1 is for ambiguity character
@@ -121,7 +121,7 @@ void testSearchForRandomKmers(
 		// build the kmer.
 		// printf("nuclookup ptr %p, amino %p, index p: %p\n", nucleotideLookup, aminoLookup, index);
 		uint8_t *characterLookupTable =
-				(index->config.alphabetType == AwFmAlphabetNucleotide) ? &nucleotideLookup[0] : &aminoLookup[0];
+				(index->config.alphabetType == AwFmAlphabetDna) ? &nucleotideLookup[0] : &aminoLookup[0];
 		uint8_t alphabetCardinalty = awFmGetAlphabetCardinality(index->config.alphabetType);
 		for(size_t i = 0; i < kmerLength; i++) {
 			kmer[i] = characterLookupTable[rand() % alphabetCardinalty];

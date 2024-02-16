@@ -17,7 +17,7 @@
 #include "../../src/AwFmSuffixArray.h"
 #include "../test.h"
 #include "FastaVector.h"
-// #include "../../libdivsufsort/build/include/divsufsort64.h"
+// #include "../../lib/libdivsufsort/include/divsufsort64.h"
 
 
 char buffer[2048];

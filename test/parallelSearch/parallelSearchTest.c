@@ -16,7 +16,7 @@
 #include "../../src/AwFmSearch.h"
 #include "../../src/AwFmSuffixArray.h"
 #include "../test.h"
-#include "divsufsort64.h"
+#include "../../build/divsufsort64.h"
 
 char buffer[2048];
 uint8_t aminoLookup[21] = {

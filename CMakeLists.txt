@@ -108,27 +108,43 @@ add_custom_command(
             $<TARGET_FILE_DIR:awfmindex_static>
 )
 
+# Set common compiler options
 target_compile_options(
-        awfmindex_static
-        PRIVATE
-        -mtune=native
-        -march=native
-        -mavx2
-        -Wall
-        -Wextra
-        ${OpenMP_C_FLAGS}
+    awfmindex_static
+    PRIVATE
+    -mtune=native
+    -march=native
+    -Wall
+    -Wextra
+    ${OpenMP_C_FLAGS}
 )
 
 target_compile_options(
-        awfmindex
-        PRIVATE
-        -mtune=native
-        -march=native
-        -mavx2 
-        -Wall
-        -Wextra
-        ${OpenMP_C_FLAGS}
+    awfmindex
+    PRIVATE
+    -mtune=native
+    -march=native
+    -Wall
+    -Wextra
+    ${OpenMP_C_FLAGS}
 )
+
+# Check if the target architecture is x86_64 (Intel) or aarch64 (ARM)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+    # Check if the compiler supports AVX2
+    include(CheckCCompilerFlag)
+    CHECK_C_COMPILER_FLAG("-mavx2" COMPILER_SUPPORTS_AVX2)
+
+    if(COMPILER_SUPPORTS_AVX2)
+        # Set AVX2 flags for x86_64 (Intel)
+        target_compile_options(awfmindex_static PRIVATE -mavx2)
+        target_compile_options(awfmindex PRIVATE -mavx2)
+    endif()
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+    # Set NEON flags for ARM
+    target_compile_options(awfmindex_static PRIVATE -march=armv8-a+simd)
+    target_compile_options(awfmindex PRIVATE -march=armv8-a+simd)
+endif()
 
 install(
         TARGETS awfmindex awfmindex_static

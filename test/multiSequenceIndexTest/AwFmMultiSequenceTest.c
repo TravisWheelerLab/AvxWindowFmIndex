@@ -16,7 +16,7 @@
 #include "../../src/AwFmSearch.h"
 #include "../../src/AwFmSuffixArray.h"
 #include "../test.h"
-#include "FastaVector.h"
+#include "../../lib/FastaVector/src/FastaVector.h"
 // #include "../../lib/libdivsufsort/include/divsufsort64.h"
 
 
@@ -31,6 +31,8 @@ struct FastaVector *generateMultiSequenceFastaVector(
 void randomizeSequenceBuffer(char *sequenceBuffer, size_t sequenceLength, bool isAmino);
 void getRawSequenceFromFastaVector(
 		const struct FastaVector *const fastaVector, char **compositeSequenceBufferPtr, size_t *compositeSequenceLength);
+
+void testFromFasta();
 
 struct AwFmIndexConfiguration generateReasonableRandomMetadata();
 
@@ -48,6 +50,7 @@ int main(int argc, char **argv) {
 	testAwFmIndexIdenticalForFastaVector();
 	testAwFmIndexFastaVectorDataMatchesExpected();
 	testAwFmIndexGivesCorrectLocalPositions();
+	testFromFasta();
 }
 
 struct FastaVector *generateMultiSequenceFastaVector(
@@ -484,4 +487,103 @@ void checkAllGlobalPositionsForCorrectLocalPositions(
 			testAssertString(sequenceNumberOut == sequenceIndex, buffer);
 		}
 	}
+}
+
+
+void testFromFasta(){
+	size_t localPosition, sequenceNumber;
+	uint64_t *positions;
+	struct AwFmIndex *index;
+	struct AwFmIndexConfiguration config;
+	config.suffixArrayCompressionRatio = 2;
+	config.kmerLengthInSeedTable = 2;
+	config.alphabetType = AwFmAlphabetAmino;
+	config.keepSuffixArrayInMemory = true;
+	config.storeOriginalSequence = false;
+	enum AwFmReturnCode awfmrc = awFmCreateIndexFromFasta(&index, &config, "test2.fa", "test2.awfmi");
+
+	testAssertString(awfmrc == AwFmFileWriteOkay, "Error: create from fasta did not return file write okay");
+	struct AwFmSearchRange searchRange;
+
+	bool foundHeader = awFmSingleKmerExists(index, "t", 1);
+	testAssertString((!foundHeader), "Error: awfm found header 1 while looking for sequence"); 
+
+	foundHeader = awFmSingleKmerExists(index, "v", 1);
+	testAssertString((!foundHeader), "Error: awfm found header 2 while looking for sequence"); 
+
+	foundHeader = awFmSingleKmerExists(index, "w", 1);
+	testAssertString((!foundHeader), "Error: awfm found header 2 while looking for sequence"); 
+
+	foundHeader = awFmSingleKmerExists(index, "y", 1);
+	testAssertString((!foundHeader), "Error: awfm found header 2 while looking for sequence"); 
+
+	bool foundSequence = awFmSingleKmerExists(index, "acdef", 5);
+	testAssertString(foundSequence, "Error: did not find sequence 1");
+
+	foundSequence = awFmSingleKmerExists(index, "g", 1);
+	testAssertString(foundSequence, "Error: did not find sequence 2");
+
+	foundSequence = awFmSingleKmerExists(index, "hikl", 4);
+	testAssertString(foundSequence, "Error: did not find sequence 3");
+
+	foundSequence = awFmSingleKmerExists(index, "m", 1);
+	testAssertString(foundSequence, "Error: did not find sequence 1");
+
+	//check to make sure they're in the right position;
+	awFmAminoNonSeededSearch(index, "acdef", 5, &searchRange);
+	testAssertString(awFmSearchRangeLength(&searchRange)== 1, "Error: seq 1 did not return exactly 1 hit");
+	awFmAminoNonSeededSearch(index, "g", 1, &searchRange);
+	testAssertString(awFmSearchRangeLength(&searchRange)== 1, "Error: seq 2 did not return exactly 1 hit");
+	awFmAminoNonSeededSearch(index, "hikl", 4, &searchRange);
+	testAssertString(awFmSearchRangeLength(&searchRange)== 1, "Error: seq 3 did not return exactly 1 hit");
+	awFmAminoNonSeededSearch(index, "m", 1, &searchRange);
+	testAssertString(awFmSearchRangeLength(&searchRange)== 1, "Error: seq 4 did not return exactly 1 hit");
+
+	//check to make sure the local positions make sense
+	awFmAminoNonSeededSearch(index, "acdef", 5, &searchRange);
+	positions = awFmFindDatabaseHitPositions(index,&searchRange, &awfmrc);
+	testAssertString(awfmrc == AwFmFileReadOkay, "getting db hit position did not return read okay.");
+	awfmrc = awFmGetLocalSequencePositionFromIndexPosition(index, positions[0], &sequenceNumber, &localPosition);
+	testAssertString(awfmrc == AwFmSuccess, "get local position did not return success");
+	testAssertString(sequenceNumber == 0, "first seq did not return seq number 0");
+	testAssertString(localPosition == 0, "first seq did not return local position 0");
+	free(positions);
+
+	awFmAminoNonSeededSearch(index, "g", 1, &searchRange);
+	positions = awFmFindDatabaseHitPositions(index,&searchRange, &awfmrc);
+	testAssertString(awfmrc == AwFmFileReadOkay, "getting db hit position did not return read okay.");
+	awfmrc = awFmGetLocalSequencePositionFromIndexPosition(index, positions[0], &sequenceNumber, &localPosition);
+	testAssertString(awfmrc == AwFmSuccess, "get local position did not return success");
+	testAssertString(sequenceNumber == 1, "second seq did not return seq number 1");
+	testAssertString(localPosition == 0, "second seq did not return local position 0");
+	free(positions);
+
+	awFmAminoNonSeededSearch(index, "hikl", 4, &searchRange);
+	positions = awFmFindDatabaseHitPositions(index,&searchRange, &awfmrc);
+	testAssertString(awfmrc == AwFmFileReadOkay, "getting db hit position did not return read okay.");
+	awfmrc = awFmGetLocalSequencePositionFromIndexPosition(index, positions[0], &sequenceNumber, &localPosition);
+	testAssertString(awfmrc == AwFmSuccess, "get local position did not return success");
+	testAssertString(sequenceNumber == 2, "third seq did not return seq number 2");
+	testAssertString(localPosition == 0, "third seq did not return local position 0");
+	free(positions);
+
+	awFmAminoNonSeededSearch(index, "m", 1, &searchRange);
+	positions = awFmFindDatabaseHitPositions(index,&searchRange, &awfmrc);
+	testAssertString(awfmrc == AwFmFileReadOkay, "getting db hit position did not return read okay.");
+	awfmrc = awFmGetLocalSequencePositionFromIndexPosition(index, positions[0], &sequenceNumber, &localPosition);
+	testAssertString(awfmrc == AwFmSuccess, "get local position did not return success");
+	testAssertString(sequenceNumber == 3, "fourth seq did not return seq number 3");
+	testAssertString(localPosition == 0, "fourth seq did not return local position 0");
+	free(positions);
+
+	//check to make sure no hits overlap the sequences
+
+
+	awFmAminoNonSeededSearch(index, "fg", 2, &searchRange);
+	testAssertString(awFmSearchRangeLength(&searchRange) == 0, "searching for overlap between seqs 1 and 2 found a hit");
+	awFmAminoNonSeededSearch(index, "gh", 2, &searchRange);
+	testAssertString(awFmSearchRangeLength(&searchRange) == 0, "searching for overlap between seqs 2 and 3 found a hit");
+	awFmAminoNonSeededSearch(index, "lm", 2, &searchRange);
+	testAssertString(awFmSearchRangeLength(&searchRange) == 0, "searching for overlap between seqs 3 and 4 found a hit");
+
 }

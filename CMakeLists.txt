@@ -6,7 +6,7 @@ project(
 )
 
 set(CMAKE_C_STANDARD 17)
-
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #add support for OpenMP
 find_package(OpenMP REQUIRED)
@@ -116,6 +116,9 @@ target_compile_options(
     -march=native
     -Wall
     -Wextra
+    -O3
+    -fPIC
+    -lgomp
     ${OpenMP_C_FLAGS}
 )
 
@@ -126,6 +129,9 @@ target_compile_options(
     -march=native
     -Wall
     -Wextra
+    -O3
+    -fPIC
+    -lgomp
     ${OpenMP_C_FLAGS}
 )
 
@@ -210,6 +216,8 @@ add_custom_target(build_divsufsort
     COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/lib/
     COMMENT "Building submodule"
 )
+
+set_target_properties(build_divsufsort PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Custom command to move the divsufsort64.h file after the end of the build
 add_custom_command(

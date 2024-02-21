@@ -227,5 +227,12 @@ add_custom_command(
         ${CMAKE_CURRENT_BINARY_DIR}/build/
 )
 
+add_custom_command(
+        TARGET awfmindex_static POST_BUILD # Add dependency on build_submodule
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/libdivsufsort/lib/build/libdivsufsort64.a
+        ${CMAKE_CURRENT_BINARY_DIR}/build/
+)
+
 # Add a dependency on build_submodule
 add_dependencies(awfmindex_static build_divsufsort)

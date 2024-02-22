@@ -160,6 +160,9 @@ install(
 # Dependencies
 # ------------
 
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+set(CMAKE_BUILD_TYPE "Release")
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/)
 
 # Custom target for building submodules

@@ -219,34 +219,19 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *_RESTRICT_ const 
 
 enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct AwFmIndex *_RESTRICT_ const index,
 		size_t globalPosition, size_t *sequenceNumber, size_t *localSequencePosition) {
-	if(!index->fastaVector) {
+	if(__builtin_expect(!index->fastaVector, false)) {
 		return AwFmUnsupportedVersionError;
 	}
-	else {
-		if(globalPosition >= index->bwtLength) {
-			return AwFmIllegalPositionError;
-		}
 
-		const size_t numSequencesInIndex = index->fastaVector->metadata.count;
-		for(size_t sequenceIndex = 0; sequenceIndex < numSequencesInIndex; sequenceIndex++) {
-			size_t sequenceEndPosition = index->fastaVector->metadata.data[sequenceIndex].sequenceEndPosition;
-			if(sequenceEndPosition > globalPosition) {
-				// generate the sequenceNumber and localSequencePosition
-				size_t sequenceStartPosition;
-				if(sequenceIndex == 0) {
-					sequenceStartPosition = 0;
-				}
-				else {
-					sequenceStartPosition = index->fastaVector->metadata.data[sequenceIndex - 1].sequenceEndPosition;
-				}
-				*sequenceNumber				 = sequenceIndex;
-				*localSequencePosition = globalPosition - sequenceStartPosition;
-				return AwFmSuccess;
-			}
-		}
-
-		return AwFmIllegalPositionError;
+	struct FastaVectorLocalPosition fastaVectorLocalPosition;
+	bool findLocalPositionSuccessful = fastaVectorGetLocalSequencePositionFromGlobal(index->fastaVector, globalPosition,
+    &fastaVectorLocalPosition);
+	if(findLocalPositionSuccessful){
+		*localSequencePosition = fastaVectorLocalPosition.positionInSequence;
+		*sequenceNumber = fastaVectorLocalPosition.sequenceIndex;
+		return AwFmSuccess;
 	}
+	else return AwFmIllegalPositionError;
 }
 
 

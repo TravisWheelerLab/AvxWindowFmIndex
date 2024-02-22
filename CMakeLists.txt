@@ -6,7 +6,7 @@ project(
 )
 
 set(CMAKE_C_STANDARD 17)
-
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 #add support for OpenMP
 find_package(OpenMP REQUIRED)
@@ -116,6 +116,9 @@ target_compile_options(
     -march=native
     -Wall
     -Wextra
+    -O3
+    -fPIC
+    -lgomp
     ${OpenMP_C_FLAGS}
 )
 
@@ -126,6 +129,9 @@ target_compile_options(
     -march=native
     -Wall
     -Wextra
+    -O3
+    -fPIC
+    -lgomp
     ${OpenMP_C_FLAGS}
 )
 
@@ -153,6 +159,9 @@ install(
 # ------------
 # Dependencies
 # ------------
+
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+set(CMAKE_BUILD_TYPE "Release")
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/)
 
@@ -211,11 +220,20 @@ add_custom_target(build_divsufsort
     COMMENT "Building submodule"
 )
 
+set_target_properties(build_divsufsort PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 # Custom command to move the divsufsort64.h file after the end of the build
 add_custom_command(
         TARGET awfmindex_static POST_BUILD # Add dependency on build_submodule
         COMMAND ${CMAKE_COMMAND} -E copy
         ${CMAKE_CURRENT_BINARY_DIR}/lib/libdivsufsort/include/divsufsort64.h
+        ${CMAKE_CURRENT_BINARY_DIR}/build/
+)
+
+add_custom_command(
+        TARGET awfmindex_static POST_BUILD # Add dependency on build_submodule
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/libdivsufsort/lib/build/libdivsufsort64.a
         ${CMAKE_CURRENT_BINARY_DIR}/build/
 )
 

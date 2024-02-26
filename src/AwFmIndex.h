@@ -545,6 +545,41 @@ enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct A
 
 
 /*
+ * Function:  awFmNucleotideBacktraceReturnPreviousLetterIndex
+ * --------------------
+ *  Backtraces the given position in the bwt, and returns the the previous character to that position.
+ * 		The given BWT position will then be updated to refer to the position of the returned previous character. 
+ *
+ *  Inputs:
+ *     index:			Pointer to the valid AwFmIndex struct.
+ *     bwtPosition:     A valid position in the fm index
+ *
+ *  Returns:
+ *    Letter index of the character found at the given position in the bwt. In other words, 
+ * 		the letter previous in the sequence to the given position.
+ */
+uint8_t awFmNucleotideBacktraceReturnPreviousLetterIndex(const struct AwFmIndex *_RESTRICT_ const index, 
+	uint64_t *bwtPosition);
+
+
+/*
+ * Function:  awFmAminoBacktraceReturnPreviousLetterIndex
+ * --------------------
+ *  Backtraces the given position in the bwt, and returns the the previous character to that position.
+ * 		The given BWT position will then be updated to refer to the position of the returned previous character. 
+ *
+ *  Inputs:
+ *     index:			Pointer to the valid AwFmIndex struct.
+ *     bwtPosition:     A valid position in the fm index
+ *
+ *  Returns:
+ *    Letter index of the character found at the given position in the bwt. In other words, 
+ * 		the letter previous in the sequence to the given position.
+ */
+uint8_t awFmAminoBacktraceReturnPreviousLetterIndex( const struct AwFmIndex *_RESTRICT_ const index, 
+	uint64_t *bwtPosition);
+
+/*
  * Function:  awFmGetHeaderStringFromSequenceNumber
  * --------------------
  *  For indices that are built from a fasta file (indices that use an internal FastaVector struct),

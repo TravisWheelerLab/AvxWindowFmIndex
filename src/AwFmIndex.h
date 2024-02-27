@@ -519,30 +519,6 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *_RESTRICT_ const 
 
 
 /*
- * Function:  awFmFindDatabaseHitPositionSingle
- * --------------------
- *  Backtraces a single BWT position to find its position in the sequence.
- * 		If the Suffix Array is stored on disk, this will occur a single disk read.
- * 		If your goal is to query many BWT positions, use awFmFindDatabaseHitPositions instead.
- *
- *
- *
- *  Inputs:
- *    index:              	Pointer to the valid AwFmIndex struct.
- *    bwtPosition:			Position in the bwt to query
- *    fileAssessResult:		Returns the result of this action as an out-variable.
- * 		possible return values are:
- * 			AwFmFileReadOkay on success
- * 			AwFmFileReadFail on failure to read from the position array (if left 
- * 				on file and not in memory)
- *
- *  Returns:
- * 		Position in the original sequence that corresponds to the bwt position
- */
-uint64_t awFmFindDatabaseHitPositionSingle(const struct AwFmIndex *_RESTRICT_ const index,
-		const uint64_t bwtPosition, enum AwFmReturnCode *_RESTRICT_ fileAccessResult);
-
-/*
  * Function:  awFmGetLocalSequencePositionFromIndexPosition
  * --------------------
  *  For indices that are built from a fasta file (indices that use an internal FastaVector struct),

@@ -217,40 +217,6 @@ uint64_t *awFmFindDatabaseHitPositions(const struct AwFmIndex *_RESTRICT_ const 
 }
 
 
-uint64_t awFmFindDatabaseHitPositionSingle(const struct AwFmIndex *_RESTRICT_ const index,
-	const uint64_t bwtPosition, enum AwFmReturnCode *_RESTRICT_ fileAccessResult){
-
-	uint64_t databaseSequenceOffset = 0;
-	uint64_t backtracePosition		= bwtPosition;
-
-	if(index->config.alphabetType != AwFmAlphabetAmino) {
-		while(!awFmBwtPositionIsSampled(index, backtracePosition)) {
-			backtracePosition = awFmNucleotideBacktraceBwtPosition(index, backtracePosition);
-			databaseSequenceOffset++;
-		}
-	}
-	else {
-		while(!awFmBwtPositionIsSampled(index, backtracePosition)) {
-			backtracePosition = awFmAminoBacktraceBwtPosition(index, backtracePosition);
-			databaseSequenceOffset++;
-		}
-	}
-
-	*fileAccessResult = awFmReadPositionsFromSuffixArray(index, &backtracePosition, 1);
-
-	// make sure that reading from the suffix array actually succeeded
-	if(*fileAccessResult == AwFmFileReadFail) {
-		return 0;
-	}
-
-	backtracePosition += databaseSequenceOffset;
-	backtracePosition %= index->bwtLength;	 // mod by the length so that the sentinel wraps to zero.
-	*fileAccessResult = AwFmFileReadOkay;
-	return backtracePosition;
-
-}
-
-
 enum AwFmReturnCode awFmGetLocalSequencePositionFromIndexPosition(const struct AwFmIndex *_RESTRICT_ const index,
 		size_t globalPosition, size_t *sequenceNumber, size_t *localSequencePosition) {
 	if(__builtin_expect(!index->fastaVector, false)) {

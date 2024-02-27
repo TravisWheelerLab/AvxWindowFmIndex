@@ -2,7 +2,7 @@ TEST_SRC = bwtTest.c
 SRC = $(wildcard ../../src/*.c)
 
 CFLAGS = -std=c11  -Wall -mtune=native -fopenmp -mavx2 -O3
-LDLIBS = ../../build/libfastavector_static.a ../../build/libdivsufsort64.a
+LDLIBS = ../../build/libfastavector_static.a ../../build/libdivsufsort64.a -I../../build/
 
 EXE = bwtTest.out
 

@@ -1,7 +1,7 @@
 TEST_SRC = awfmiTest.c
 
 CFLAGS = -std=c11 -Wall -mtune=native -fopenmp -mavx2 -O3
-LDFLAGS = -L../../build
+LDFLAGS = -L../../build -I../../build/
 LDLIBS = -lawfmindex
 
 EXE = staticLibTest.out

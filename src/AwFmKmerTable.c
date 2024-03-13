@@ -4,6 +4,23 @@
 #include "AwFmSearch.h"
 
 
+
+bool awFmQueryCanUseKmerTable(const struct AwFmIndex *_RESTRICT_ const index,
+	const char *_RESTRICT_ const kmer, const uint8_t kmerLength){
+
+	if (kmerLength < index->config.kmerLengthInSeedTable){
+		return false;
+	}
+	for(uint8_t letterIdx = kmerLength - index->config.kmerLengthInSeedTable; letterIdx < kmerLength; letterIdx++){
+		if(awFmLetterIsAmbiguous(kmer[letterIdx], index->config.alphabetType)){
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
 struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(
 		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint8_t kmerLength) {
 
@@ -184,5 +201,7 @@ inline struct AwFmSearchRange awFmAminoPartialKmerSeedRangeFromTable(
 
 	return range;
 }
+
+
 
 #endif

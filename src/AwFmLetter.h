@@ -128,4 +128,19 @@ uint8_t awFmAminoAcidLetterIndexToCompressedVector(const uint8_t letterIndex);
  */
 uint8_t awFmAminoAcidCompressedVectorToLetterIndex(const uint8_t compressedVectorLetter);
 
+
+/*
+ * Function:  awFmLetterIsAmbiguous
+ * --------------------
+ * Determines if the given character representation is ambiguous. 
+ *  Inputs:
+ *      letter: ascii character to check for ambiguity
+ *      alphabet: alphabet the character is from. 
+ *
+ *  Returns:
+ *    true if the letter is an ambiguity code, false if it 
+ *      represents a specific nucleotide or amino acid.
+ */
+bool awFmLetterIsAmbiguous(const char letter, const enum AwFmAlphabetType alphabet);
+
 #endif /* end of include guard: AW_FM_LETTER_H */

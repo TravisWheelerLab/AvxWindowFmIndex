@@ -100,8 +100,8 @@ enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *_RESTRICT_ 
 				threadBlockStartIndex += AW_FM_NUM_CONCURRENT_QUERIES) {
 
 			const size_t threadBlockEndIndex = threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES > searchList->count ?
-																						 searchList->count :
-																						 threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES;
+				searchList->count : threadBlockStartIndex + AW_FM_NUM_CONCURRENT_QUERIES;
+
 			struct AwFmSearchRange ranges[AW_FM_NUM_CONCURRENT_QUERIES];
 
 			parallelSearchFindKmerSeedsForBlock(index, searchList, ranges, threadBlockStartIndex, threadBlockEndIndex);
@@ -185,25 +185,36 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *_RESTRICT_ cons
 
 	for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++) {
 		const struct AwFmKmerSearchData *searchData = &searchList->kmerSearchData[kmerIndex];
-		const uint8_t kmerLength										= searchData->kmerLength;
-		const char *kmerString											= searchData->kmerString;
+		const uint8_t kmerLength	= searchData->kmerLength;
+		const char *kmerString		= searchData->kmerString;
+
+		const bool queryCanUseKmerTable = awFmQueryCanUseKmerTable(index, kmerString, kmerLength);
 
 		const uint64_t rangesIndex = kmerIndex - threadBlockStartIndex;
+
+		//these are used if the kmer is ineligible for using the kmerSeedTable
+		const uint8_t kmerStringNonSeededStart = kmerLength < index->config.kmerLengthInSeedTable?
+			0: kmerLength - index->config.kmerLengthInSeedTable;
+		const uint8_t kmerStringNonSeededLength = kmerLength < index->config.kmerLengthInSeedTable?
+			kmerLength: index->config.kmerLengthInSeedTable;
+
 		if(index->config.alphabetType != AwFmAlphabetAmino) {
 			// TODO: reimplement partial seeded search when it's implementable
-			if(kmerLength < index->config.kmerLengthInSeedTable) {
-				awFmNucleotideNonSeededSearch(index, kmerString, kmerLength, &ranges[rangesIndex]);
+			if(queryCanUseKmerTable) {
+				ranges[rangesIndex] = awFmNucleotideKmerSeedRangeFromTable(index, kmerString, kmerLength);
 			}
 			else {
-				ranges[rangesIndex] = awFmNucleotideKmerSeedRangeFromTable(index, kmerString, kmerLength);
+				awFmNucleotideNonSeededSearch(index, kmerString + kmerStringNonSeededStart, 
+					kmerStringNonSeededLength, &ranges[rangesIndex]);
 			}
 		}
 		else {
-			if(kmerLength < index->config.kmerLengthInSeedTable) {
-				awFmAminoNonSeededSearch(index, kmerString, kmerLength, &ranges[rangesIndex]);
-			}
-			else {
+			if(queryCanUseKmerTable) {
 				ranges[rangesIndex] = awFmAminoKmerSeedRangeFromTable(index, kmerString, kmerLength);
+			}
+			else{
+				awFmAminoNonSeededSearch(index, kmerString + kmerStringNonSeededStart, 
+					kmerStringNonSeededLength, &ranges[rangesIndex]);
 			}
 		}
 	}

@@ -1,9 +1,9 @@
 #include "AwFmLetter.h"
+#include "AwFmIndexStruct.h"
 
 #include <stdlib.h>
 #include <time.h>
-
-#include "AwFmIndexStruct.h"
+#include <ctype.h>
 
 
 uint8_t awFmAsciiNucleotideToLetterIndex(const uint8_t asciiLetter) {
@@ -86,4 +86,33 @@ uint8_t awFmAminoAcidCompressedVectorToLetterIndex(const uint8_t compressedVecto
 			20, 8, 17, 1, 20, 7, 5, 6, 9, 10, 4, 20};
 
 	return letterLookup[compressedVectorLetter];
+}
+
+bool awFmLetterIsAmbiguous(const char letter, const enum AwFmAlphabetType alphabet){
+	const char lowercase = tolower(letter);
+	if(alphabet == AwFmAlphabetAmino){
+		switch(lowercase){
+			case 'z':
+			case 'x':
+			case 'b':
+				return true;
+			default:
+				return false;
+		}
+	}
+	else{
+		switch(lowercase){
+			case 'a':
+			case 'c':
+			case 'g':
+			case 't':
+			case 'u':
+				return false;
+			default: 
+				return true;
+		}
+	}
+
+	//this return should never occur
+	return true;
 }

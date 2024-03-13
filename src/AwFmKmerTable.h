@@ -48,4 +48,22 @@ struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(
 		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint8_t kmerLength);
 
 
+/*
+ * Function:  awFmQueryCanUseKmerTable
+ * --------------------
+ * Determines if a given kmer can use the kmer seed table. A kmer is ineligible for using
+ * 	the kmer seed table if it is too short or contains any ambiguity characters in the 
+ * 	suffix characters that would be used to query the table.
+ *  Inputs:
+ *    	index: AwFmIndex that contains the table to be used
+ * 		kmer: pointer to the start of the kmer
+ * 		kmerLength: length of the kmer in question.
+ *
+ *  Returns:
+ *    true if the kmer is eligible for using the kmer seed table, or false otherwise.
+ */
+bool awFmQueryCanUseKmerTable(const struct AwFmIndex *_RESTRICT_ const index,
+	const char *_RESTRICT_ const kmer, const uint8_t kmerLength);
+
+
 #endif /* end of include guard: AW_FM_KMER_TABLE_H */

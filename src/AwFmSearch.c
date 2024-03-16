@@ -278,7 +278,7 @@ enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(const struct AwFmIndex
 		return AwFmIllegalPositionError;
 	}
 	else{
-		fastaVectorFastaGetHeader(index->fastaVector,sequenceNumber, headerBuffer,headerLength);
+		fastaVectorGetHeader(index->fastaVector,sequenceNumber, headerBuffer,headerLength);
 		return AwFmSuccess;
 	}
 }

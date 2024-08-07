@@ -202,7 +202,7 @@ one will result in 4x table size for nucleotide indices, and a 20x table size
 for protein indices.
 
 **`alphabetType`** allows the user to set the type of index to make. Options are
-AwFmAlphabetNucleotide and AwFmAlphabetAmino
+AwFmAlphabetDna, AwFmAlphabetRna, and AwFmAlphabetAmino
 
 **`keepSuffixArrayInMemory`** determines if the compressed suffix array is
 *loaded into memory, or left on

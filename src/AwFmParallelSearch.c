@@ -185,7 +185,7 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *_RESTRICT_ cons
 
 	for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++) {
 		const struct AwFmKmerSearchData *searchData = &searchList->kmerSearchData[kmerIndex];
-		const uint8_t kmerLength	= searchData->kmerLength;
+		const uint64_t kmerLength	= searchData->kmerLength;
 		const char *kmerString		= searchData->kmerString;
 
 		const bool queryCanUseKmerTable = awFmQueryCanUseKmerTable(index, kmerString, kmerLength);
@@ -193,9 +193,9 @@ void parallelSearchFindKmerSeedsForBlock(const struct AwFmIndex *_RESTRICT_ cons
 		const uint64_t rangesIndex = kmerIndex - threadBlockStartIndex;
 
 		//these are used if the kmer is ineligible for using the kmerSeedTable
-		const uint8_t kmerStringNonSeededStart = kmerLength < index->config.kmerLengthInSeedTable?
+		const uint64_t kmerStringNonSeededStart = kmerLength < index->config.kmerLengthInSeedTable?
 			0: kmerLength - index->config.kmerLengthInSeedTable;
-		const uint8_t kmerStringNonSeededLength = kmerLength < index->config.kmerLengthInSeedTable?
+		const uint64_t kmerStringNonSeededLength = kmerLength < index->config.kmerLengthInSeedTable?
 			kmerLength: index->config.kmerLengthInSeedTable;
 
 		if(index->config.alphabetType != AwFmAlphabetAmino) {
@@ -225,7 +225,7 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *_RESTRICT_ const i
 		struct AwFmKmerSearchList *_RESTRICT_ const searchList, struct AwFmSearchRange *_RESTRICT_ const ranges,
 		const size_t threadBlockStartIndex, const size_t threadBlockEndIndex) {
 	bool hasActiveQueries					 = true;
-	uint8_t currentKmerLetterIndex = index->config.kmerLengthInSeedTable;
+	uint64_t currentKmerLetterIndex = index->config.kmerLengthInSeedTable;
 
 	while(hasActiveQueries) {
 		currentKmerLetterIndex++;
@@ -234,12 +234,12 @@ void parallelSearchExtendKmersInBlock(const struct AwFmIndex *_RESTRICT_ const i
 		for(size_t kmerIndex = threadBlockStartIndex; kmerIndex < threadBlockEndIndex; kmerIndex++) {
 			const uint64_t rangesIndex																 = kmerIndex - threadBlockStartIndex;
 			const struct AwFmKmerSearchData *_RESTRICT_ const searchData = &searchList->kmerSearchData[kmerIndex];
-			const uint8_t kmerLength																	 = searchData->kmerLength;
+			const uint64_t kmerLength																	 = searchData->kmerLength;
 			const char *kmerString																		 = searchData->kmerString;
 
 			if((kmerLength >= currentKmerLetterIndex) && awFmSearchRangeIsValid(&ranges[rangesIndex])) {
 				hasActiveQueries											= true;
-				const uint8_t currentQueryLetterIndex = kmerLength - currentKmerLetterIndex;
+				const uint64_t currentQueryLetterIndex = kmerLength - currentKmerLetterIndex;
 
 				if(index->config.alphabetType != AwFmAlphabetAmino) {
 					const uint8_t queryLetterIndex = awFmAsciiNucleotideToLetterIndex(kmerString[currentQueryLetterIndex]);

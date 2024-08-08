@@ -86,7 +86,7 @@ bool awFmSingleKmerExists(
  *
  */
 void awFmNucleotideNonSeededSearch(const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer,
-		const uint8_t kmerLength, struct AwFmSearchRange *range);
+		const uint64_t kmerLength, struct AwFmSearchRange *range);
 
 
 /*
@@ -111,7 +111,7 @@ void awFmNucleotideNonSeededSearch(const struct AwFmIndex *_RESTRICT_ const inde
  *
  */
 void awFmAminoNonSeededSearch(const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer,
-		const uint8_t kmerLength, struct AwFmSearchRange *range);
+		const uint64_t kmerLength, struct AwFmSearchRange *range);
 
 
 #endif /* end of include guard: AW_FM_INDEX_SEARCH_H */

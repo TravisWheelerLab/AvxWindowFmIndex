@@ -6,7 +6,7 @@
 
 
 struct AwFmSearchRange awFmCreateInitialQueryRange(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const query, const uint8_t queryLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const query, const uint64_t queryLength) {
 
 	uint8_t finalLetterIndexInQuery;
 	if(index->config.alphabetType != AwFmAlphabetAmino) {
@@ -422,9 +422,9 @@ inline uint8_t awFmAminoBacktraceReturnPreviousLetterIndex(
 
 
 inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer,
-		const uint8_t kmerLength, struct AwFmSearchRange *range) {
+		const uint64_t kmerLength, struct AwFmSearchRange *range) {
 
-	uint8_t indexInKmerString = kmerLength - 1;
+	uint64_t indexInKmerString = kmerLength - 1;
 	uint8_t queryLetterIndex	= awFmAsciiNucleotideToLetterIndex(kmer[indexInKmerString]);
 	range->startPtr						= index->prefixSums[queryLetterIndex];
 	range->endPtr							= index->prefixSums[queryLetterIndex + 1] - 1;
@@ -436,9 +436,9 @@ inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *_RESTRICT_ con
 
 
 inline void awFmAminoNonSeededSearch(const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer,
-		const uint8_t kmerLength, struct AwFmSearchRange *range) {
+		const uint64_t kmerLength, struct AwFmSearchRange *range) {
 
-	uint8_t indexInKmerString = kmerLength - 1;
+	uint64_t indexInKmerString = kmerLength - 1;
 	uint8_t queryLetterIndex	= awFmAsciiAminoAcidToLetterIndex(kmer[indexInKmerString]);
 	range->startPtr = index->prefixSums[queryLetterIndex], range->endPtr = index->prefixSums[queryLetterIndex + 1] - 1;
 

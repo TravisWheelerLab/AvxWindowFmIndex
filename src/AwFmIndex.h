@@ -429,7 +429,7 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *_RESTRICT_ 
  *    in the input query.
  */
 struct AwFmSearchRange awFmCreateInitialQueryRange(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const query, const uint8_t queryLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const query, const uint64_t queryLength);
 
 
 /*

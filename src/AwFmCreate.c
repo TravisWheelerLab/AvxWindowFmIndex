@@ -19,7 +19,7 @@ void setBwtAndPrefixSums(struct AwFmIndex *_RESTRICT_ const index, const size_t 
 		const uint8_t *_RESTRICT_ const sequence, const uint64_t *_RESTRICT_ const unsampledSuffixArray);
 
 void populateKmerSeedTableRecursive(struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange range,
-		uint8_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier);
+		size_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier);
 		
 void populateKmerSeedTable(struct AwFmIndex *_RESTRICT_ const index);
 
@@ -361,10 +361,10 @@ void populateKmerSeedTable(struct AwFmIndex *_RESTRICT_ const index) {
 
 
 void populateKmerSeedTableRecursive(struct AwFmIndex *_RESTRICT_ const index, struct AwFmSearchRange range,
-		uint8_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier) {
+		size_t currentKmerLength, uint64_t currentKmerIndex, uint64_t letterIndexMultiplier) {
 	const uint8_t alphabetSize = awFmGetAlphabetCardinality(index->config.alphabetType);
 
-	const uint8_t kmerLength = index->config.kmerLengthInSeedTable;
+	const size_t kmerLength = index->config.kmerLengthInSeedTable;
 
 	// base case
 	if(kmerLength == currentKmerLength) {

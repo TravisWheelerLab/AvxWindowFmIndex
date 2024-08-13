@@ -275,7 +275,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(
  *    the given kmer does not exist in the database sequence.
  */
 struct AwFmSearchRange awFmFindSearchRangeForString(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const size_t kmerLength);
 
 
 /*
@@ -349,7 +349,7 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *_RESTRICT_ const searc
 *					is stored on file, not in memory)
  */
 enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *_RESTRICT_ const index,
-		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint8_t numThreads);
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint32_t numThreads);
 
 
 /*
@@ -380,7 +380,7 @@ enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *_RESTRICT_ 
  *                    will likely vary from system to system. Suggested default value is 4
  */
 void awFmParallelSearchCount(const struct AwFmIndex *_RESTRICT_ const index,
-		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint8_t numThreads);
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint32_t numThreads);
 
 
 /*

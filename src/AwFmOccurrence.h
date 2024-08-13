@@ -93,7 +93,7 @@ void awFmBlockPrefetch(
  *
  *  Inputs:
  *    blockList: blockList to be queried.
- *    bwtPosition: Position of the character to be returned.
+ *    localPosition: Position of the character to be returned.
  *
  *  Returns:
  *    letter at the bwtPosition in the specified blockList.
@@ -108,7 +108,7 @@ uint8_t awFmGetNucleotideLetterAtBwtPosition(const struct AwFmNucleotideBlock *b
  *
  *  Inputs:
  *    blockList: blockList to be queried.
- *    bwtPosition: Position of the character to be returned.
+ *    localPosition: Position of the character to be returned.
  *
  *  Returns:
  *    letter at the bwtPosition in the specified blockList.

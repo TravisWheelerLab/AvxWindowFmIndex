@@ -90,7 +90,7 @@ void awFmDeallocKmerSearchList(struct AwFmKmerSearchList *_RESTRICT_ const searc
 
 
 enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *_RESTRICT_ const index,
-		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint8_t numThreads) {
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint32_t numThreads) {	
 
 	const uint32_t searchListCount = searchList->count;
 	enum AwFmReturnCode atomicReturnCode = AwFmSuccess;
@@ -134,7 +134,7 @@ enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *_RESTRICT_ 
 }
 
 void awFmParallelSearchCount(const struct AwFmIndex *_RESTRICT_ const index,
-		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint8_t numThreads) {
+		struct AwFmKmerSearchList *_RESTRICT_ const searchList, uint32_t numThreads) {
 
 	const uint32_t searchListCount = searchList->count;
 

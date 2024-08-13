@@ -285,8 +285,8 @@ enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(const struct AwFmIndex
 
 
 struct AwFmSearchRange awFmFindSearchRangeForString(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength) {
-	int8_t kmerLetterPosition = kmerLength - 1;
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const size_t kmerLength) {
+	size_t kmerLetterPosition = kmerLength - 1;
 	uint16_t bwtBlockWidth;
 	uint8_t kmerLetterIndex;
 
@@ -322,7 +322,7 @@ struct AwFmSearchRange awFmFindSearchRangeForString(
 
 
 bool awFmSingleKmerExists(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const size_t kmerLength) {
 
 	struct AwFmSearchRange kmerRange = awFmFindSearchRangeForString(index, kmer, kmerLength);
 	return kmerRange.startPtr <= kmerRange.endPtr;

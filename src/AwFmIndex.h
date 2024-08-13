@@ -275,7 +275,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(
  *    the given kmer does not exist in the database sequence.
  */
 struct AwFmSearchRange awFmFindSearchRangeForString(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const size_t kmerLength);
 
 
 /*

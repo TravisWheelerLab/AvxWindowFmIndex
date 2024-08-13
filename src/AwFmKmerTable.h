@@ -24,7 +24,7 @@
  *    Copy of the AwFmSearchRange containing the startPtr and endPtr for the kmer seed.
  */
 struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint8_t kmerLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const size_t kmerLength);
 
 
 /*
@@ -45,7 +45,7 @@ struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(
  *    Copy of the AwFmSearchRange containing the startPtr and endPtr for the kmer seed.
  */
 struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint8_t kmerLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const size_t kmerLength);
 
 
 /*
@@ -63,7 +63,7 @@ struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(
  *    true if the kmer is eligible for using the kmer seed table, or false otherwise.
  */
 bool awFmQueryCanUseKmerTable(const struct AwFmIndex *_RESTRICT_ const index,
-	const char *_RESTRICT_ const kmer, const uint8_t kmerLength);
+	const char *_RESTRICT_ const kmer, const size_t kmerLength);
 
 
 #endif /* end of include guard: AW_FM_KMER_TABLE_H */

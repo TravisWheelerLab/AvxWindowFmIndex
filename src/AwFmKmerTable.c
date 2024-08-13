@@ -6,12 +6,12 @@
 
 
 bool awFmQueryCanUseKmerTable(const struct AwFmIndex *_RESTRICT_ const index,
-	const char *_RESTRICT_ const kmer, const uint8_t kmerLength){
+	const char *_RESTRICT_ const kmer, const size_t kmerLength){
 
 	if (kmerLength < index->config.kmerLengthInSeedTable){
 		return false;
 	}
-	for(uint8_t letterIdx = kmerLength - index->config.kmerLengthInSeedTable; letterIdx < kmerLength; letterIdx++){
+	for(size_t letterIdx = kmerLength - index->config.kmerLengthInSeedTable; letterIdx < kmerLength; letterIdx++){
 		if(awFmLetterIsAmbiguous(kmer[letterIdx], index->config.alphabetType)){
 			return false;
 		}
@@ -22,11 +22,11 @@ bool awFmQueryCanUseKmerTable(const struct AwFmIndex *_RESTRICT_ const index,
 
 
 struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint8_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const size_t kmerLength) {
 
-	const uint8_t kmerSeedStartPosition = kmerLength - index->config.kmerLengthInSeedTable;
+	const size_t kmerSeedStartPosition = kmerLength - index->config.kmerLengthInSeedTable;
 	uint64_t kmerTableIndex							= 0;
-	for(int_fast16_t i = kmerSeedStartPosition; i < kmerLength; i++) {
+	for(size_t i = kmerSeedStartPosition; i < kmerLength; i++) {
 		uint8_t letterIndex = awFmAsciiNucleotideToLetterIndex(kmer[i]);
 		kmerTableIndex			= (kmerTableIndex * AW_FM_NUCLEOTIDE_CARDINALITY) + letterIndex;
 	}
@@ -36,11 +36,11 @@ struct AwFmSearchRange awFmNucleotideKmerSeedRangeFromTable(
 
 
 struct AwFmSearchRange awFmAminoKmerSeedRangeFromTable(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint8_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const size_t kmerLength) {
 
-	const uint8_t kmerSeedStartPosition = kmerLength - index->config.kmerLengthInSeedTable;
+	const size_t kmerSeedStartPosition = kmerLength - index->config.kmerLengthInSeedTable;
 	uint64_t kmerTableIndex							= 0;
-	for(int_fast16_t i = kmerSeedStartPosition; i < kmerLength; i++) {
+	for(size_t i = kmerSeedStartPosition; i < kmerLength; i++) {
 		uint8_t letterIndex = awFmAsciiAminoAcidToLetterIndex(kmer[i]);
 		kmerTableIndex			= (kmerTableIndex * AW_FM_AMINO_CARDINALITY) + letterIndex;
 	}

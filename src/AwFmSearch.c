@@ -6,7 +6,7 @@
 
 
 struct AwFmSearchRange awFmCreateInitialQueryRange(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const query, const uint8_t queryLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const query, const size_t queryLength) {
 
 	uint8_t finalLetterIndexInQuery;
 	if(index->config.alphabetType != AwFmAlphabetAmino) {
@@ -285,7 +285,7 @@ enum AwFmReturnCode awFmGetHeaderStringFromSequenceNumber(const struct AwFmIndex
 
 
 struct AwFmSearchRange awFmFindSearchRangeForString(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const size_t kmerLength) {
 	int8_t kmerLetterPosition = kmerLength - 1;
 	uint16_t bwtBlockWidth;
 	uint8_t kmerLetterIndex;
@@ -322,7 +322,7 @@ struct AwFmSearchRange awFmFindSearchRangeForString(
 
 
 bool awFmSingleKmerExists(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength) {
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const size_t kmerLength) {
 
 	struct AwFmSearchRange kmerRange = awFmFindSearchRangeForString(index, kmer, kmerLength);
 	return kmerRange.startPtr <= kmerRange.endPtr;
@@ -422,9 +422,9 @@ inline uint8_t awFmAminoBacktraceReturnPreviousLetterIndex(
 
 
 inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer,
-		const uint8_t kmerLength, struct AwFmSearchRange *range) {
+		const size_t kmerLength, struct AwFmSearchRange *range) {
 
-	uint8_t indexInKmerString = kmerLength - 1;
+	size_t indexInKmerString = kmerLength - 1;
 	uint8_t queryLetterIndex	= awFmAsciiNucleotideToLetterIndex(kmer[indexInKmerString]);
 	range->startPtr						= index->prefixSums[queryLetterIndex];
 	range->endPtr							= index->prefixSums[queryLetterIndex + 1] - 1;
@@ -436,9 +436,9 @@ inline void awFmNucleotideNonSeededSearch(const struct AwFmIndex *_RESTRICT_ con
 
 
 inline void awFmAminoNonSeededSearch(const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer,
-		const uint8_t kmerLength, struct AwFmSearchRange *range) {
+		const size_t kmerLength, struct AwFmSearchRange *range) {
 
-	uint8_t indexInKmerString = kmerLength - 1;
+	size_t indexInKmerString = kmerLength - 1;
 	uint8_t queryLetterIndex	= awFmAsciiAminoAcidToLetterIndex(kmer[indexInKmerString]);
 	range->startPtr = index->prefixSums[queryLetterIndex], range->endPtr = index->prefixSums[queryLetterIndex + 1] - 1;
 

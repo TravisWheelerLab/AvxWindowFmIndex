@@ -275,7 +275,7 @@ enum AwFmReturnCode awFmReadIndexFromFile(
  *    the given kmer does not exist in the database sequence.
  */
 struct AwFmSearchRange awFmFindSearchRangeForString(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const uint16_t kmerLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const kmer, const size_t kmerLength);
 
 
 /*
@@ -355,7 +355,7 @@ enum AwFmReturnCode awFmParallelSearchLocate(const struct AwFmIndex *_RESTRICT_ 
 /*
  * Function:  awFmParallelSearchCount
  * --------------------
- *  Using the given index and a searchData struct preloaded with kmers, query the kmers
+ *  Using the given index and a searchData struct preloaded with kmers, query the kmers	
  *    in a concurrent, thread-parallel manner to find the count of occurrences of each
  *    respective kmer. The suggested use case for this function is as follows:
  *
@@ -429,7 +429,7 @@ enum AwFmReturnCode awFmReadSequenceFromFile(const struct AwFmIndex *_RESTRICT_ 
  *    in the input query.
  */
 struct AwFmSearchRange awFmCreateInitialQueryRange(
-		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const query, const uint8_t queryLength);
+		const struct AwFmIndex *_RESTRICT_ const index, const char *_RESTRICT_ const query, const size_t queryLength);
 
 
 /*

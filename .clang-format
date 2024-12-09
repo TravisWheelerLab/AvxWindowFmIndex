@@ -1,13 +1,12 @@
 ---
-Language:        Cpp
-BasedOnStyle:  LLVM
+Language:       C
+BasedOnStyle:  Microsoft
 AccessModifierOffset: -2
 AlignAfterOpenBracket: Align
 AlignConsecutiveMacros: false
 AlignConsecutiveAssignments: false
 AlignConsecutiveBitFields: false
 Language: Cpp
-BasedOnStyle:  Google
 AccessModifierOffset: 0
 AlignAfterOpenBracket: DontAlign
 AlignConsecutiveMacros: AcrossEmptyLines

@@ -5,7 +5,6 @@
 
 #include "AwFmIndex.h"
 
-
 /*
  * Function:  AwFmSimdVecLoad
  * --------------------
@@ -19,8 +18,7 @@
  *  Returns:
  *    AwFmSimdVec256 containing the loaded data.
  */
-AwFmSimdVec256 AwFmSimdVecLoad(const AwFmSimdVec256* memAddr);
-
+AwFmSimdVec256 AwFmSimdVecLoad(const AwFmSimdVec256 *memAddr);
 
 /*
  * Function:  AwFmSimdVecAnd
@@ -36,7 +34,6 @@ AwFmSimdVec256 AwFmSimdVecLoad(const AwFmSimdVec256* memAddr);
  */
 AwFmSimdVec256 AwFmSimdVecAnd(const AwFmSimdVec256 v1, const AwFmSimdVec256 v2);
 
-
 /*
  * Function:  AwFmSimdVecOr
  * --------------------
@@ -51,11 +48,11 @@ AwFmSimdVec256 AwFmSimdVecAnd(const AwFmSimdVec256 v1, const AwFmSimdVec256 v2);
  */
 AwFmSimdVec256 AwFmSimdVecOr(const AwFmSimdVec256 v1, const AwFmSimdVec256 v2);
 
-
 /*
  * Function:  AwFmSimdVecAndNot
  * --------------------
- *  This function bitwise NOT's the vector v1, and then bitwise ANDs the result with v2.
+ *  This function bitwise NOT's the vector v1, and then bitwise ANDs the result
+ * with v2.
  *
  *  Inputs:
  *    v1 and v2 are the vectors to to perform the operation on.
@@ -63,25 +60,25 @@ AwFmSimdVec256 AwFmSimdVecOr(const AwFmSimdVec256 v1, const AwFmSimdVec256 v2);
  *  Returns:
  *    AwFmSimdVec256 result of NOTing v1 and ANDing it with v2.
  */
-AwFmSimdVec256 AwFmSimdVecAndNot(const AwFmSimdVec256 v1, const AwFmSimdVec256 v2);
-
+AwFmSimdVec256 AwFmSimdVecAndNot(const AwFmSimdVec256 v1,
+                                 const AwFmSimdVec256 v2);
 
 /*
  * Function:  AwFmMaskedVectorPopcount
  * --------------------
- *  Creates a 256-bit bitmask that masks away all bits after localQueryPosition, and
- *    ANDs the result with vec. A population count is then taken of the result.
+ *  Creates a 256-bit bitmask that masks away all bits after localQueryPosition,
+ * and ANDs the result with vec. A population count is then taken of the result.
  *
  *  Inputs:
  *    vec: populated vector to take the masked popcount of.
- *    localQueryPosition: position in the vector for which all 1s up to this position
- *      are to be counted.
+ *    localQueryPosition: position in the vector for which all 1s up to this
+ * position are to be counted.
  *
  *  Returns:
  *    a population count of the vector up to the localQueryPosition.
  */
-uint32_t AwFmMaskedVectorPopcount(const AwFmSimdVec256 vec, const uint8_t localQueryPosition);
-
+uint32_t AwFmMaskedVectorPopcount(const AwFmSimdVec256 vec,
+                                  const uint8_t localQueryPosition);
 
 /*
  * Function:  AwFmSimdPrefetch
@@ -92,6 +89,6 @@ uint32_t AwFmMaskedVectorPopcount(const AwFmSimdVec256 vec, const uint8_t localQ
  *  Inputs:
  *    memAddr: address of memory to prefetch.
  */
-void AwFmSimdPrefetch(const void* memAddr);
+void AwFmSimdPrefetch(const void *memAddr);
 
 #endif

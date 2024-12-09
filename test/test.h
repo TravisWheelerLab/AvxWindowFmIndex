@@ -10,11 +10,11 @@
   (awFmAssertTest(assertion, __FILE__, __func__, __LINE__))
 #define testAssertString(assertion, message)                                   \
   (awFmAssertTestString(assertion, message, __FILE__, __func__, __LINE__))
-void setPrintfColorRed() { printf("\033[1;31m"); }
-void setPrintfColorDefault() { printf("\033[0m"); }
+inline void setPrintfColorRed() { printf("\033[1;31m"); }
+inline void setPrintfColorDefault() { printf("\033[0m"); }
 
 size_t assertionNumber = 0;
-void awFmAssertTest(bool assertion, const char *file, const char *func,
+inline void awFmAssertTest(bool assertion, const char *file, const char *func,
                     const int line) {
   if (!assertion) {
     setPrintfColorRed();
@@ -25,7 +25,7 @@ void awFmAssertTest(bool assertion, const char *file, const char *func,
   assertionNumber++;
 }
 
-void awFmAssertTestString(bool assertion, char *message, const char *file,
+inline void awFmAssertTestString(bool assertion, char *message, const char *file,
                           const char *func, const int line) {
   if (!assertion) {
     setPrintfColorRed();
@@ -36,6 +36,6 @@ void awFmAssertTestString(bool assertion, char *message, const char *file,
   assertionNumber++;
 }
 
-void resetAssertionNumber() { assertionNumber = 0; }
+inline void resetAssertionNumber() { assertionNumber = 0; }
 
 #endif /* end of include guard: AW_FM_INDEX_TEST_H */

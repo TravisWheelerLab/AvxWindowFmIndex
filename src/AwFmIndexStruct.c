@@ -1,8 +1,6 @@
 #include "AwFmIndexStruct.h"
-
 #include <stdlib.h>
 #include <string.h>
-
 #include "AwFmIndex.h"
 #include "FastaVector.h"
 

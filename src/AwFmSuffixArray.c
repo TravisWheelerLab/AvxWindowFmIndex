@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <string.h>
-
 #include "AwFmFile.h"
 
 // adding padding bytes prevents buffer overflow problems recalling values from

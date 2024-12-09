@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -8,11 +7,9 @@
 #include <time.h>
 
 #include "../../build/divsufsort64.h"
-#include "../../src/AwFmCreate.h"
 #include "../../src/AwFmIndex.h"
 #include "../../src/AwFmIndexStruct.h"
 #include "../../src/AwFmKmerTable.h"
-#include "../../src/AwFmLetter.h"
 #include "../../src/AwFmSearch.h"
 #include "../test.h"
 

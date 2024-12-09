@@ -1,11 +1,7 @@
-#include "AwFmParallelSearch.h"
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "AwFmFile.h"
 #include "AwFmIndex.h"
 #include "AwFmIndexStruct.h"
 #include "AwFmKmerTable.h"

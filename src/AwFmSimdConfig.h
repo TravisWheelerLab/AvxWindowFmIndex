@@ -2,7 +2,6 @@
 #define AWFM_SIMD_CONFIG_H
 
 #include <stdint.h>
-
 #include "AwFmIndex.h"
 
 /*

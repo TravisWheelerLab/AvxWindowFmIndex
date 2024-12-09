@@ -1,7 +1,5 @@
 #include "AwFmKmerTable.h"
-
 #include "AwFmLetter.h"
-#include "AwFmSearch.h"
 
 bool awFmQueryCanUseKmerTable(const struct AwFmIndex *_RESTRICT_ const index,
                               const char *_RESTRICT_ const kmer,

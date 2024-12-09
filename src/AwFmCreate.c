@@ -1,14 +1,9 @@
-#include "AwFmCreate.h"
-
 #include <stdlib.h>
 #include <string.h>
-
 #include "AwFmFile.h"
 #include "AwFmIndex.h"
 #include "AwFmIndexStruct.h"
 #include "AwFmLetter.h"
-#include "AwFmSearch.h"
-#include "AwFmSimdConfig.h"
 #include "AwFmSuffixArray.h"
 #include "FastaVector.h"
 #include "divsufsort64.h"

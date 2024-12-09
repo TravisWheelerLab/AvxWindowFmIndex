@@ -9,7 +9,6 @@
 #include <string.h>
 #include <time.h>
 
-#include "../../src/AwFmIndexStruct.h"
 #include "../test.h"
 
 char buffer[2048];

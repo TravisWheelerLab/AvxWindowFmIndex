@@ -5,13 +5,11 @@
 #define _XOPEN_SOURCE 500
 
 #include "AwFmFile.h"
-
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
 #include "AwFmIndex.h"
 #include "AwFmIndexStruct.h"
 #include "AwFmSuffixArray.h"

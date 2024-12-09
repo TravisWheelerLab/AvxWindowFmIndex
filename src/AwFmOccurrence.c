@@ -1,7 +1,5 @@
-#include "AwFmOccurrence.h"
-
 #include <stdbool.h>
-
+#include "AwFmOccurrence.h"
 #include "AwFmIndex.h"
 #include "AwFmLetter.h"
 

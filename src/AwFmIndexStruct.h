@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-
 #include "AwFmIndex.h"
 
 #define AW_FM_CURRENT_VERSION_NUMBER 8

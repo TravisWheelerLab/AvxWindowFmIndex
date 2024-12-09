@@ -1,5 +1,4 @@
 #include "AwFmSimdConfig.h"
-
 #include "AwFmIndex.h"
 
 // function implementations are defined based on if they're ARM_NEON (aarch64)

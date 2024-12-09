@@ -1,9 +1,5 @@
 #include "AwFmLetter.h"
-#include "AwFmIndexStruct.h"
-
 #include <ctype.h>
-#include <stdlib.h>
-#include <time.h>
 
 uint8_t awFmAsciiNucleotideToLetterIndex(const uint8_t asciiLetter) {
   uint8_t toLowerCase = asciiLetter | 0x20;

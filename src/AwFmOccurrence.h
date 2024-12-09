@@ -2,7 +2,6 @@
 #define AW_FM_OCCURANCE_H
 
 #include <stdint.h>
-
 #include "AwFmIndexStruct.h"
 #include "AwFmSimdConfig.h"
 

@@ -1,5 +1,4 @@
 #include "AwFmSearch.h"
-
 #include "AwFmLetter.h"
 #include "AwFmOccurrence.h"
 #include "AwFmSuffixArray.h"

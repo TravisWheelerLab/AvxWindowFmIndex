@@ -2,7 +2,6 @@
 #define AW_FM_LETTER_H
 
 #include <stdint.h>
-
 #include "AwFmIndexStruct.h"
 
 /*

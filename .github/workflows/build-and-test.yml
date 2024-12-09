@@ -16,11 +16,11 @@ jobs:
       - run: make
 
   check-build-mac:
-    runs-on: macos-12
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v1
       - run: git submodule update --init 
-      - run: cmake -DCMAKE_C_COMPILER=`which gcc-10` .
+      - run: cmake -DCMAKE_C_COMPILER=`which gcc-12` .
       - run: make || true
 
   check-legacy-build:
@@ -35,10 +35,10 @@ jobs:
       - run: make -f Makefile_legacy static
 
   check-legacy-build-mac:
-    runs-on: macos-12
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v1
-      - run: make -f Makefile_legacy CC=`which gcc-10`
+      - run: make -f Makefile_legacy CC=`which gcc-12`
       - run: make -f Makefile_legacy static
 
   check-format:

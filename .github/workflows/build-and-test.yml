@@ -16,7 +16,7 @@ jobs:
       - run: make
 
   check-build-mac:
-    runs-on: macos-11
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v1
       - run: git submodule update --init 
@@ -35,7 +35,7 @@ jobs:
       - run: make -f Makefile_legacy static
 
   check-legacy-build-mac:
-    runs-on: macos-11
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v1
       - run: make -f Makefile_legacy CC=`which gcc-10`
